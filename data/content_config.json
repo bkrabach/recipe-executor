@@ -1,9 +1,0 @@
-{
-  "analysis_settings": {
-    "include_themes": true,
-    "include_sentiment": true,
-    "include_recommendations": true
-  },
-  "output_format": "markdown",
-  "max_summary_length": 500
-}

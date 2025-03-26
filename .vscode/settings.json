@@ -66,8 +66,17 @@
     "uv.lock",
     "logs",
     ".env",
+    "pyproject.toml",
     "docs",
     "planning"
   ],
-  "cSpell.words": ["dotenv", "groq", "mypy", "pydantic"]
+  "cSpell.words": [
+    "asyncio",
+    "dotenv",
+    "groq",
+    "levelname",
+    "mypy",
+    "Ollama",
+    "pydantic"
+  ]
 }
