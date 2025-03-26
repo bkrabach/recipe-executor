@@ -2,10 +2,7 @@
 
 ## Build and Run Commands
 
-- **Install dependencies**: `pip install -r requirements.txt`
-- **Run a recipe**: `python recipe_executor/main.py path/to/recipe.md`
-- **Run with options**: `python recipe_executor/main.py path/to/recipe.md --model claude-3-7-sonnet-20250219 --provider anthropic`
-- **Debug mode**: `python recipe_executor/main.py path/to/recipe.md --log-level debug`
+- **Install dependencies**: `uv pip install -e .`
 - **Linting**: `ruff` and `mypy`
 
 ## Code Style Guidelines
