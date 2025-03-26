@@ -38,8 +38,7 @@ venv.bak/
 
 # Project specific
 logs/
-output/
-cache/
+outputs/
 *.log
 
 # Jupyter Notebooks

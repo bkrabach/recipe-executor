@@ -1,20 +1,15 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "recipe-executor"
 version = "0.1.0"
-description = "A tool for executing natural language recipes"
-authors = [{ name = "Brian Krabach", email = "brkrabac@microsoft.com" }]
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = ["pydantic>=2.0.0"]
+description = "A CLI tool for executing structured natural language recipes to automate LLM-driven workflows."
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.9"
 
-[project.optional-dependencies]
-openai = ["openai>=1.0.0"]
-anthropic = ["anthropic>=0.5.0"]
-dev = ["pytest>=7.0.0", "pytest-asyncio>=0.20.0"]
+dependencies = ["pydantic-ai-slim[openai,anthropic]", "python-dotenv>=1.0.0"]
 
 [project.scripts]
-recipe-executor = "recipe_executor.__main__:main"
+recipe-executor = "recipe_executor.cli:main"
+
+[build-system]
+requires = ["setuptools>=65.0.0"]
+build-backend = "setuptools.build_meta"
