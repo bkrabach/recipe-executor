@@ -1,30 +1,55 @@
-# recipe_executor/models.py
+"""
+Domain models for the Recipe Executor CLI tool.
+
+This module defines the core Pydantic models for representing recipes and steps.
+Each step must be implemented as a subclass of Step and provide its own execution logic.
+"""
 
 from pydantic import BaseModel
-from typing import List, Literal, Union, Optional
+from typing import Any, Optional, List
 
-class LLMGenerateStep(BaseModel):
-    type: Literal['llm_generate']
-    prompt: str
-    # Optionally, a key to store this output in context (if provided by recipe author)
-    output_key: Optional[str] = None
+class Step(BaseModel):
+    """
+    Base class for all recipe steps.
 
-class FileWriteStep(BaseModel):
-    type: Literal['file_write']
-    path: str
-    content: str
+    Attributes:
+        type: A string indicating the step type.
+        name: An optional name for the step.
+    """
+    type: str
+    name: Optional[str] = None
 
-class RunCommandStep(BaseModel):
-    type: Literal['run_command']
-    command: str
+    def execute(self, context: dict) -> Any:
+        """
+        Execute the step using the provided context.
 
-class RunRecipeStep(BaseModel):
-    type: Literal['run_recipe']
-    recipe: str
+        Args:
+            context: A dictionary containing shared state for recipe execution.
 
-# A step can be any one of the above (for type hinting)
-Step = Union[LLMGenerateStep, FileWriteStep, RunCommandStep, RunRecipeStep]
+        Returns:
+            The result of the step execution.
+
+        Raises:
+            NotImplementedError: If not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement the execute method.")
+
+    class Config:
+        extra = "forbid"
+
 
 class Recipe(BaseModel):
-    name: str
+    """
+    Represents a complete recipe.
+
+    Attributes:
+        title: The title of the recipe.
+        description: An optional description of the recipe.
+        steps: A list of steps that constitute the recipe.
+    """
+    title: str
+    description: Optional[str] = None
     steps: List[Step]
+
+    class Config:
+        extra = "forbid"

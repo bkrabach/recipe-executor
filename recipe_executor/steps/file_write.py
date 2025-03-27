@@ -1,29 +1,60 @@
-# recipe_executor/steps/file_write.py
+"""
+File Write Step implementation for the Recipe Executor CLI tool.
 
+This step writes content to a file. It resolves the output path based on the
+configured OUTPUT_ROOT, creates necessary directories, and writes the content
+after performing template substitutions using the provided context.
+"""
+
+import logging
 import os
-from recipe_executor import config
+from typing import Optional
+from recipe_executor.models import Step
+from recipe_executor.config import OUTPUT_ROOT
 
-def execute(step, context):
+class FileWriteStep(Step):
     """
-    Execute a file_write step: write given content to the specified file path.
-    The path may be relative to the output root.
+    Step that writes content to a file.
+
+    Attributes:
+        type: The step type identifier ("file_write").
+        name: An optional name for the step.
+        path: The relative path where the file should be written.
+        content: The file content, which may include placeholders to be replaced.
     """
-    # Resolve the full file path relative to output root if not an absolute path
-    output_root = config.Config.OUTPUT_ROOT
-    path = step.path
-    if not os.path.isabs(path):
-        full_path = os.path.join(output_root, path)
-    else:
-        full_path = path
-    # Ensure the directory for the file exists
-    os.makedirs(os.path.dirname(full_path) or ".", exist_ok=True)
-    content = step.content
-    # Substitute context variables in content if any placeholders are present (e.g., {{step_1}})
-    if "{{" in content:
-        for key, val in context.items():
-            content = content.replace(f"{{{{{key}}}}}", str(val))
-    # Write content to the file (overwrites if exists)
-    with open(full_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-    # Returning the file path might be useful for logging or future extension
-    return full_path
+    type: str = "file_write"
+    name: Optional[str] = None
+    path: str
+    content: str
+
+    def execute(self, context: dict) -> None:
+        """
+        Execute the step by writing the processed content to a file.
+
+        Args:
+            context: A dictionary holding shared execution state. Placeholders
+                     in the content are replaced using keys from this context.
+        """
+
+        logging.info("Executing FileWriteStep: writing file '%s'", self.path)
+
+        try:
+            resolved_path = os.path.join(OUTPUT_ROOT, self.path)
+            os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+
+            processed_content = self.content
+            for key, value in context.items():
+                processed_content = processed_content.replace(f"{{{{{key}}}}}", str(value))
+
+            with open(resolved_path, "w") as f:
+                f.write(processed_content)
+            logging.debug("File '%s' written successfully", resolved_path)
+
+            # Update context with the file path for later steps.
+            context[self.name or f"file_write_{len(context)}"] = resolved_path
+
+        except Exception as e:
+            logging.error("Error writing file '%s': %s", self.path, e)
+            raise
+
+    model_config = {"extra": "forbid"}

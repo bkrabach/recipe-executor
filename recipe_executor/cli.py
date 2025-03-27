@@ -1,46 +1,39 @@
-# recipe_executor/cli.py
-
+#!/usr/bin/env python3
 import argparse
+import logging
 import sys
-import os
-from recipe_executor import config, parser, executor
 
-def main():
-    # Set up argument parser for CLI options
-    arg_parser = argparse.ArgumentParser(prog="recipe_executor", description="Run a specified recipe file.")
-    arg_parser.add_argument("--recipe", "-r", required=True,
-                            help="Name or path of the recipe to execute")
-    arg_parser.add_argument("--recipes-dir",
-                            help="Directory containing recipes (overrides RECIPES_DIR from .env)")
-    arg_parser.add_argument("--root",
-                            help="Output root directory for file outputs (overrides OUTPUT_ROOT from .env)")
-    args = arg_parser.parse_args()
+from recipe_executor.logger_setup import setup_logging
+from recipe_executor.preprocessor import parse_recipe
+from recipe_executor.executor import execute_recipe
 
-    # Override configuration with CLI arguments if provided
-    if args.recipes_dir:
-        config.Config.RECIPES_DIR = args.recipes_dir
-    if args.root:
-        config.Config.OUTPUT_ROOT = args.root
-        # If LOGS_DIR not explicitly set in environment, use the new root for logs
-        if not os.getenv("LOGS_DIR"):
-            config.Config.LOGS_DIR = os.path.join(config.Config.OUTPUT_ROOT, "logs")
-    # Ensure required directories exist (recipes, output, logs)
-    config.Config.ensure_directories()
-    # Initialize logging
-    executor.setup_logging()
+def main() -> None:
+    # Set up logging (this will overwrite previous log files on each run)
+    setup_logging()
 
-    # Parse the specified recipe file
+    parser = argparse.ArgumentParser(
+        description="Execute a recipe from a Markdown file."
+    )
+    parser.add_argument(
+        "recipe_path",
+        help="Path to the recipe Markdown file"
+    )
+    args = parser.parse_args()
+
+    logging.info("Starting recipe execution for: %s", args.recipe_path)
     try:
-        recipe = parser.parse_recipe(args.recipe)
+        recipe = parse_recipe(args.recipe_path)
     except Exception as e:
-        print(f"Failed to load recipe: {e}", file=sys.stderr)
+        logging.error("Failed to parse recipe: %s", e)
         sys.exit(1)
-    # Execute the recipe
+
     try:
-        executor.execute_recipe(recipe)
+        execute_recipe(recipe)
     except Exception as e:
-        print(f"Recipe execution failed: {e}", file=sys.stderr)
+        logging.error("Error during recipe execution: %s", e)
         sys.exit(1)
+
+    logging.info("Recipe executed successfully.")
 
 if __name__ == "__main__":
     main()
