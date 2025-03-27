@@ -30,8 +30,9 @@ def get_env(name: str, default: str | None = None) -> str:
     return value
 
 # Core configuration variables.
-DEFAULT_MODEL = get_env("DEFAULT_MODEL", "openai:gpt-4.5")
+CONSOLE_LOG_LEVEL = get_env("CONSOLE_LOG_LEVEL", "INFO")
+DEFAULT_MODEL = get_env("DEFAULT_MODEL", "openai:gpt-4o")
+LOGS_DIR = get_env("LOGS_DIR", "./logs")
 PREPROCESSOR_MODEL = get_env("PREPROCESSOR_MODEL", DEFAULT_MODEL)
 RECIPES_DIR = get_env("RECIPES_DIR", "./recipes")
-OUTPUT_ROOT = get_env("OUTPUT_ROOT", "./outputs")
-LOGS_DIR = get_env("LOGS_DIR", os.path.join(OUTPUT_ROOT, "logs"))
+ROOT_DIR = get_env("ROOT_DIR", "./outputs")

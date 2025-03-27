@@ -13,9 +13,9 @@ A console handler is also added for warnings and above.
 import logging
 import os
 
-from .config import LOGS_DIR
+from .config import CONSOLE_LOG_LEVEL, LOGS_DIR
 
-def setup_logging() -> None:
+def setup_logging(console_level: str | None = None) -> None:
     # Create the log directory if it doesn't exist.
     os.makedirs(LOGS_DIR, exist_ok=True)
 
@@ -47,8 +47,13 @@ def setup_logging() -> None:
     error_handler.setFormatter(formatter)
     root_logger.addHandler(error_handler)
 
-    # Console handler for warnings and above.
+    # Console log handler.
+    # Use the provided console_level or fall back to the config value.
+    if console_level is None:
+        console_level = CONSOLE_LOG_LEVEL
+    # Convert string level to numeric level.
+    numeric_level = getattr(logging, console_level.upper(), logging.INFO)
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.WARNING)
+    console_handler.setLevel(numeric_level)
     console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
     root_logger.addHandler(console_handler)

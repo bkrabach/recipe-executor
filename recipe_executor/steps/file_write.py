@@ -10,7 +10,6 @@ import logging
 import os
 from typing import Optional
 from recipe_executor.models import Step
-from recipe_executor.config import OUTPUT_ROOT
 
 class FileWriteStep(Step):
     """
@@ -36,10 +35,11 @@ class FileWriteStep(Step):
                      in the content are replaced using keys from this context.
         """
 
-        logging.info("Executing FileWriteStep: writing file '%s'", self.path)
+        root = context.get("root", "")
+        logging.info("Executing FileWriteStep: writing file '%s' relative to root '%s'", self.path, root)
 
         try:
-            resolved_path = os.path.join(OUTPUT_ROOT, self.path)
+            resolved_path = os.path.join(root, self.path)
             os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
 
             processed_content = self.content

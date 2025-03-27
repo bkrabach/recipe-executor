@@ -37,8 +37,8 @@ class RunCommandStep(Step):
         Raises:
             subprocess.CalledProcessError: If the command returns a non-zero exit status.
         """
-
-        logging.info("Executing RunCommandStep: running command '%s'", self.command)
+        root = context.get("root", "")
+        logging.info("Executing RunCommandStep: running command '%s' with cwd '%s'", self.command, root)
 
         try:
             command_to_run = self.command
@@ -46,7 +46,7 @@ class RunCommandStep(Step):
             # Substitute placeholders in the command using the context.
             for key, value in context.items():
                 command_to_run = command_to_run.replace(f"{{{{{key}}}}}", str(value))
-            result = subprocess.run(command_to_run, shell=True, capture_output=True, text=True)
+            result = subprocess.run(command_to_run, shell=True, capture_output=True, text=True, cwd=root)
             result.check_returncode()
             output = result.stdout.strip()
 

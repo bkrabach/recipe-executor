@@ -60,7 +60,7 @@ class LLMGenerateStep(Step):
             if not result or result.data is None:
                 raise Exception("LLM returned no result")
             generated_text = result.data
-            logging.debug("LLM response (truncated): '%s'", generated_text)
+            logging.debug("LLM response: '%s'", generated_text)
 
             # Store the result in the context using the provided name or a generated key.
             context[self.name or f"llm_generate_{len(context)}"] = generated_text
