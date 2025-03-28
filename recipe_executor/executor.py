@@ -34,5 +34,3 @@ def execute_recipe(recipe: Recipe, context: dict | None = None) -> None:
             logger.error("Recipe execution aborted.")
             raise
         logger.info("Completed: %s", step_name)
-
-    logger.info("Recipe executed successfully.")

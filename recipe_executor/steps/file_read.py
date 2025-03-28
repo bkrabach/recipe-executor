@@ -6,6 +6,7 @@ This step reads data from a file and returns its content.
 
 import logging
 
+import os
 from typing import Optional
 from recipe_executor.models import Step
 
@@ -33,12 +34,16 @@ class FileReadStep(Step):
             The content of the file as a string.
         """
 
-        logging.info("Executing FileReadStep: reading file '%s'", self.file_path)
+        root = context.get("root", "")
+        logging.info("Executing FileWriteStep: reading file '%s' relative to root '%s'", self.file_path, root)
 
         try:
-            with open(self.file_path, "r") as file:
+            resolved_path = os.path.join(root, self.file_path)
+            os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+
+            with open(resolved_path, "r") as file:
                 data = file.read()
-            logging.debug("Successfully read %d bytes from '%s'", len(data), self.file_path)
+            logging.debug("Successfully read %d bytes from '%s'", len(data), resolved_path)
             return data
 
         except Exception as e:

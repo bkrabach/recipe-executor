@@ -2,8 +2,9 @@
 name = "recipe-executor"
 version = "0.1.0"
 description = "A CLI tool for executing structured natural language recipes to automate LLM-driven workflows."
-authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = ">=3.9"
+authors = [{ name = "Brian Krabach", email = "brkrabac@microsoft.com" }]
+requires-python = ">=3.11"
+readme = "README.md"
 
 dependencies = ["pydantic-ai-slim[openai,anthropic]", "python-dotenv>=1.0.0"]
 
@@ -13,3 +14,7 @@ recipe-executor = "recipe_executor.cli:main"
 [build-system]
 requires = ["setuptools>=65.0.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["recipe_executor"]
+exclude = ["recipes"]
