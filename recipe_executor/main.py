@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from typing import Any, Dict, List
 
@@ -49,6 +50,9 @@ def main() -> None:
     parser.add_argument("recipe_path", help="Path to the recipe file to execute.")
     parser.add_argument("--log-dir", default="logs", help="Directory for log files (default: logs)")
     parser.add_argument("--context", action="append", default=[], help="Additional context values as key=value pairs")
+    parser.add_argument("--description", help="Product description for recipe generation")
+    parser.add_argument("--input-dir", help="Input directory for analysis (defaults to current working directory)")
+    parser.add_argument("--output-dir", help="Output directory for generated code (defaults to current working directory)")
 
     args = parser.parse_args()
 
@@ -58,6 +62,19 @@ def main() -> None:
     except ValueError as e:
         sys.stderr.write(f"Context Error: {str(e)}\n")
         sys.exit(1)
+
+    # Add the product description to the context if provided
+    if args.description:
+        cli_context["product_description"] = args.description
+
+    # Add directory paths to the context if provided
+    if args.input_dir:
+        cli_context["input_dir"] = os.path.abspath(args.input_dir)
+    
+    if args.output_dir:
+        cli_context["output_dir"] = os.path.abspath(args.output_dir)
+        # Ensure the output directory exists
+        os.makedirs(args.output_dir, exist_ok=True)
 
     # Initialize logging
     logger = init_logger(args.log_dir)

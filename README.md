@@ -80,6 +80,7 @@ The project includes several useful make commands:
 - **`make`**: Sets up the virtual environment and installs all dependencies
 - **`make recipe-executor-context`**: Builds AI context files for recipe executor development
 - **`make recipe-executor-create`**: Generates recipe executor code from scratch using the recipe itself
+- **`make recipe-executor-create-with-desc DESCRIPTION="Your product description" [INPUT_DIR="/path/to/input"] [OUTPUT_DIR="/path/to/output"]`**: Generates recipe executor code with a custom product description and optional directory paths
 - **`make recipe-executor-edit`**: Revises existing recipe executor code using recipes
 
 ## Running Recipes
@@ -90,10 +91,17 @@ Execute a recipe using the command line interface:
 python recipe_executor/main.py path/to/your/recipe.json
 ```
 
-You can also pass context variables:
+You can also pass context variables and more options:
 
 ```bash
+# Basic context variables
 python recipe_executor/main.py path/to/your/recipe.json --context key=value
+
+# Product description for code generation
+python recipe_executor/main.py path/to/your/recipe.json --description "Your product description"
+
+# Custom input and output directories
+python recipe_executor/main.py path/to/your/recipe.json --input-dir /path/to/analyze --output-dir /path/to/output
 ```
 
 ## Project Structure

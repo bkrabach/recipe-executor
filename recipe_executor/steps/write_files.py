@@ -58,8 +58,14 @@ class WriteFileStep(BaseStep[WriteFilesConfig]):
         else:
             raise TypeError("Expected FileGenerationResult or list of FileSpec objects")
 
-        # Render output root using the context to resolve any template variables
-        output_root = render_template(self.config.root, context)
+        # Check if output_dir is in the context, prioritize it over the config.root
+        if "output_dir" in context:
+            output_root = context["output_dir"]
+            self.logger.info(f"Using output directory from context: {output_root}")
+        else:
+            # Render output root using the context to resolve any template variables
+            output_root = render_template(self.config.root, context)
+            self.logger.info(f"Using output root from config: {output_root}")
 
         # Process each file in the file list
         for file in files:
