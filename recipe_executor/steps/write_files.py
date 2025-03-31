@@ -69,9 +69,36 @@ class WriteFileStep(BaseStep[WriteFilesConfig]):
 
         # Process each file in the file list
         for file in files:
-            # Render the relative file path from template variables
+            # Render the file path from template variables
             rel_path = render_template(file.path, context)
-            full_path = os.path.join(output_root, rel_path)
+            
+            # Check if the path is already absolute
+            if os.path.isabs(rel_path):
+                full_path = rel_path
+            else:
+                # Check if the output path includes a recipe_executor path segment which might need to be handled differently
+                if 'recipe_executor' in rel_path:
+                    # This is a special case where we want to preserve the recipe_executor folder structure
+                    self.logger.info(f"Preserving recipe_executor path structure for {rel_path}")
+                    # No changes needed
+                    pass
+                elif rel_path.startswith(output_root) or os.path.abspath(rel_path) == output_root:
+                    # If the path already contains the full output path, avoid duplication
+                    self.logger.info(f"Path already contains full output path: {rel_path}")
+                    # Use the path as is without joining with output_root
+                    full_path = rel_path
+                else:
+                    # Check if rel_path already contains the output directory name to avoid duplication
+                    output_dir_name = os.path.basename(output_root)
+                    path_parts = rel_path.split(os.path.sep)
+                    
+                    if path_parts and path_parts[0] == output_dir_name:
+                        # If the path already starts with the output directory name, avoid duplication
+                        self.logger.info(f"Avoiding path duplication for {rel_path}")
+                        # Remove the duplicated directory from the path
+                        rel_path = os.path.sep.join(path_parts[1:]) if len(path_parts) > 1 else ""
+                
+                full_path = os.path.join(output_root, rel_path)
 
             # Create parent directories if they do not exist
             parent_dir = os.path.dirname(full_path)

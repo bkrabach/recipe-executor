@@ -89,10 +89,26 @@ def main() -> None:
         
     # Add directory paths
     if args["input_dir"]:
-        cli_context["input_dir"] = os.path.abspath(args["input_dir"])
+        # First expand any user path with tilde (~)
+        input_dir = os.path.expanduser(args["input_dir"])
+        
+        # If it's an absolute path, use it directly
+        # Otherwise, make it absolute relative to current directory
+        if not os.path.isabs(input_dir):
+            input_dir = os.path.abspath(input_dir)
+            
+        cli_context["input_dir"] = input_dir
         
     if args["output_dir"]:
-        output_dir = os.path.abspath(args["output_dir"])
+        # Handle output directory path correctly
+        # First expand any user path with tilde (~)
+        output_dir = os.path.expanduser(args["output_dir"])
+        
+        # If it's an absolute path, use it directly
+        # Otherwise, make it absolute relative to current directory
+        if not os.path.isabs(output_dir):
+            output_dir = os.path.abspath(output_dir)
+        
         cli_context["output_dir"] = output_dir
         # Ensure the output directory exists
         os.makedirs(output_dir, exist_ok=True)
