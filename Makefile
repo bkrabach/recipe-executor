@@ -16,12 +16,12 @@ recipe-executor-create:
 # Create with description and optional directories
 .PHONY: recipe-executor-create-with-desc
 recipe-executor-create-with-desc:
-	@if [ -z "$(DESCRIPTION)" ]; then \
-		echo "Error: DESCRIPTION is required. Usage: make recipe-executor-create-with-desc DESCRIPTION=\"Your product description\" [INPUT_DIR=\"/path/to/input\"] [OUTPUT_DIR=\"/path/to/output\"]"; \
+	@if [ -z "$(DESC)" ]; then \
+		echo "Error: DESC is required. Usage: make recipe-executor-create-with-desc DESC=\"Your product description\" [IN=\"/path/to/input\"] [OUT=\"/path/to/output\"]"; \
 		exit 1; \
 	fi
 	@echo "Generating recipe executor code with custom description..."
-	@python recipe_executor/main.py recipes/recipe_executor/create.json --description "$(DESCRIPTION)" $(if $(INPUT_DIR),--input-dir "$(INPUT_DIR)") $(if $(OUTPUT_DIR),--output-dir "$(OUTPUT_DIR)")
+	@python recipe_executor/main.py recipes/recipe_executor/create.json "$(DESC)" $(if $(IN),-i "$(IN)") $(if $(OUT),-o "$(OUT)")
 
 # Edit/revise the existing recipe executor code using the recipe executor itself
 .PHONY: recipe-executor-edit
