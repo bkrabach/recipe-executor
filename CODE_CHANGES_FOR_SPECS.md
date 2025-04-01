@@ -1,6 +1,18 @@
 # Code Changes to Implement in Specs/Docs
 
-As per the repository guidelines, code changes should be implemented through spec/doc improvements. The following changes need to be captured in specs/docs to drive code generation:
+## Addressing Repository Supervisor Feedback
+
+As per the repository supervisor's feedback:
+
+> "I cannot accept the changes to main.py and write_files.py because they are code-only changes and will be blown away the next time the code is generated. We need to have these changes captured and implemented as a spec/doc improvements that drive the generation of this code and there is a recipe to be written to assist in that in a desirable way."
+
+This document captures the desired code changes that should be implemented through specs/docs rather than direct code modifications. Instead of modifying the generated code files directly, these improvements should be implemented by:
+
+1. Updating the corresponding specs to include requirements for robust path handling
+2. Enhancing the docs to document the expected path handling behavior
+3. Ensuring the recipes that generate these files produce code with the desired functionality
+
+This approach ensures changes persist through code regeneration cycles.
 
 ## Path Handling Improvements
 
