@@ -19,17 +19,35 @@ The Utils component provides utility functions for the Recipe Executor system, p
 - Handle rendering errors gracefully with clear error messages
 - Keep the implementation stateless and focused
 
+## Logging
+
+- Debug: Log the template being rendered and the context keys used
+- Info: None
+
 ## Component Dependencies
 
-The Utils component depends on:
+### Internal Components
 
-- **Context** - Uses the Context class for accessing artifacts during template rendering
+- **Context** - (Required) Uses the Context class for accessing artifacts during template rendering
+
+### External Libraries
+
+- **Liquid** - (Required) Uses the Liquid templating engine for template rendering (`python-liquid`)
+- **json** - (Required) Uses json module for handling dictionary conversions
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
 - Wrap template rendering in try/except blocks
 - Provide specific error messages that indicate the source of template failures
 - Propagate rendering errors with useful context
+
+## Output Files
+
+- `utils.py`
 
 ## Future Considerations
 

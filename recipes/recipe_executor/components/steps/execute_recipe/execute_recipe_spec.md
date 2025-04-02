@@ -21,14 +21,27 @@ The ExecuteRecipeStep component enables recipes to execute other recipes as sub-
 - Keep the implementation simple and focused on a single responsibility
 - Log detailed information about sub-recipe execution
 
+## Logging
+
+- Debug: None
+- Info: Log the path of the sub-recipe being executed at both start and end of execution
+
 ## Component Dependencies
 
-The ExecuteRecipeStep component depends on:
+### Internal Components
 
-- **Steps Base** - Extends BaseStep with a specific config type
-- **Context** - Shares context between main recipe and sub-recipes
-- **Executor** - Uses RecipeExecutor to run the sub-recipe
-- **Utils** - Uses render_template for dynamic content resolution
+- **Steps Base** - (Required) Extends BaseStep to implement the step interface
+- **Context** - (Required) Shares context between main recipe and sub-recipes
+- **Executor** - (Required) Uses Executor to run the sub-recipe
+- **Utils** - (Required) Uses render_template for dynamic content resolution in paths and context overrides
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
@@ -36,6 +49,10 @@ The ExecuteRecipeStep component depends on:
 - Propagate errors from sub-recipe execution
 - Log sub-recipe execution start and completion
 - Include sub-recipe path in error messages for debugging
+
+## Output Files
+
+- `steps/execute_recipe.py`
 
 ## Future Considerations
 

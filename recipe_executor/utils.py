@@ -1,8 +1,12 @@
-from typing import Any
+import logging
+from typing import Any, Dict
 
 from liquid import Template
 
 from recipe_executor.context import Context
+
+# Configure module-level logger
+logger = logging.getLogger(__name__)
 
 
 def render_template(text: str, context: Context) -> str:
@@ -11,25 +15,32 @@ def render_template(text: str, context: Context) -> str:
     All values in the context are converted to strings before rendering.
 
     Args:
-        text (str): The Liquid template text to be rendered.
-        context (Context): The context containing values for substitution.
+        text (str): The template text to render.
+        context (Context): The context for rendering the template.
 
     Returns:
-        str: The rendered template string.
+        str: The rendered text.
 
     Raises:
-        ValueError: When there is an error during template rendering.
+        ValueError: If there is an error during template rendering.
     """
+    logger.debug(f"Rendering template: {text}")
+    
     try:
-        # Retrieve all artifacts from the context as a dictionary.
-        # Convert each value to a string to ensure compatibility with the Liquid engine.
-        context_dict = context.as_dict()
+        # Retrieve context artifacts and log the keys for debugging
+        context_dict: Dict[str, Any] = context.as_dict()
+        debug_context_keys = list(context_dict.keys())
+        logger.debug(f"Context keys: {debug_context_keys}")
+
+        # Convert all context values to strings to avoid type errors
         safe_context = {key: str(value) for key, value in context_dict.items()}
-        
-        # Create the Liquid template and render it using the prepared safe context.
-        template = Template(text)
-        rendered = template.render(**safe_context)
-        return rendered
+
+        # Create the Liquid template and render it using the safe context
+        template_obj = Template(text)
+        result = template_obj.render(safe_context)
+
+        return result
     except Exception as e:
-        # Raise a ValueError wrapping the original error with a clear error message.
-        raise ValueError(f"Error rendering template: {e}") from e
+        error_message = f"Error rendering template: {e}"
+        logger.error(error_message)
+        raise ValueError(error_message) from e

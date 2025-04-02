@@ -18,7 +18,29 @@ The Step Registry component provides a central mechanism for registering and loo
 - Keep the registry structure simple and stateless
 - Avoid unnecessary abstractions or wrapper functions
 
-## Additional Files
+## Logging
+
+- Debug: None
+- Info: None
+
+## Component Dependencies
+
+### Internal Components
+
+None
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
+
+## Output Files
+
+- `steps/registry.py`
+- `steps/__init__.py` (details below)
 
 Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
 
@@ -40,10 +62,6 @@ STEP_REGISTRY.update({
     "write_files": WriteFilesStep,
 })
 ```
-
-## Component Dependencies
-
-The Step Registry component has no external dependencies on other Recipe Executor components.
 
 ## Future Considerations
 

@@ -21,14 +21,27 @@ The WriteFilesStep component writes generated files to disk based on content fro
 - Keep the implementation simple and focused on a single responsibility
 - Log details about files written for troubleshooting
 
+## Logging
+
+- Debug: Log the file path and content being written before writing (in case of failure)
+- Info: Log the successful writing of the file (including path) and its content size
+
 ## Component Dependencies
 
-The WriteFilesStep component depends on:
+### Internal Components
 
-- **Steps Base** - Extends BaseStep with a specific config type
-- **Context** - Retrieves file content from the context
-- **Models** - Uses FileGenerationResult and FileSpec models
-- **Utils** - Uses render_template for path resolution
+- **Steps Base** - (Required) Extends BaseStep to implement the step interface
+- **Context** - (Required) Retrieves file content from the context
+- **Models** - (Required) Uses FileGenerationResult and FileSpec models for content structure
+- **Utils** - (Required) Uses render_template for dynamic path resolution
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
@@ -36,6 +49,10 @@ The WriteFilesStep component depends on:
 - Ensure artifact contains a valid FileGenerationResult or list of FileSpec objects
 - Handle file writing errors with clear messages
 - Log successes and failures appropriately
+
+## Output Files
+
+- `steps/write_files.py`
 
 ## Future Considerations
 

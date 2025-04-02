@@ -2,7 +2,7 @@
   "steps": [
     {
       "type": "read_file",
-      "path": "recipes/component_blueprint_generator/includes/docs_template.md",
+      "path": "recipes/blueprint_generator/includes/docs_template.md",
       "artifact": "docs_template"
     },
     {

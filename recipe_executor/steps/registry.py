@@ -2,5 +2,5 @@ from typing import Dict, Type
 
 from recipe_executor.steps.base import BaseStep
 
-# Global step registry mapping step type names to their implementation classes
+# Global dictionary to store step registrations
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {}

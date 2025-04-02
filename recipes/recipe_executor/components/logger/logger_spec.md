@@ -9,6 +9,7 @@ The Logger component provides a consistent logging interface for the Recipe Exec
 - Initialize a logger that writes to both stdout and log files
 - Support different log levels (DEBUG, INFO, ERROR)
 - Create separate log files for each level
+- For stdout, set the log level to INFO
 - Clear existing logs on each run to prevent unbounded growth
 - Provide a consistent log format with timestamps and log levels
 - Create log directories if they don't exist
@@ -21,9 +22,24 @@ The Logger component provides a consistent logging interface for the Recipe Exec
 - Create the log directory if it doesn't exist
 - Use mode="w" for file handlers to clear previous logs
 
+## Logging
+
+- Debug: Log that the logger is being initialized, the log directory being created, and any errors encountered during initialization
+- Info: None
+
 ## Component Dependencies
 
-The Logger component has no external dependencies on other Recipe Executor components.
+### Internal Components
+
+None
+
+### External Libraries
+
+- **Python stdlib logging** - (Required) Uses Python's standard logging module for core functionality
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
@@ -34,3 +50,7 @@ The Logger component has no external dependencies on other Recipe Executor compo
 ## Future Considerations
 
 - Customizable log formats
+
+## Output Files
+
+- `logger.py`

@@ -1,9 +1,9 @@
 import os
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.context import Context
+from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
 
@@ -23,56 +23,39 @@ class ReadFileConfig(StepConfig):
 
 class ReadFileStep(BaseStep[ReadFileConfig]):
     """
-    ReadFileStep component reads a file from the filesystem and stores its contents into the execution context.
-
-    This step renders the file path using the given context, reads the contents of the file, and assigns it to a specified key.
-    It handles missing files based on the 'optional' configuration flag. If the file is optional and not found,
-    an empty string is stored in the context, otherwise a FileNotFoundError is raised.
+    ReadFileStep reads a file from the filesystem using a dynamic path resolved via templating.
+    It stores the file content in the provided context under the specified artifact key.
     """
-    
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        # Convert the provided config dictionary into a ReadFileConfig instance and initialize the base step
+
+    def __init__(self, config: Dict[str, Any], logger: Optional[logging.Logger] = None) -> None:
+        # Convert dict to ReadFileConfig using pydantic or similar underlying mechanism
         super().__init__(ReadFileConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        """
-        Execute the ReadFileStep:
-          - Render the file path using template rendering
-          - Check for file existence
-          - Read file content using UTF-8 encoding
-          - Store the content into the context under the specified artifact key
-          - Handle missing files based on the 'optional' flag
+        # Render the file path using context and provided template
+        rendered_path = render_template(self.config.path, context)
+        self.logger.debug(f"Attempting to read file from path: {rendered_path}")
 
-        Args:
-            context (Context): The shared execution context.
-
-        Raises:
-            FileNotFoundError: If the file is not found and the step is not marked as optional.
-        """
-        # Render the file path using values from the execution context
-        path: str = render_template(self.config.path, context)
-        self.logger.debug(f"Rendered file path: {path}")
-
-        # Check if the file exists at the rendered path
-        if not os.path.exists(path):
+        # Check if file exists
+        if not os.path.exists(rendered_path):
             if self.config.optional:
-                self.logger.warning(f"Optional file not found at path: {path}, continuing without file.")
+                self.logger.warning(f"Optional file not found at path: {rendered_path}. Continuing with empty content.")
                 context[self.config.artifact] = ""
                 return
             else:
-                error_msg: str = f"ReadFileStep: file not found at path: {path}"
-                self.logger.error(error_msg)
-                raise FileNotFoundError(error_msg)
+                error_message = f"ReadFileStep: file not found at path: {rendered_path}"
+                self.logger.error(error_message)
+                raise FileNotFoundError(error_message)
 
-        # File exists, attempt to read its contents with UTF-8 encoding
-        self.logger.info(f"Reading file from path: {path}")
+        # Read the file using UTF-8 encoding
+        self.logger.info(f"Reading file from: {rendered_path}")
         try:
-            with open(path, "r", encoding="utf-8") as file:
-                content: str = file.read()
+            with open(rendered_path, "r", encoding="utf-8") as f:
+                content = f.read()
         except Exception as e:
-            self.logger.error(f"Error reading file at {path}: {e}")
+            self.logger.error(f"Error reading file at {rendered_path}: {e}")
             raise
 
-        # Store the file content into the context under the specified artifact key
+        # Store the file content in context under the specified artifact key
         context[self.config.artifact] = content
         self.logger.debug(f"Stored file contents in context under key: '{self.config.artifact}'")

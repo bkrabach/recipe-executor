@@ -3,12 +3,12 @@
 ## Importing
 
 ```python
-from recipe_executor.executor import RecipeExecutor
+from recipe_executor.executor import Executor
 ```
 
 ## Basic Usage
 
-The RecipeExecutor has a single primary method: `execute()`. This method loads and runs a recipe with a given context:
+The Executor has a single primary method: `execute()`. This method loads and runs a recipe with a given context:
 
 ```python
 # Method signature
@@ -37,7 +37,7 @@ Examples:
 ```python
 # Create context and executor
 context = Context()
-executor = RecipeExecutor()
+executor = Executor()
 
 # Execute a recipe from a file
 executor.execute("path/to/recipe.json", context)
@@ -111,19 +111,6 @@ logger.setLevel(logging.DEBUG)
 executor.execute(recipe, context, logger=logger)
 ```
 
-## Error Handling
-
-The executor provides detailed error messages:
-
-```python
-try:
-    executor.execute(recipe, context)
-except ValueError as e:
-    print(f"Recipe execution failed: {e}")
-except TypeError as e:
-    print(f"Unsupported recipe type: {e}")
-```
-
 ## Integration with Steps
 
 The executor uses the Step Registry to instantiate steps based on their type:
@@ -135,18 +122,6 @@ step: Dict[str, Any] = {
     "path": "input.txt",
     "artifact": "content"
 }
-```
-
-Steps are looked up in the STEP_REGISTRY by their type name:
-
-```python
-# Simplified example of what happens inside the executor
-from recipe_executor.steps.registry import STEP_REGISTRY
-
-step_type = step["type"]
-step_class = STEP_REGISTRY[step_type]
-step_instance = step_class(step, logger)
-step_instance.execute(context)
 ```
 
 ## Important Notes

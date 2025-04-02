@@ -21,10 +21,18 @@ The Executor component is the central orchestration mechanism for the Recipe Exe
 
 ## Component Dependencies
 
-The Executor component depends on:
+### Internal Components
 
-- **Context** - Uses Context for data sharing between steps
-- **Step Registry** - Uses STEP_REGISTRY to look up step classes by type
+- **Context** - (Required) Uses Context for data sharing between steps during recipe execution
+- **Step Registry** - (Required) Uses STEP_REGISTRY to look up and instantiate step classes by type
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
 
 ## Logging
 
@@ -38,6 +46,10 @@ The Executor component depends on:
 - Verify each step is properly structured before execution
 - Provide specific error messages identifying problematic steps
 - Include original exceptions for debugging
+
+## Output Files
+
+- `executor.py`
 
 ## Future Considerations
 

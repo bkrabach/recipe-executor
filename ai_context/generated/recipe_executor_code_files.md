@@ -143,6 +143,10 @@ One of the most interesting aspects of this project is that it can generate its 
 
 This demonstrates the power of the Recipe Executor for code generation and maintenance tasks.
 
+## Contributing & Development
+
+We have a doc just for that... [dev_guidance.md](docs/dev_guidance.md)
+
 
 === File: pyproject.toml ===
 [project]
@@ -179,288 +183,212 @@ packages = ["recipe_executor"]
 
 
 === File: recipe_executor/context.py ===
-import copy
 from typing import Any, Dict, Iterator, Optional
+import copy
 
 
 class Context:
     """
-    Context is the shared state container for the Recipe Executor system.
-    It provides a simple dictionary-like interface for storing and accessing artifacts
-    and maintains a separate configuration for use during recipe execution.
-    
-    Core Responsibilities:
-    - Store and provide access to artifacts (data shared between steps).
-    - Maintain separate configuration values.
-    - Provide dictionary-like operations (get, set, iteration).
-    - Support deep cloning to ensure data isolation.
+    Shared state container for the Recipe Executor system. It provides a dictionary-like interface to store and retrieve artifacts and configuration values.
     """
-    
     def __init__(self, artifacts: Optional[Dict[str, Any]] = None, config: Optional[Dict[str, Any]] = None) -> None:
         """
         Initialize the Context with optional artifacts and configuration.
 
         Args:
-            artifacts: Optional initial artifacts to store in the context.
-            config: Optional configuration values for the context.
+            artifacts: Initial artifacts to store.
+            config: Configuration values.
         """
-        # Use deep copy for true data isolation
-        self._artifacts: Dict[str, Any] = copy.deepcopy(artifacts) if artifacts is not None else {}
-        self.config: Dict[str, Any] = copy.deepcopy(config) if config is not None else {}
-    
-    def __getitem__(self, key: str) -> Any:
-        """
-        Retrieve an artifact by key.
+        # Copy input dictionaries to avoid external modification
+        self._artifacts: Dict[str, Any] = artifacts.copy() if artifacts is not None else {}
+        self.config: Dict[str, Any] = config.copy() if config is not None else {}
 
-        Args:
-            key: The key name of the artifact.
-
-        Returns:
-            The artifact associated with the key.
-        
-        Raises:
-            KeyError: If the key is not present in the context, with a descriptive error message.
-        """
-        if key not in self._artifacts:
-            raise KeyError(f"Artifact '{key}' not found in context.")
-        return self._artifacts[key]
-    
     def __setitem__(self, key: str, value: Any) -> None:
-        """
-        Set an artifact in the context.
-
-        Args:
-            key: The key under which the artifact is stored.
-            value: The value of the artifact to store.
-        """
+        """Dictionary-like setting of artifacts."""
         self._artifacts[key] = value
-    
+
+    def __getitem__(self, key: str) -> Any:
+        """Dictionary-like access to artifacts. Raises KeyError with descriptive message if key is missing."""
+        if key in self._artifacts:
+            return self._artifacts[key]
+        raise KeyError(f"Artifact with key '{key}' not found in context.")
+
     def get(self, key: str, default: Optional[Any] = None) -> Any:
-        """
-        Get an artifact with an optional default if the key is missing.
-
-        Args:
-            key: The key of the artifact to retrieve.
-            default: The default value to return if the key is not found.
-
-        Returns:
-            The artifact associated with the key or the provided default if key is missing.
-        """
+        """Get an artifact with an optional default value."""
         return self._artifacts.get(key, default)
-    
+
     def __contains__(self, key: str) -> bool:
-        """
-        Check if a key exists in the artifacts.
-
-        Args:
-            key: The key to check.
-
-        Returns:
-            True if the key exists; False otherwise.
-        """
+        """Check if a key exists in artifacts."""
         return key in self._artifacts
-    
+
     def __iter__(self) -> Iterator[str]:
-        """
-        Return an iterator over the artifact keys.
-
-        Returns:
-            An iterator for the artifact keys.
-        """
-        # Convert keys to a list to avoid external modifications
+        """Iterate over artifact keys."""
+        # Convert dict_keys to a list for safe iteration
         return iter(list(self._artifacts.keys()))
-    
+
     def keys(self) -> Iterator[str]:
-        """
-        Return an iterator over the artifact keys.
+        """Return an iterator over the keys of artifacts."""
+        return self.__iter__()
 
-        Returns:
-            An iterator over the keys of the artifacts.
-        """
-        return iter(list(self._artifacts.keys()))
-    
     def __len__(self) -> int:
-        """
-        Return the count of artifacts stored.
-
-        Returns:
-            The number of artifacts in the context.
-        """
+        """Return the number of artifacts."""
         return len(self._artifacts)
-    
-    def as_dict(self) -> Dict[str, Any]:
-        """
-        Return a deep copy of the artifacts dictionary.
-        This ensures external code cannot modify the internal state of the context.
 
-        Returns:
-            A deep copy of the artifacts dictionary.
-        """
-        return copy.deepcopy(self._artifacts)
-    
+    def as_dict(self) -> Dict[str, Any]:
+        """Return a copy of the artifacts as a dictionary to ensure immutability."""
+        return self._artifacts.copy()
+
     def clone(self) -> "Context":
         """
-        Return a deep copy of the current context.
-
-        This method clones both the artifacts and configuration to ensure complete data isolation.
-        
-        Returns:
-            A new Context instance with the current state copied deeply.
+        Return a deep copy of the current context, including artifacts and configuration.
+        This ensures data isolation between different executions.
         """
-        return Context(
-            artifacts=copy.deepcopy(self._artifacts),
-            config=copy.deepcopy(self.config)
-        )
+        cloned_artifacts = copy.deepcopy(self._artifacts)
+        cloned_config = copy.deepcopy(self.config)
+        return Context(artifacts=cloned_artifacts, config=cloned_config)
 
 
 === File: recipe_executor/executor.py ===
+import os
 import json
 import logging
-import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Union, Optional
 
 from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
 
-class RecipeExecutor:
+class Executor:
     """
     Executor component for the Recipe Executor system.
 
-    Loads recipe definitions from various sources and executes their steps sequentially using the provided context.
-
-    Supported recipe formats:
-        - File path pointing to a JSON file
-        - JSON string
-        - Dictionary
-
-    Each recipe must be a dictionary with a 'steps' key containing a list of step definitions.
-    Each step must have a 'type' field that corresponds to a registered step in STEP_REGISTRY.
+    Loads recipe definitions, validates their structure, and executes steps sequentially
+    using the provided context.
     """
 
-    def __init__(self) -> None:
-        # Minimal initialization. Could be expanded later if needed.
-        pass
-
     def execute(
-        self, recipe: Union[str, Dict[str, Any]], context: Context, logger: Optional[logging.Logger] = None
+        self,
+        recipe: Union[str, Dict[str, Any]],
+        context: Context,
+        logger: Optional[logging.Logger] = None
     ) -> None:
         """
         Execute a recipe with the given context.
 
         Args:
-            recipe: Recipe to execute; can be a file path, JSON string, or dictionary.
-            context: Context instance for execution that stores shared artifacts.
-            logger: Optional logger; if not provided, a default one will be created.
+            recipe: Recipe to execute, can be a file path, JSON string, or dictionary
+            context: Context instance to use for execution
+            logger: Optional logger to use, creates a default one if not provided
 
         Raises:
-            ValueError: If the recipe format is invalid or the execution of any step fails.
-            TypeError: If the recipe type is not supported.
+            ValueError: If recipe format is invalid or a step is improperly structured
+            TypeError: If recipe type is not supported
         """
-        # Set up the logger if not provided
+        # Setup logger
         if logger is None:
             logger = logging.getLogger(__name__)
-            if not logger.handlers:
-                handler = logging.StreamHandler()
-                formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-                handler.setFormatter(formatter)
-                logger.addHandler(handler)
-            logger.setLevel(logging.DEBUG)
+            if not logger.hasHandlers():
+                # Basic logging configuration if no handlers are attached
+                logging.basicConfig(level=logging.DEBUG)
 
-        # Determine the recipe data source (dictionary, file path, or JSON string)
-        recipe_data: Dict[str, Any]
+        logger.debug("Starting recipe execution.")
+
+        # Load recipe data based on type
+        data: Dict[str, Any]
         if isinstance(recipe, dict):
-            recipe_data = recipe
-            logger.debug("Loaded recipe from dictionary.")
+            data = recipe
+            logger.debug("Recipe provided as a dictionary.")
         elif isinstance(recipe, str):
             # Check if the string is a file path
-            if os.path.exists(recipe) and os.path.isfile(recipe):
+            if os.path.exists(recipe):
+                logger.debug(f"Loading recipe from file: {recipe}")
                 try:
-                    with open(recipe, "r", encoding="utf-8") as f:
-                        recipe_data = json.load(f)
-                    logger.debug(f"Recipe loaded successfully from file: {recipe}")
+                    with open(recipe, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
                 except Exception as e:
-                    raise ValueError(f"Failed to read or parse recipe file '{recipe}': {e}") from e
+                    raise ValueError(f"Failed to load recipe from file '{recipe}': {e}")
             else:
-                # Attempt to parse the string as JSON
+                # Attempt to parse recipe as a JSON string
+                logger.debug("Attempting to parse recipe as JSON string.")
                 try:
-                    recipe_data = json.loads(recipe)
-                    logger.debug("Recipe loaded successfully from JSON string.")
+                    data = json.loads(recipe)
                 except json.JSONDecodeError as e:
-                    raise ValueError(
-                        f"Invalid recipe format. Expected file path or valid JSON string. Error: {e}"
-                    ) from e
+                    raise ValueError(f"Invalid recipe format. Unable to parse JSON string: {e}")
         else:
-            raise TypeError(f"Unsupported recipe type: {type(recipe)}")
+            raise TypeError("Recipe must be either a file path, JSON string, or dictionary")
 
-        # Validate that the parsed recipe is a dictionary
-        if not isinstance(recipe_data, dict):
-            raise ValueError("Recipe must be a dictionary after parsing.")
+        logger.debug(f"Parsed recipe: {data}")
+        
+        # Validate recipe structure
+        if 'steps' not in data or not isinstance(data['steps'], list):
+            raise ValueError("Invalid recipe structure: Missing or invalid 'steps' key")
 
-        steps = recipe_data.get("steps")
-        if not isinstance(steps, list):
-            raise ValueError("Recipe must contain a 'steps' key with a list of steps.")
-
-        logger.debug(f"Starting recipe execution with {len(steps)} step(s). Recipe data: {recipe_data}")
+        steps: List[Dict[str, Any]] = data['steps']
 
         # Execute each step sequentially
-        for idx, step in enumerate(steps):
-            if not isinstance(step, dict):
-                raise ValueError(f"Step at index {idx} is not a valid dictionary.")
+        for index, step in enumerate(steps):
+            logger.debug(f"Processing step {index + 1}/{len(steps)}: {step}")
+            # Validate that the step has a 'type'
+            if 'type' not in step:
+                raise ValueError(f"Step at index {index} is missing the 'type' field")
+            step_type = step['type']
 
-            step_type = step.get("type")
-            if not step_type:
-                raise ValueError(f"Step at index {idx} is missing the 'type' field.")
-
+            # Lookup step in the registry
             if step_type not in STEP_REGISTRY:
-                raise ValueError(f"Unknown step type '{step_type}' at index {idx}. Please ensure it is registered.")
+                raise ValueError(f"Unknown step type '{step_type}' at index {index}")
 
             step_class = STEP_REGISTRY[step_type]
 
             try:
-                logger.debug(f"Executing step {idx} of type '{step_type}'. Step details: {step}")
+                # Instantiate the step and execute it
                 step_instance = step_class(step, logger)
+                logger.debug(f"Executing step of type '{step_type}'")
                 step_instance.execute(context)
-                logger.debug(f"Step {idx} executed successfully.")
+                logger.debug(f"Completed step {index + 1} successfully.")
             except Exception as e:
-                raise ValueError(f"Error executing step at index {idx} (type '{step_type}'): {e}") from e
+                logger.error(f"Error executing step at index {index} (type '{step_type}'): {e}")
+                # Include original exception details for debugging purposes
+                raise ValueError(f"Step execution failed at index {index} (type '{step_type}'): {e}") from e
 
         logger.debug("Recipe execution completed successfully.")
 
 
 === File: recipe_executor/llm.py ===
 import logging
+import os
 import time
 from typing import Optional
 
-from recipe_executor.models import FileGenerationResult
-
-# Import LLM model classes from pydantic_ai package
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.gemini import GeminiModel
 
+# For Azure OpenAI use our internal utility
+from recipe_executor.llm_utils.azure_openai import get_openai_model as get_azure_openai_model
 
-def get_model(model_id: str):
+from recipe_executor.models import FileGenerationResult
+
+
+# Use DEFAULT_MODEL env variable if provided, otherwise default to 'openai:gpt-4o'
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
+
+
+def get_model(model_id: Optional[str] = None):
     """
-    Initialize and return an LLM model instance based on a standardized model identifier format.
-
-    Supported model id formats:
+    Initialize and return a PydanticAI model instance based on the standardized model identifier string.
+    Expected formats:
       - openai:model_name
       - anthropic:model_name
       - gemini:model_name
       - azure:model_name or azure:model_name:deployment_name
-
-    Raises:
-        ValueError: for an improperly formatted model_id or unsupported provider.
     """
+    model_id = model_id or DEFAULT_MODEL
     parts = model_id.split(":")
     if len(parts) < 2:
-        raise ValueError(f"Invalid model identifier: {model_id}")
+        raise ValueError(f"Invalid model_id format: {model_id}")
 
     provider = parts[0].lower()
-
     if provider == "openai":
         model_name = parts[1]
         return OpenAIModel(model_name)
@@ -471,210 +399,193 @@ def get_model(model_id: str):
         model_name = parts[1]
         return GeminiModel(model_name)
     elif provider == "azure":
-        # For Azure, allowed formats are: azure:model_name or azure:model_name:deployment_name
-        if len(parts) == 2:
-            model_name = parts[1]
-            deployment_name = model_name  # Default deployment name is same as model name
-        elif len(parts) == 3:
-            model_name = parts[1]
-            deployment_name = parts[2]
-        else:
-            raise ValueError(f"Invalid Azure model identifier: {model_id}")
-        # Import the azure-specific function to get the model
-        from recipe_executor.llm_utils.azure_openai import get_openai_model
-        return get_openai_model(model_name=model_name, deployment_name=deployment_name)
+        model_name = parts[1]
+        # If deployment name is not provided, default deployment is same as model name
+        deployment_name = parts[2] if len(parts) >= 3 else model_name
+        return get_azure_openai_model(model_name, deployment_name)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
 
 def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResult]:
     """
-    Initialize and return an Agent configured with the specified model identifier.
-
-    If model_id is not specified, it defaults to 'openai:gpt-4o'.
-
-    Returns:
-        Agent instance with the result type set to FileGenerationResult.
+    Initialize a PydanticAI Agent using the model specified in model_id (or default).
+    The agent is configured to produce structured outputs of type FileGenerationResult.
     """
-    if model_id is None:
-        model_id = "openai:gpt-4o"
     model_instance = get_model(model_id)
-    agent = Agent(model_instance, result_type=FileGenerationResult)
-    return agent
+    return Agent(model_instance, result_type=FileGenerationResult)
 
 
 def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[logging.Logger] = None) -> FileGenerationResult:
     """
-    Send a prompt to the LLM and return the validated FileGenerationResult.
+    Call the LLM with the given prompt using the specified model (or default model if not provided).
 
     Args:
-        prompt (str): The prompt/query to send to the LLM.
-        model (Optional[str]): The LLM model identifier in the format 'provider:model_name' (or for Azure: 'azure:model_name[:deployment_name]').
-                                Defaults to 'openai:gpt-4o' if not provided.
-        logger (Optional[logging.Logger]): Logger instance to log debug and info messages. If not specified, a default logger named 'RecipeExecutor' is used.
+        prompt (str): The prompt string to be sent to the LLM.
+        model (Optional[str]): The model identifier, in the format 'provider:model_name' or 'provider:model_name:deployment_name'.
+                              Defaults to the DEFAULT_MODEL if None.
+        logger (Optional[logging.Logger]): Logger instance, defaults to 'RecipeExecutor' logger.
 
     Returns:
-        FileGenerationResult: The structured result produced by the LLM.
+        FileGenerationResult: The structured output containing generated files and optional commentary.
 
     Raises:
-        Exception: Propagates any exceptions encountered during the LLM call with appropriate logging.
+        Exception: Propagates exceptions from the LLM call after logging.
     """
-    if logger is None:
-        logger = logging.getLogger("RecipeExecutor")
-
-    if model is None:
-        model = "openai:gpt-4o"
-
-    logger.debug(f"LLM Request - Prompt: {prompt}, Model: {model}")
-
-    agent = get_agent(model_id=model)
-    start_time = time.time()
+    logger = logger or logging.getLogger("RecipeExecutor")
+    logger.info(f"Calling LLM with model: {model or DEFAULT_MODEL}")
+    logger.debug(f"LLM request payload: {prompt}")
+    start = time.monotonic()
     try:
+        agent = get_agent(model)
         result = agent.run_sync(prompt)
     except Exception as e:
-        logger.error(f"LLM call failed with error: {e}")
+        logger.error(f"LLM call failed: {e}", exc_info=True)
         raise
-    elapsed = time.time() - start_time
-    logger.info(f"Model {model} responded in {elapsed:.2f} seconds")
-    logger.debug(f"LLM Response: {result}")
-
-    # Return only the structured data from the result
+    elapsed = time.monotonic() - start
+    logger.info(f"LLM call completed in {elapsed:.2f} seconds")
+    logger.debug(f"LLM response payload: {result}")
     return result.data
 
 
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    res = call_llm("Generate a Python utility module for handling dates.")
+    print(res)
+
+
 === File: recipe_executor/llm_utils/azure_openai.py ===
-import logging
 import os
+import logging
 from typing import Optional
 
-import openai
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential, get_bearer_token_provider
+from openai import AsyncAzureOpenAI
 
-# Import the PydanticAI model and provider for OpenAI
-from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
-
-# For managed identity, attempt to import the Azure Identity packages
-try:
-    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential, get_bearer_token_provider
-except ImportError as e:
-    raise ImportError("azure-identity package is required for managed identity authentication.") from e
+from pydantic_ai.models.openai import OpenAIModel
 
 
-def get_openai_model(
-    model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = None
-) -> OpenAIModel:
+def mask_api_key(api_key: str) -> str:
     """
-    Create and return a PydanticAI OpenAIModel instance configured for Azure OpenAI Service.
+    Mask an API key by revealing only the first and last character.
+    For example, 'abcd1234' becomes 'a******4'.
+    """
+    if not api_key:
+        return ""
+    if len(api_key) <= 4:
+        return '*' * len(api_key)
+    return api_key[0] + ('*' * (len(api_key) - 2)) + api_key[-1]
 
-    The function reads configuration values from environment variables and supports both API key and managed identity authentication.
 
-    Environment Variables:
-      - AZURE_OPENAI_ENDPOINT: The endpoint of your Azure OpenAI resource (required).
-      - AZURE_OPENAI_API_VERSION: The API version to use (optional, defaults to "2023-07-01-preview").
-      - AZURE_OPENAI_DEPLOYMENT: The deployment name (optional, defaults to the model name).
-      - AZURE_USE_MANAGED_IDENTITY: If set to "true" or "1", managed identity is used instead of API key.
-      - AZURE_MANAGED_IDENTITY_CLIENT_ID: (Optional) The client ID for a user-assigned managed identity.
-      - AZURE_OPENAI_API_KEY: The API key to use when managed identity is not employed.
+
+def get_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = None) -> OpenAIModel:
+    """
+    Create a PydanticAI OpenAIModel instance configured for Azure OpenAI.
+
+    The method determines the authentication method based on environment variables:
+      - If AZURE_USE_MANAGED_IDENTITY is set to true (or '1'), it uses Azure Identity for authentication.
+      - Otherwise, it uses the AZURE_OPENAI_API_KEY for API key authentication.
+
+    Required Environment Variables:
+      - AZURE_OPENAI_ENDPOINT
+      - AZURE_OPENAI_API_VERSION (optional, defaults to '2025-03-01-preview')
+      - AZURE_OPENAI_DEPLOYMENT_NAME (optional, fallback to model_name if not provided)
+
+    For API key authentication (if not using managed identity):
+      - AZURE_OPENAI_API_KEY
+
+    For Managed Identity authentication:
+      - AZURE_USE_MANAGED_IDENTITY (set to true or 1)
+      - Optionally, AZURE_MANAGED_IDENTITY_CLIENT_ID
 
     Args:
-      model_name: The name of the underlying model (e.g., "gpt-4o").
-      deployment_name: Optional override for the deployment name; if not provided, falls back to AZURE_OPENAI_DEPLOYMENT or model_name.
-      logger: Optional logger; if not provided, a logger named "RecipeExecutor" is used.
+        model_name (str): Name of the model (e.g., 'gpt-4o').
+        deployment_name (Optional[str]): Custom deployment name, defaults to environment var or model_name.
+        logger (Optional[logging.Logger]): Logger instance, defaults to a logger named 'RecipeExecutor'.
 
     Returns:
-      An instance of OpenAIModel configured with the proper authentication and endpoint settings.
-
-    Raises:
-      ValueError: If required environment variables are missing.
-      Exception: If there is an error initializing the client or model.
+        OpenAIModel: Configured for Azure OpenAI.
     """
     if logger is None:
         logger = logging.getLogger("RecipeExecutor")
 
-    # Read required Azure configuration values
+    # Load required environment variables
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     if not azure_endpoint:
-        raise ValueError("AZURE_OPENAI_ENDPOINT is not set in the environment.")
+        raise Exception("Missing required environment variable: AZURE_OPENAI_ENDPOINT")
 
-    azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2023-07-01-preview")
-    azure_deployment = deployment_name or os.getenv("AZURE_OPENAI_DEPLOYMENT", model_name)
+    azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2025-03-01-preview")
+    env_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    deployment = deployment_name or env_deployment or model_name
 
-    # Determine if managed identity should be used
-    use_managed_identity = os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() in ("true", "1")
+    # Determine authentication method
+    use_managed_identity = os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() in ["true", "1"]
 
     if use_managed_identity:
-        logger.info("Using managed identity authentication for Azure OpenAI.")
-        client_id = os.getenv("AZURE_MANAGED_IDENTITY_CLIENT_ID")
+        # Use Azure Identity
         try:
-            if client_id:
-                credential = ManagedIdentityCredential(client_id=client_id)
+            managed_identity_client_id = os.getenv("AZURE_MANAGED_IDENTITY_CLIENT_ID")
+            if managed_identity_client_id:
+                credential = ManagedIdentityCredential(client_id=managed_identity_client_id)
+                logger.info("Using ManagedIdentityCredential with client id.")
             else:
                 credential = DefaultAzureCredential()
-            token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
-        except Exception as e:
-            logger.error("Error initializing token provider with managed identity: %s", e)
-            raise e
+                logger.info("Using DefaultAzureCredential for Managed Identity.")
+        except Exception as ex:
+            logger.error("Failed to create Azure Credential: %s", ex)
+            raise
+
+        token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+
         try:
-            azure_client = openai.AsyncAzureOpenAI(
+            azure_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider,
                 azure_endpoint=azure_endpoint,
                 api_version=azure_api_version,
-                azure_deployment=azure_deployment,
-                azure_ad_token_provider=token_provider,
+                azure_deployment=deployment
             )
-        except Exception as e:
-            logger.error("Error initializing Azure OpenAI client with managed identity: %s", e)
-            raise e
+            logger.info("Initialized Azure OpenAI client with Managed Identity.")
+        except Exception as ex:
+            logger.error("Error initializing AsyncAzureOpenAI client with Managed Identity: %s", ex)
+            raise
     else:
-        logger.info("Using API key authentication for Azure OpenAI.")
+        # Use API key authentication
         azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
         if not azure_api_key:
-            raise ValueError("AZURE_OPENAI_API_KEY must be set when not using managed identity.")
+            raise Exception("Missing required environment variable: AZURE_OPENAI_API_KEY")
+        masked_key = mask_api_key(azure_api_key)
+        logger.info("Initializing Azure OpenAI client with API Key: %s", masked_key)
+
         try:
-            azure_client = openai.AsyncAzureOpenAI(
+            azure_client = AsyncAzureOpenAI(
                 api_key=azure_api_key,
                 azure_endpoint=azure_endpoint,
                 api_version=azure_api_version,
-                azure_deployment=azure_deployment,
+                azure_deployment=deployment
             )
-        except Exception as e:
-            logger.error("Error initializing Azure OpenAI client with API key: %s", e)
-            raise e
+            logger.info("Initialized Azure OpenAI client with API Key.")
+        except Exception as ex:
+            logger.error("Error initializing AsyncAzureOpenAI client with API key: %s", ex)
+            raise
 
-    try:
-        provider = OpenAIProvider(openai_client=azure_client)
-        model = OpenAIModel(model_name, provider=provider)
-    except Exception as e:
-        logger.error("Error creating OpenAIModel: %s", e)
-        raise e
-
-    logger.info("Successfully created Azure OpenAI model for model '%s' with deployment '%s'.", model_name, azure_deployment)
-    return model
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    try:
-        model = get_openai_model("gpt-4o")
-        print("Model created successfully:", model)
-    except Exception as err:
-        print("Failed to create model:", err)
+    # Create the provider and model instance
+    provider = OpenAIProvider(openai_client=azure_client)
+    model_instance = OpenAIModel(model_name, provider=provider)
+    logger.info("Created OpenAIModel instance for model '%s' using deployment '%s'", model_name, deployment)
+    return model_instance
 
 
 === File: recipe_executor/logger.py ===
 import logging
 import os
 import sys
-from typing import Optional
 
 
 def init_logger(log_dir: str = "logs") -> logging.Logger:
     """
     Initializes a logger that writes to stdout and to log files (debug/info/error).
     Clears existing logs on each run.
-
-    This function sets up separate handlers for debug, info, and error log files as well
-    as a console handler for stdout. Each file is truncated (using mode='w') on each
-    run to prevent unbounded growth of log files.
 
     Args:
         log_dir (str): Directory to store log files. Default is "logs".
@@ -683,164 +594,152 @@ def init_logger(log_dir: str = "logs") -> logging.Logger:
         logging.Logger: Configured logger instance.
 
     Raises:
-        Exception: If the log directory cannot be created or log file handlers cannot be initialized.
+        Exception: If the log directory cannot be created or log files cannot be opened.
     """
-    logger = logging.getLogger("RecipeExecutor")
-    logger.setLevel(logging.DEBUG)  # Capture all logs at or above DEBUG
-
-    # Remove any existing handlers to ensure a clean configuration
-    if logger.hasHandlers():
-        logger.handlers.clear()
-
-    # Define the common log format
+    # Define a consistent log format
     log_format = "%(asctime)s [%(levelname)s] %(message)s"
     formatter = logging.Formatter(log_format)
 
-    # Ensure the log directory exists
+    # Create logger with the name 'RecipeExecutor'
+    logger = logging.getLogger("RecipeExecutor")
+    logger.setLevel(logging.DEBUG)  # Capture all levels; individual handlers will filter
+
+    # Remove any existing handlers
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Attempt to create log directory if it doesn't exist
     try:
         os.makedirs(log_dir, exist_ok=True)
     except Exception as e:
+        # Logging not yet configured; use print for error message
+        print(f"Error: Failed to create log directory '{log_dir}': {e}")
         raise Exception(f"Failed to create log directory '{log_dir}': {e}")
 
-    # Set up file handlers with mode 'w' to clear previous logs
+    # Setup file handlers for debug, info, and error levels
     try:
         # Debug file handler: logs all messages (DEBUG and above)
         debug_file = os.path.join(log_dir, "debug.log")
-        debug_handler = logging.FileHandler(debug_file, mode="w")
-        debug_handler.setLevel(logging.DEBUG)
-        debug_handler.setFormatter(formatter)
-        logger.addHandler(debug_handler)
+        fh_debug = logging.FileHandler(debug_file, mode='w')
+        fh_debug.setLevel(logging.DEBUG)
+        fh_debug.setFormatter(formatter)
+        logger.addHandler(fh_debug)
 
-        # Info file handler: logs INFO and above
+        # Info file handler: logs INFO and above messages
         info_file = os.path.join(log_dir, "info.log")
-        info_handler = logging.FileHandler(info_file, mode="w")
-        info_handler.setLevel(logging.INFO)
-        info_handler.setFormatter(formatter)
-        logger.addHandler(info_handler)
+        fh_info = logging.FileHandler(info_file, mode='w')
+        fh_info.setLevel(logging.INFO)
+        fh_info.setFormatter(formatter)
+        logger.addHandler(fh_info)
 
-        # Error file handler: logs ERROR and above
+        # Error file handler: logs ERROR and above messages
         error_file = os.path.join(log_dir, "error.log")
-        error_handler = logging.FileHandler(error_file, mode="w")
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(formatter)
-        logger.addHandler(error_handler)
+        fh_error = logging.FileHandler(error_file, mode='w')
+        fh_error.setLevel(logging.ERROR)
+        fh_error.setFormatter(formatter)
+        logger.addHandler(fh_error)
     except Exception as e:
-        raise Exception(f"Failed to initialize file handlers: {e}")
+        print(f"Error: Failed to set up file handlers: {e}")
+        raise Exception(f"Failed to set up file handlers: {e}")
 
-    # Console Handler: logs INFO and above to stdout
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    # Setup console handler for stdout with INFO level and above
+    try:
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+    except Exception as e:
+        print(f"Error: Failed to set up console handler: {e}")
+        raise Exception(f"Failed to set up console handler: {e}")
+
+    # Log a debug message indicating logger initialization
+    logger.debug(f"Logger initialized. Log directory: {log_dir}")
 
     return logger
 
 
-if __name__ == "__main__":
-    # Example usage of the logger component
-    try:
-        logger = init_logger()
-        logger.debug("Debug message: Detailed info for diagnosing problems")
-        logger.info("Info message: Confirmation that things are working as expected")
-        logger.warning("Warning message: Something unexpected happened")
-        logger.error("Error message: A function could not be performed")
-        logger.critical("Critical message: The program may be unable to continue running")
-    except Exception as e:
-        print(f"Logger initialization failed: {e}")
-
-
 === File: recipe_executor/main.py ===
-import argparse
 import sys
-from typing import Dict, List
+import time
+import traceback
+import argparse
+from typing import List, Dict
 
 from dotenv import load_dotenv
 
-from executor import RecipeExecutor
 from recipe_executor.context import Context
 from recipe_executor.logger import init_logger
+from executor import Executor  # Importing Executor from executor to avoid circular import issues
 
 
-def parse_context(context_list: List[str]) -> Dict[str, str]:
-    """
-    Parse a list of key=value strings into a dictionary.
+def parse_arguments() -> argparse.Namespace:
+    """Parse command-line arguments for recipe execution."""
+    parser = argparse.ArgumentParser(description='Execute a recipe with the Recipe Executor Tool.')
+    parser.add_argument('recipe_path', type=str, help='Path to the recipe file to execute.')
+    parser.add_argument('--log-dir', type=str, default='logs', help='Directory for log files (default: logs)')
+    parser.add_argument('--context', type=str, action='append', default=[],
+                        help='Context key=value pair. Can be specified multiple times.')
+    return parser.parse_args()
 
-    Args:
-        context_list (List[str]): List of context strings in key=value format.
 
-    Returns:
-        Dict[str, str]: Dictionary containing parsed context values.
-
-    Raises:
-        ValueError: If any context string is malformed or key is empty.
-    """
+def parse_context(context_args: List[str]) -> Dict[str, str]:
+    """Parse context key=value pairs from the command line into a dictionary."""
     context: Dict[str, str] = {}
-    for item in context_list:
-        if "=" not in item:
-            raise ValueError(f"Malformed context item: {item}. Expected format key=value.")
-        key, value = item.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if not key:
-            raise ValueError(f"Empty key in context pair: {item}.")
+    for arg in context_args:
+        if '=' not in arg:
+            raise ValueError(f"Invalid context format for '{arg}'. Expected format key=value.")
+        key, value = arg.split('=', 1)
         context[key] = value
     return context
 
 
 def main() -> None:
-    """
-    CLI entry point for the Recipe Executor Tool.
-
-    This function parses command-line arguments, loads environment variables, sets up logging,
-    creates a Context from CLI inputs, and executes the specified recipe.
-    """
-    # Load environment variables from .env file
+    # Load environment variables from .env files
     load_dotenv()
 
-    # Define command-line argument parser
-    parser = argparse.ArgumentParser(
-        description="Recipe Executor Tool - Executes a recipe with additional context information."
-    )
-    parser.add_argument("recipe_path", help="Path to the recipe file to execute.")
-    parser.add_argument("--log-dir", default="logs", help="Directory for log files (default: logs)")
-    parser.add_argument("--context", action="append", default=[], help="Additional context values as key=value pairs")
-    args = parser.parse_args()
+    args = parse_arguments()
 
-    # Parse context key=value pairs
-    try:
-        cli_context = parse_context(args.context) if args.context else {}
-    except ValueError as e:
-        sys.stderr.write(f"Context Error: {str(e)}\n")
-        sys.exit(1)
-
-    # Initialize logging system
+    # Initialize logger early
     logger = init_logger(args.log_dir)
-    logger.info("Starting Recipe Executor Tool")
+    logger.debug(f"Main function started with arguments: {args}")
 
-    # Create the execution context with CLI-supplied artifacts
-    context = Context(artifacts=cli_context)
-
+    start_time = time.time()
     try:
-        # Execute the specified recipe
-        executor = RecipeExecutor()
+        # Parse context values from command line
+        context_dict = parse_context(args.context)
+        logger.debug(f"Parsed context values: {context_dict}")
+
+        # Create a clean context with command-line provided artifacts
+        context = Context(artifacts=context_dict)
+
+        # Instantiate Executor and execute the specified recipe
+        executor = Executor()
+        logger.info('Starting Recipe Executor Tool')
+        logger.info(f"Executing recipe: {args.recipe_path}")
         executor.execute(args.recipe_path, context, logger=logger)
+
+        total_time = time.time() - start_time
+        logger.info(f"Recipe executed successfully in {total_time:.2f} seconds.")
+        sys.exit(0)
     except Exception as e:
         logger.error(f"An error occurred during recipe execution: {str(e)}", exc_info=True)
+        sys.stderr.write(f"Error: {str(e)}\n")
+        sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 
 
 === File: recipe_executor/models.py ===
-from typing import List, Dict, Optional, Any
+from typing import List, Optional, Dict, Any
+
 from pydantic import BaseModel
 
 
 class FileSpec(BaseModel):
-    """
-    Represents a single file to be generated.
+    """Represents a single file to be generated.
 
     Attributes:
         path (str): Relative path where the file should be written.
@@ -851,8 +750,7 @@ class FileSpec(BaseModel):
 
 
 class FileGenerationResult(BaseModel):
-    """
-    Result of an LLM file generation request.
+    """Result of an LLM file generation request.
 
     Attributes:
         files (List[FileSpec]): List of files to generate.
@@ -863,8 +761,7 @@ class FileGenerationResult(BaseModel):
 
 
 class RecipeStep(BaseModel):
-    """
-    A single step in a recipe.
+    """A single step in a recipe.
 
     Attributes:
         type (str): The type of the recipe step.
@@ -875,8 +772,7 @@ class RecipeStep(BaseModel):
 
 
 class Recipe(BaseModel):
-    """
-    A complete recipe with multiple steps.
+    """A complete recipe with multiple steps.
 
     Attributes:
         steps (List[RecipeStep]): A list containing the steps of the recipe.
@@ -961,7 +857,7 @@ import logging
 from typing import Dict, Optional
 
 from recipe_executor.context import Context
-from recipe_executor.executor import RecipeExecutor
+from recipe_executor.executor import Executor
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
@@ -985,7 +881,7 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
       - Shares the current context with the sub-recipe, modifying it as needed with overrides.
       - Validates that the sub-recipe file exists before executing it.
       - Logs the start and completion details of sub-recipe execution.
-      - Uses the existing RecipeExecutor to run the sub-recipe.
+      - Uses the existing Executor to run the sub-recipe.
     """
 
     def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
@@ -1030,7 +926,7 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
 
         try:
             # Execute the sub-recipe using the same executor
-            executor = RecipeExecutor()
+            executor = Executor()
             executor.execute(recipe=recipe_path, context=context, logger=self.logger)
         except Exception as e:
             # Log error with sub-recipe path and propagate
@@ -1070,7 +966,7 @@ class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     GenerateWithLLMStep is responsible for generating content using a large language model (LLM).
     It renders the prompt, model identifier, and artifact key from the provided context, calls the LLM,
     and stores the returned FileGenerationResult in the context under the rendered artifact key.
-    
+
     The step follows a minimalistic design:
       - It uses template rendering for dynamic prompt and model resolution.
       - It allows the artifact key to be templated for dynamic context storage.
@@ -1090,17 +986,17 @@ class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     def execute(self, context: Context) -> None:
         """
         Execute the LLM generation step using the provided context.
-        
+
         This method performs the following:
           1. Dynamically render artifact key, prompt, and model values from the context.
           2. Log debug and info messages with details of the rendered parameters.
           3. Call the LLM using the rendered prompt and model.
           4. Store the resulting FileGenerationResult in the context under the rendered artifact key.
           5. Handle and log any errors encountered during generation.
-        
+
         Args:
             context (Context): The shared context for execution containing input data and used for storing results.
-        
+
         Raises:
             Exception: Propagates any exception encountered during processing, after logging the error.
         """
@@ -1450,40 +1346,49 @@ class WriteFilesStep(BaseStep[WriteFilesConfig]):
 
 
 === File: recipe_executor/utils.py ===
-from typing import Any
+import logging
+from typing import Any, Dict
 
 from liquid import Template
 
-from recipe_executor.context import Context
+# Configure basic logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
-def render_template(text: str, context: Context) -> str:
+def render_template(text: str, context: Any) -> str:
     """
     Render the given text as a Liquid template using the provided context.
     All values in the context are converted to strings before rendering.
 
     Args:
-        text (str): The Liquid template text to be rendered.
-        context (Context): The context containing values for substitution.
+        text (str): The template text to render.
+        context (Context): The context for rendering the template.
 
     Returns:
-        str: The rendered template string.
+        str: The rendered text.
 
     Raises:
-        ValueError: When there is an error during template rendering.
+        ValueError: If there is an error during template rendering.
     """
+    # Convert context artifacts to a dict of strings
     try:
-        # Retrieve all artifacts from the context as a dictionary.
-        # Convert each value to a string to ensure compatibility with the Liquid engine.
-        context_dict = context.as_dict()
-        safe_context = {key: str(value) for key, value in context_dict.items()}
-        
-        # Create the Liquid template and render it using the prepared safe context.
+        context_artifacts: Dict[str, Any] = context.as_dict()
+    except AttributeError as e:
+        raise ValueError(f"Context provided does not have an as_dict() method: {e}")
+
+    # Convert all values to string
+    str_context = {key: str(value) for key, value in context_artifacts.items()}
+    logger.debug(f"Rendering template: {text}")
+    logger.debug(f"Context keys used: {list(str_context.keys())}")
+
+    try:
         template = Template(text)
-        rendered = template.render(**safe_context)
-        return rendered
+        result = template.render(**str_context)
+        return result
     except Exception as e:
-        # Raise a ValueError wrapping the original error with a clear error message.
-        raise ValueError(f"Error rendering template: {e}") from e
+        error_message = f"Error rendering template: {e}. Template: '{text}' with context: {str_context}"
+        logger.debug(error_message)
+        raise ValueError(error_message) from e
 
 

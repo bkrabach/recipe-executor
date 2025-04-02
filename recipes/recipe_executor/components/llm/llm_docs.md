@@ -43,47 +43,6 @@ result = call_llm(
 ```
 
 ```python
-def get_model(model_id: str) -> Union[OpenAIModel, AnthropicModel, GeminiModel]:
-    """
-    Initialize an LLM model based on a standardized model_id string.
-    Expected format: 'provider:model_name' or 'provider:model_name:deployment_name'.
-
-    Supported providers:
-    - openai
-    - anthropic
-    - gemini
-    - azure (for Azure OpenAI, use 'azure:model_name:deployment_name' or 'azure:model_name')
-
-    Args:
-        model_id (str): Model identifier in format 'provider:model_name'
-            or 'provider:model_name:deployment_name'.
-            If None, defaults to 'openai:gpt-4o'.
-
-    Returns:
-        The model instance for the specified provider and model.
-
-    Raises:
-        ValueError: If model_id format is invalid or if the provider is unsupported.
-    """
-```
-
-Usage example:
-
-```python
-# Get an OpenAI model
-openai_model = get_model("openai:o3-mini")
-# Uses OpenAIModel('o3-mini')
-
-# Get an Anthropic model
-anthropic_model = get_model("anthropic:claude-3.7-sonnet-latest")
-# Uses AnthropicModel('claude-3.7-sonnet-latest')
-
-# Get a Gemini model
-gemini_model = get_model("gemini:gemini-pro")
-# Uses GeminiModel('gemini-pro')
-```
-
-```python
 def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResult]:
     """
     Initialize an LLM agent with the specified model using structured output.

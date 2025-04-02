@@ -93,10 +93,10 @@ The logger is typically initialized in the main component and passed to the exec
 
 ```python
 from recipe_executor.logger import init_logger
-from recipe_executor.executor import RecipeExecutor
+from recipe_executor.executor import Executor
 
 logger = init_logger(log_dir="logs")
-executor = RecipeExecutor()
+executor = Executor()
 executor.execute(recipe_path, context, logger=logger)
 ```
 

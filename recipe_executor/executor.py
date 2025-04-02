@@ -7,7 +7,7 @@ from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
 
-class RecipeExecutor:
+class Executor:
     """
     Executor component for the Recipe Executor system.
 

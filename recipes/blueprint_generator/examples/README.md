@@ -13,9 +13,20 @@ The `auth_candidate_spec.md` file provides a sample candidate specification for 
 First, evaluate the candidate specification to check for completeness and identify areas that need clarification:
 
 ```bash
-python recipe_executor/main.py recipes/component_blueprint_generator/evaluate_candidate_spec.json \
-  --context candidate_spec_path=recipes/component_blueprint_generator/examples/auth_candidate_spec.md \
-  --context output_root=output
+python recipe_executor/main.py recipes/blueprint_generator/evaluate_candidate_spec.json \
+  --context candidate_spec_path=recipes/blueprint_generator/examples/auth_candidate_spec.md \
+  --context component_id=auth \
+  --context output_root=output/blueprints
+```
+
+**NOTE**: If you wish to use a different model for evaluation, you can specify it in the command line by passing the `model` context parameter and value. For example, to use the `azure:o3-mini` model:
+
+```bash
+python recipe_executor/main.py recipes/blueprint_generator/evaluate_candidate_spec.json \
+  --context candidate_spec_path=recipes/blueprint_generator/examples/auth_candidate_spec.md \
+  --context component_id=auth \
+  --context output_root=output/blueprints \
+  --context model="azure:o3-mini"
 ```
 
 This will generate an evaluation report in the `output` directory, which will highlight areas where the specification is strong and where it needs improvement.
@@ -25,9 +36,10 @@ This will generate an evaluation report in the `output` directory, which will hi
 If the evaluation indicates that the specification needs improvement, generate specific clarification questions:
 
 ```bash
-python recipe_executor/main.py recipes/component_blueprint_generator/generate_clarification_questions.json \
-  --context candidate_spec_path=recipes/component_blueprint_generator/examples/auth_candidate_spec.md \
-  --context output_root=output
+python recipe_executor/main.py recipes/blueprint_generator/generate_clarification_questions.json \
+  --context candidate_spec_path=recipes/blueprint_generator/examples/auth_candidate_spec.md \
+  --context component_id=auth \
+  --context output_root=output/blueprints
 ```
 
 This will create a structured document with targeted questions organized by category that can help improve the specification.
@@ -37,38 +49,34 @@ This will create a structured document with targeted questions organized by cate
 Once you've reviewed the evaluation and potentially improved the specification based on the clarification questions, generate the complete component blueprint:
 
 ```bash
-python recipe_executor/main.py recipes/component_blueprint_generator/build_blueprint.json \
-  --context candidate_spec_path=recipes/component_blueprint_generator/examples/auth_candidate_spec.md \
+python recipe_executor/main.py recipes/blueprint_generator/build_blueprint.json \
+  --context candidate_spec_path=recipes/blueprint_generator/examples/auth_candidate_spec.md \
   --context component_id=auth \
   --context component_name="Authentication" \
   --context target_project=example_project \
-  --context output_root=output
+  --context output_root=output/blueprints
 ```
 
-### Expected Outputs
+**Expected Outputs**
 
 After running the full workflow, you should find these files in the `output` directory:
 
-1. **Evaluation Report**: `auth_evaluation_summary.md` or `clarification_questions.md`
-2. **Clarification Questions**: `auth_specification_clarification_questions.md`
+1. **Evaluation Report**: `auth_evaluation_summary.md` or `auth_needs_clarification.md`
+2. **Clarification Questions**: `auth_clarification_questions.md`
 3. **Blueprint Files**:
-   - `example_project/specs/auth.md` - Formal specification
-   - `example_project/docs/auth.md` - Usage documentation
-   - `example_project/recipes/auth_create.json` - Recipe for creating the component
-   - `example_project/recipes/auth_edit.json` - Recipe for editing the component
-   - `example_project/auth_blueprint_summary.md` - Summary of the generated blueprint
+   - `example_project/components/auth` - All the files needed to drop into your project recipe `components` directory
+     - `example_project/components/auth/auth_spec.md`
+     - `example_project/components/auth/auth_docs.md`
+     - `example_project/components/auth/auth_create.json`
+     - `example_project/components/auth/auth_edit.json`
+   - `example_project/reports/auth_blueprint_summary.md` - Summary of the generated blueprint
 
-### Next Steps
+**Next Steps**
 
 1. Review the evaluation and clarification questions
 2. Improve the candidate specification based on the feedback
 3. Regenerate the blueprint with the improved specification
-4. Use the generated `auth_create.json` recipe to implement the actual component:
-
-```bash
-python recipe_executor/main.py output/example_project/recipes/auth_create.json \
-  --context output_root=src
-```
+4. Use the generated `authentication_create.json` recipe to implement the actual component:
 
 #### 4. Implementing the Component Using Generated Files
 
@@ -76,14 +84,14 @@ After generating the blueprint, use the files to implement the component:
 
 ```bash
 # First, create the component using the generated recipe
-python recipe_executor/main.py output/example_project/recipes/auth_create.json \
+python recipe_executor/main.py output/example_project/components/auth/auth_create.json \
   --context output_root=src
 ```
 
 This command will:
 
-- Read the formal specification from `output/example_project/specs/auth.md`
-- Use the documentation from `output/example_project/docs/auth.md` for guidance
+- Use the documentation from `output/example_project/components/auth/auth_docs.md` for guidance
+- Read the formal specification from `output/example_project/components/auth/auth_spec.md`
 - Generate implementation code for both Auth0 and mock authentication
 - Write the files to the appropriate locations in your project
 - Create all necessary classes, functions, and utilities defined in the spec
@@ -101,7 +109,7 @@ The implementation will include:
 To test the implementation, follow the examples provided in the documentation file. If you need to make changes to the implementation later, use the edit recipe:
 
 ```bash
-python recipe_executor/main.py output/example_project/recipes/auth_edit.json \
+python recipe_executor/main.py output/example_project/components/auth/auth_edit.json \
   --context output_root=src
 ```
 

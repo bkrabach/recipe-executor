@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "type": "execute_recipe",
+      "recipe_path": "recipes/blueprint_generator/recipes/create_docs.json"
+    },
+    {
+      "type": "execute_recipe",
+      "recipe_path": "recipes/blueprint_generator/recipes/create_spec.json"
+    },
+    {
+      "type": "execute_recipe",
+      "recipe_path": "recipes/blueprint_generator/recipes/create_recipes.json"
+    },
+    {
+      "type": "execute_recipe",
+      "recipe_path": "recipes/blueprint_generator/recipes/finalize_blueprint.json"
+    }
+  ]
+}

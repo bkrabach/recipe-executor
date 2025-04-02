@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Optional
 
 from recipe_executor.context import Context
-from recipe_executor.executor import RecipeExecutor
+from recipe_executor.executor import Executor
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
@@ -27,7 +27,7 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
       - Shares the current context with the sub-recipe, modifying it as needed with overrides.
       - Validates that the sub-recipe file exists before executing it.
       - Logs the start and completion details of sub-recipe execution.
-      - Uses the existing RecipeExecutor to run the sub-recipe.
+      - Uses the existing Executor to run the sub-recipe.
     """
 
     def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
@@ -72,7 +72,7 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
 
         try:
             # Execute the sub-recipe using the same executor
-            executor = RecipeExecutor()
+            executor = Executor()
             executor.execute(recipe=recipe_path, context=context, logger=self.logger)
         except Exception as e:
             # Log error with sub-recipe path and propagate

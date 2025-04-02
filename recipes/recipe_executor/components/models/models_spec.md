@@ -20,9 +20,28 @@ The Models component defines the core data structures used throughout the Recipe
 - Use descriptive field names and docstrings
 - Focus on essential fields without over-engineering
 
+## Logging
+
+- Debug: None
+- Info: None
+
 ## Component Dependencies
 
-The Models component has no external dependencies on other Recipe Executor components.
+### Internal Components
+
+None
+
+### External Libraries
+
+- **pydantic** - (Required) Uses Pydantic for schema validation and model definition
+
+### Configuration Dependencies
+
+None
+
+## Output Files
+
+- `models.py`
 
 ## Future Considerations
 

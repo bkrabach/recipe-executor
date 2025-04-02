@@ -50,10 +50,10 @@ def build_context_files():
             "exclude": collect_files.DEFAULT_EXCLUDE + [OUTPUT_DIR],
             "include": ["README.md", "pyproject.toml", ".env.example"],
         },
-        # Task 2: Collect files recipes/component_blueprint_generator
+        # Task 2: Collect files recipes/blueprint_generator
         {
-            "patterns": ["recipes/component_blueprint_generator"],
-            "output": f"{OUTPUT_DIR}/component_blueprint_generator_recipe_files.md",
+            "patterns": ["recipes/blueprint_generator"],
+            "output": f"{OUTPUT_DIR}/blueprint_generator_recipe_files.md",
             "exclude": collect_files.DEFAULT_EXCLUDE + [OUTPUT_DIR],
             "include": [],
         },

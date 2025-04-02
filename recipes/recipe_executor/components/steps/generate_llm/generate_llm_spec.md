@@ -21,14 +21,27 @@ The GenerateWithLLMStep component enables recipes to generate content using larg
 - Keep the implementation simple and focused on a single responsibility
 - Log detailed information about LLM requests
 
+## Logging
+
+- Debug: Log that the LLM call is being made (leave the details to the LLM component to log)
+- Info: None
+
 ## Component Dependencies
 
-The GenerateWithLLMStep component depends on:
+### Internal Components
 
-- **Steps Base** - Extends BaseStep with a specific config type
-- **Context** - Retrieves input values and stores generation results
-- **LLM** - Uses call_llm function to interact with language models
-- **Utils** - Uses render_template for dynamic content resolution
+- **Steps Base** - (Required) Extends BaseStep to implement the step interface
+- **Context** - (Required) Retrieves input values and stores generation results
+- **LLM** - (Required) Uses call_llm function to interact with language models
+- **Utils** - (Required) Uses render_template for dynamic content resolution in prompts and model identifiers
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
@@ -36,6 +49,10 @@ The GenerateWithLLMStep component depends on:
 - Log LLM call failures with meaningful context
 - Ensure proper error propagation for debugging
 - Validate configuration before making LLM calls
+
+## Output Files
+
+- `steps/generate_llm.py`
 
 ## Future Considerations
 

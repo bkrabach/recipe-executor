@@ -21,19 +21,36 @@ The ReadFileStep component reads a file from the filesystem and stores its conte
 - Implement optional flag to continue execution if files are missing
 - Keep the implementation simple and focused on a single responsibility
 
+## Logging
+
+- Debug: Log the file path attempting to be read prior to reading (in case of failure)
+- Info: Log the successful reading of the file (including path) and its storage in the context (including key)
+
 ## Component Dependencies
 
-The ReadFileStep component depends on:
+### Internal Components
 
-- **Steps Base** - Extends BaseStep with a specific config type
-- **Context** - Stores file contents in the context
-- **Utils** - Uses render_template for path resolution
+- **Steps Base** - (Required) Extends BaseStep to implement the step interface
+- **Context** - (Required) Stores file contents in the context under specified key
+- **Utils** - (Required) Uses render_template for dynamic path resolution
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
 
 ## Error Handling
 
 - Raise FileNotFoundError with clear message when files don't exist
 - Support optional flag to continue execution with empty content
 - Log appropriate warnings and information during execution
+
+## Output Files
+
+- `steps/read_file.py`
 
 ## Future Considerations
 

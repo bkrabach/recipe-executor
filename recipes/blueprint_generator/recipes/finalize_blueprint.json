@@ -9,7 +9,7 @@
     {
       "type": "write_files",
       "artifact": "formatted_summary",
-      "root": "{{output_root|default:'output'}}/{{target_project}}/components/{{component_id}}"
+      "root": "{{output_root|default:'output'}}/{{target_project}}/reports"
     }
   ]
 }

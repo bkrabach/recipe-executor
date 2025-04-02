@@ -7,11 +7,6 @@
     },
     {
       "type": "read_file",
-      "path": "ai_context/OPENAI_PYTHON_DOCS.md",
-      "artifact": "openai_python_docs"
-    },
-    {
-      "type": "read_file",
       "path": "ai_context/PYDANTIC_AI_DOCS.md",
       "artifact": "pydantic_ai_docs"
     },
@@ -22,7 +17,7 @@
         "component_id": "azure_openai",
         "component_path": "/llm_utils",
         "existing_code": "{{existing_code}}",
-        "additional_content": "<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<OPENAI_PYTHON_DOCS>\n{{openai_python_docs}}\n</OPENAI_PYTHON_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
+        "additional_content": "<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
       }
     }
   ]

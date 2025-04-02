@@ -28,7 +28,7 @@
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/component_blueprint_generator/create.json",
+      "recipe_path": "recipes/blueprint_generator/recipes/create_package.json",
       "context_overrides": {
         "candidate_spec": "{{candidate_spec}}",
         "component_id": "{{component_id|default:extracted_info.component_id}}",

@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Optional
 
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.context import Context
@@ -23,66 +23,44 @@ class GenerateLLMConfig(StepConfig):
 
 class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     """
-    GenerateWithLLMStep is responsible for generating content using a large language model (LLM).
-    It renders the prompt, model identifier, and artifact key from the provided context, calls the LLM,
-    and stores the returned FileGenerationResult in the context under the rendered artifact key.
-    
-    The step follows a minimalistic design:
-      - It uses template rendering for dynamic prompt and model resolution.
-      - It allows the artifact key to be templated for dynamic context storage.
-      - It logs details before and after calling the LLM.
+    Step that generates content using a large language model (LLM).
+    It processes templates for the prompt, model, and artifact key, calls the LLM, and stores the result in the context.
     """
 
-    def __init__(self, config: dict, logger: Any = None) -> None:
-        """
-        Initialize the GenerateWithLLMStep with its configuration and an optional logger.
-
-        Args:
-            config (dict): A dictionary containing the configuration for the step.
-            logger (Optional[Any]): Logger instance to use for logging. Defaults to a logger with name "RecipeExecutor".
-        """
-        super().__init__(GenerateLLMConfig(**config), logger or logging.getLogger("RecipeExecutor"))
+    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
+        super().__init__(GenerateLLMConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        """
-        Execute the LLM generation step using the provided context.
-        
-        This method performs the following:
-          1. Dynamically render artifact key, prompt, and model values from the context.
-          2. Log debug and info messages with details of the rendered parameters.
-          3. Call the LLM using the rendered prompt and model.
-          4. Store the resulting FileGenerationResult in the context under the rendered artifact key.
-          5. Handle and log any errors encountered during generation.
-        
-        Args:
-            context (Context): The shared context for execution containing input data and used for storing results.
-        
-        Raises:
-            Exception: Propagates any exception encountered during processing, after logging the error.
-        """
-        try:
-            # Process the artifact key using templating if needed
-            artifact_key = self.config.artifact
-            if "{{" in artifact_key and "}}" in artifact_key:
+        # Process the artifact key using templating if needed
+        artifact_key: str = self.config.artifact
+        if '{{' in artifact_key and '}}' in artifact_key:
+            try:
                 artifact_key = render_template(artifact_key, context)
+            except Exception as e:
+                self.logger.error(f"Error rendering artifact template '{artifact_key}': {e}")
+                raise ValueError(f"Invalid artifact template: {artifact_key}")
 
-            # Render the prompt and model values using the current context
-            rendered_prompt = render_template(self.config.prompt, context)
-            rendered_model = render_template(self.config.model, context)
-
-            # Log the LLM call details
-            self.logger.info(f"Calling LLM with prompt for artifact: {artifact_key}")
-            self.logger.debug(f"Rendered prompt: {rendered_prompt}")
-            self.logger.debug(f"Rendered model: {rendered_model}")
-
-            # Call the LLM to generate content
-            response = call_llm(rendered_prompt, rendered_model, logger=self.logger)
-
-            # Store the LLM response in the context
-            context[artifact_key] = response
-            self.logger.debug(f"LLM response stored in context under '{artifact_key}'")
-
+        # Render the prompt and model using the current context
+        try:
+            rendered_prompt: str = render_template(self.config.prompt, context)
         except Exception as e:
-            # Log detailed error information for debugging
-            self.logger.error(f"Failed to generate content using LLM. Error: {e}")
-            raise
+            self.logger.error(f"Error rendering prompt template: {e}")
+            raise ValueError(f"Invalid prompt template: {self.config.prompt}")
+
+        try:
+            rendered_model: str = render_template(self.config.model, context)
+        except Exception as e:
+            self.logger.error(f"Error rendering model template: {e}")
+            raise ValueError(f"Invalid model template: {self.config.model}")
+
+        self.logger.debug(f"LLM call is being made for artifact '{artifact_key}' with model '{rendered_model}'.")
+
+        # Call the LLM and store the response
+        try:
+            response = call_llm(rendered_prompt, rendered_model, logger=self.logger)
+        except Exception as e:
+            self.logger.error(f"LLM call failed for artifact '{artifact_key}': {e}", exc_info=True)
+            raise RuntimeError(f"LLM call failed: {e}")
+
+        context[artifact_key] = response
+        self.logger.debug(f"LLM response stored in context under '{artifact_key}'")

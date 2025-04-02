@@ -1,10 +1,10 @@
 import time
-import logging
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
-from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.context import Context
+from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.steps.registry import STEP_REGISTRY
 
 
@@ -14,121 +14,92 @@ class ParallelConfig(StepConfig):
 
     Fields:
         substeps: List of sub-step configurations to execute in parallel.
-                  Each substep must be an execute_recipe step definition (with its own recipe_path, overrides, etc).
+                  Each substep must be an execute_recipe step definition.
         max_concurrency: Maximum number of substeps to run concurrently.
-                         Default = 0 means no explicit limit (all substeps may run at once, limited only by system resources).
+                         Default = 0 means no explicit limit.
         delay: Optional delay (in seconds) between launching each substep.
-               Default = 0 means no delay (all allowed substeps start immediately).
+               Default = 0 means no delay.
     """
     substeps: List[Dict[str, Any]]
     max_concurrency: int = 0
-    delay: float = 0.0
+    delay: float = 0
 
 
 class ParallelStep(BaseStep[ParallelConfig]):
     """
-    ParallelStep executes multiple sub-recipes concurrently in isolated contexts.
+    ParallelStep executes multiple sub-recipes concurrently.
 
-    It uses a ThreadPoolExecutor to run substeps in parallel with optional concurrency limits
-    and launch delays. Implements fail-fast behavior: if any substep fails, execution aborts
-    and propagates the first encountered exception.
+    Each sub-recipe is executed in its own cloned context.
+    Fail-fast behavior is implemented to stop execution upon a substep failure.
     """
 
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        # Initialize the base step with ParallelConfig
+    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None) -> None:
+        # Convert the config dict to ParallelConfig object
         super().__init__(ParallelConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        """
-        Execute the parallel step: launch substeps concurrently and wait for completion.
+        self.logger.info(f"Starting ParallelStep with {len(self.config.substeps)} substeps.")
 
-        Args:
-            context (Context): The execution context.
-
-        Raises:
-            Exception: Propagates the first encountered exception from any substep.
-        """
-        total_substeps: int = len(self.config.substeps)
-        self.logger.info(f"ParallelStep starting with {total_substeps} substep(s).")
-
-        # Determine max_workers: if max_concurrency is 0 or greater than total, use total_substeps
-        max_workers: int = self.config.max_concurrency if self.config.max_concurrency > 0 else total_substeps
+        # Determine the maximum concurrency to use
+        if self.config.max_concurrency and self.config.max_concurrency > 0:
+            max_workers = self.config.max_concurrency
+        else:
+            max_workers = len(self.config.substeps) if self.config.substeps else 1
 
         futures = []
-        first_exception: Optional[Exception] = None
-        executor = ThreadPoolExecutor(max_workers=max_workers)
+        exception_occurred = False
 
-        try:
-            # Submit tasks sequentially and respect delay between launches
-            for index, sub_config in enumerate(self.config.substeps):
-                # Fail-fast: if an error was encountered, stop launching new substeps
-                if first_exception is not None:
-                    self.logger.error("Aborting submission of further substeps due to previous error.")
+        def run_substep(index: int, substep: Dict[str, Any], parent_context: Context) -> None:
+            substep_type = substep.get("type", "unknown")
+            # Clone the parent context to ensure isolation
+            cloned_context = parent_context.clone()
+            self.logger.debug(f"[Substep {index}] Cloned context for substep: {substep}.")
+            try:
+                # Get the step class from the registry
+                if substep_type not in STEP_REGISTRY:
+                    raise ValueError(f"Substep type '{substep_type}' is not registered in STEP_REGISTRY.")
+                step_cls = STEP_REGISTRY[substep_type]
+                self.logger.debug(f"[Substep {index}] Instantiating step of type '{substep_type}'.")
+                # Instantiate the step
+                step_instance = step_cls(substep, self.logger)
+                self.logger.info(f"[Substep {index}] Execution started for substep with config: {substep}.")
+                # Execute the substep
+                step_instance.execute(cloned_context)
+                self.logger.info(f"[Substep {index}] Execution completed successfully.")
+            except Exception as e:
+                error_msg = (f"[Substep {index}] Substep execution failed for type '{substep_type}' "
+                             f"with recipe_path '{substep.get('recipe_path', 'N/A')}'. Error: {str(e)}")
+                self.logger.error(error_msg)
+                raise Exception(error_msg) from e
+
+        # Use ThreadPoolExecutor to execute substeps concurrently
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for idx, substep in enumerate(self.config.substeps):
+                # Before launching a new substep, check if an error has already occurred
+                if exception_occurred:
+                    self.logger.debug(f"[Substep {idx}] Skipped launching due to previous errors.")
                     break
-
-                # Clone context for isolation
-                sub_context = context.clone()
-
-                # Validate step type
-                step_type = sub_config.get("type")
-                if step_type not in STEP_REGISTRY:
-                    err_msg = f"Unrecognized step type '{step_type}' in substep at index {index}."
-                    self.logger.error(err_msg)
-                    raise ValueError(err_msg)
-
-                # Instantiate the substep using the registry
-                step_class = STEP_REGISTRY[step_type]
-                substep_instance = step_class(sub_config, logger=self.logger)
-
-                self.logger.info(f"Launching substep {index} (type: {step_type}).")
-
-                # Submit the substep execution as a separate task using the cloned context
-                future = executor.submit(self._execute_substep, substep_instance, sub_context, index)
-                futures.append(future)
-
-                # If a launch delay is configured and this is not the last substep, sleep
-                if self.config.delay > 0 and index < total_substeps - 1:
+                self.logger.debug(f"[Substep {idx}] Submitting substep for execution.")
+                future = executor.submit(run_substep, idx, substep, context)
+                futures.append((idx, future))
+                # Apply launch delay if specified and if this is not the last substep
+                if self.config.delay > 0 and idx < len(self.config.substeps) - 1:
+                    self.logger.debug(f"Delaying next substep launch by {self.config.delay} seconds.")
                     time.sleep(self.config.delay)
 
-            # Wait for all submitted tasks to complete
-            for future in as_completed(futures):
+            # Monitor the futures for completion and fail-fast in case of exception
+            for idx, future in futures:
                 try:
-                    # This will re-raise any exception from the substep
+                    # This will re-raise any exception encountered during execution
                     future.result()
-                except Exception as exc:
-                    self.logger.error(f"A substep failed with error: {exc}", exc_info=True)
-                    first_exception = exc
-                    # Fail-fast: stop waiting on additional substeps
-                    break
+                except Exception as e:
+                    self.logger.error(f"Fail-fast: Cancelling remaining substeps due to failure in substep {idx}.")
+                    exception_occurred = True
+                    # Cancel any futures that haven't completed yet
+                    for _, f in futures:
+                        if not f.done():
+                            f.cancel()
+                    # Propagate the error
+                    raise e
 
-            # If an exception was encountered, cancel any pending substeps
-            if first_exception is not None:
-                self.logger.error("Fail-fast activated. Cancelling pending substeps.")
-                for fut in futures:
-                    fut.cancel()
-                raise first_exception
-
-            self.logger.info("ParallelStep completed all substeps successfully.")
-
-        finally:
-            executor.shutdown(wait=True)
-
-    def _execute_substep(self, step_instance: BaseStep, context: Context, index: int) -> None:
-        """
-        Execute an individual substep with its cloned context.
-
-        Args:
-            step_instance (BaseStep): The substep instance to execute.
-            context (Context): The cloned context for this substep.
-            index (int): Index of the substep, for logging purposes.
-
-        Raises:
-            Exception: Propagates any exception encountered during execution of the substep.
-        """
-        self.logger.info(f"Substep {index} started.")
-        try:
-            step_instance.execute(context)
-            self.logger.info(f"Substep {index} completed successfully.")
-        except Exception as e:
-            self.logger.error(f"Substep {index} failed with error: {e}", exc_info=True)
-            raise e
+        self.logger.info(f"ParallelStep completed. All substeps finished successfully.")

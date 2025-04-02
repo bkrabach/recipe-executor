@@ -124,7 +124,7 @@ The ExecuteRecipeStep works by:
 
 1. Rendering the recipe path with the current context
 2. Applying context overrides (also rendered with the current context)
-3. Creating a RecipeExecutor instance
+3. Creating a Executor instance
 4. Executing the sub-recipe with the modified context
 
 ```python
@@ -145,7 +145,7 @@ def execute(self, context: Context) -> None:
     self.logger.info(f"Executing sub-recipe: {recipe_path}")
 
     # Execute the sub-recipe
-    executor = RecipeExecutor()
+    executor = Executor()
     executor.execute(recipe=recipe_path, context=context, logger=self.logger)
 
     # Log completion
