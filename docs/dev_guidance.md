@@ -35,3 +35,5 @@ The project is organized into several key directories, each serving a specific p
 - `recipes/codebase_generator`: Contains the recipes used by the `recipes_extractor` tool to handle it's codebase generation needs. It is separated out from the `recipe_executor` recipes to allow for easier reuse in other projects. It will be extended over time to include more of the codebase generation functionality such as assistance in evaluating and testing the generated code, etc.
 
 - `recipes/blueprint_generator`: Includes a handful of utility recipes that are intended to help create the initial set of recipes + specs + docs for the _heavily opinionated_ approach to generating components for this project. Feel free to use these as is for other projects (your mileage may vary) or as a starting point for your own recipes.
+
+- `recipes/utilities`: Contains utility recipes that are not directly related to the core functionality of the Recipe Executor but are handy to leverage while working on the project. These recipes can be used for various tasks, such as generating files, etc.
