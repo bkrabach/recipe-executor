@@ -119,3 +119,7 @@ One of the most interesting aspects of this project is that it can generate its 
    ```
 
 This demonstrates the power of the Recipe Executor for code generation and maintenance tasks.
+
+## Contributing & Development
+
+We have a doc just for that... [dev_guidance.md](docs/dev_guidance.md)
