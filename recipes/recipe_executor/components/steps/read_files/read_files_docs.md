@@ -16,7 +16,7 @@ class ReadFilesConfig(StepConfig):
     Configuration for ReadFilesStep.
 
     Fields:
-        path (Union[str, List[str]]): Path or list of paths to the file(s) to read (may be templated).
+        path (Union[str, List[str]]): Path, comma-separated string, or list of paths to the file(s) to read (may be templated).
         artifact (str): Name to store the file contents in context.
         optional (bool): Whether to continue if a file is not found.
         merge_mode (str): How to handle multiple files' content. Options:
@@ -60,6 +60,20 @@ The ReadFilesStep can be used to read a single file just like the original read_
 ```
 
 ### Reading Multiple Files
+
+You can read multiple files by providing a comma-separated string:
+
+```json
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "specs/component_spec.md,specs/component_docs.md",
+      "artifact": "component_specs"
+    }
+  ]
+}
+```
 
 You can read multiple files by providing a list of paths:
 
