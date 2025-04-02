@@ -90,14 +90,13 @@ def match_pattern(path: str, pattern: str, component_matching=False) -> bool:
             if file_dir.startswith(pattern_dir):
                 # Match the filename against the pattern
                 return fnmatch.fnmatch(os.path.basename(abs_path), pattern_file)
+            return False  # Not under the pattern directory
         else:
             # Direct file match
             return abs_path == resolved_pattern or fnmatch.fnmatch(abs_path, resolved_pattern)
     else:
         # Regular pattern without navigation, use relative path matching
         return fnmatch.fnmatch(path, pattern)
-
-    return False
 
 
 def should_exclude(path: str, exclude_patterns: List[str]) -> bool:
@@ -133,7 +132,7 @@ def collect_files(patterns: List[str], exclude_patterns: List[str], include_patt
     # Process included files with simple filenames or relative paths
     for pattern in include_patterns:
         # Check for files in the current directory first
-        direct_matches = glob.glob(pattern, recursive=False)
+        direct_matches = glob.glob(pattern, recursive=True)
         for match in direct_matches:
             if os.path.isfile(match):
                 collected.add(os.path.abspath(match))
@@ -185,8 +184,9 @@ def process_directory(
 ) -> None:
     """Process a directory recursively"""
     for root, dirs, files in os.walk(dir_path):
-        # Filter directories based on exclude patterns
-        dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d), exclude_patterns)]
+        # Filter directories based on exclude patterns, but respect include patterns
+        dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d), exclude_patterns)
+                  or should_include(os.path.join(root, d), include_patterns)]
 
         # Process each file in the directory
         for file in files:
@@ -201,15 +201,26 @@ def read_file(file_path: str) -> Tuple[str, Optional[str]]:
     Returns:
         Tuple of (content, error_message)
     """
+    # Check if file is likely binary
     try:
+        with open(file_path, "rb") as f:
+            chunk = f.read(1024)
+            if b'\0' in chunk:  # Simple binary check
+                return "[Binary file not displayed]", None
+
+        # If not binary, read as text
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read(), None
+    except UnicodeDecodeError:
+        # Handle encoding issues
+        return "[File contains non-UTF-8 characters]", None
     except Exception as e:
         return "", f"[ERROR reading file: {e}]"
 
 
 def format_output(
-    file_paths: List[str], format_type: str, exclude_patterns: List[str], include_patterns: List[str]
+    file_paths: List[str], format_type: str, exclude_patterns: List[str],
+    include_patterns: List[str], patterns: List[str]
 ) -> str:
     """
     Format the collected files according to the output format.
@@ -219,6 +230,7 @@ def format_output(
         format_type: Output format type ("markdown" or "plain")
         exclude_patterns: List of exclusion patterns (for info)
         include_patterns: List of inclusion patterns (for info)
+        patterns: Original input patterns (for info)
 
     Returns:
         Formatted output string
@@ -288,12 +300,11 @@ def main() -> None:
     include_patterns = parse_patterns(args.include) if args.include else []
 
     # Collect files
-    global patterns  # For use in format_output
     patterns = args.patterns
     files = collect_files(patterns, exclude_patterns, include_patterns)
 
     # Format and print output
-    output = format_output(files, args.format, exclude_patterns, include_patterns)
+    output = format_output(files, args.format, exclude_patterns, include_patterns, patterns)
     print(output)
 
 
