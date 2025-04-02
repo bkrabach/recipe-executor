@@ -55,7 +55,7 @@ The WriteFilesStep can be used in recipes like this:
 
 The WriteFilesStep can work with two types of artifacts in the context:
 
-### 1. FileGenerationResult
+### FileGenerationResult
 
 ```python
 from recipe_executor.models import FileGenerationResult, FileSpec
@@ -73,7 +73,7 @@ result = FileGenerationResult(
 context["generated_code"] = result
 ```
 
-### 2. List of FileSpec objects
+### List of FileSpec objects
 
 ```python
 from recipe_executor.models import FileSpec
@@ -113,105 +113,42 @@ FileSpec(
 )
 ```
 
-## Implementation Details
-
-The WriteFilesStep works by:
-
-1. Retrieving the artifact from the context
-2. Validating it's a FileGenerationResult or list of FileSpec objects
-3. Rendering the root path using template rendering
-4. For each file:
-   - Rendering the file path
-   - Creating the necessary directories
-   - Writing the file content
-
-```python
-def execute(self, context: Context) -> None:
-    # Get data from context
-    data = context.get(self.config.artifact)
-
-    if data is None:
-        raise ValueError(f"No artifact found at key: {self.config.artifact}")
-
-    # Determine file list
-    if isinstance(data, FileGenerationResult):
-        files = data.files
-    elif isinstance(data, list) and all(isinstance(f, FileSpec) for f in data):
-        files = data
-    else:
-        raise TypeError("Expected FileGenerationResult or list of FileSpec objects")
-
-    # Render output root
-    output_root = render_template(self.config.root, context)
-
-    # Write each file
-    for file in files:
-        rel_path = render_template(file.path, context)
-        full_path = os.path.join(output_root, rel_path)
-
-        # Create directories
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-        # Write file
-        with open(full_path, "w", encoding="utf-8") as f:
-            f.write(file.content)
-
-        self.logger.info(f"Wrote file: {full_path}")
-```
-
-## Error Handling
-
-The WriteFilesStep can raise several types of errors:
-
-```python
-try:
-    write_step.execute(context)
-except ValueError as e:
-    # Missing or invalid artifact
-    print(f"Value error: {e}")
-except TypeError as e:
-    # Unexpected artifact type
-    print(f"Type error: {e}")
-except IOError as e:
-    # File writing errors
-    print(f"I/O error: {e}")
-```
-
 ## Common Use Cases
 
-1. **Writing Generated Code**:
+**Writing Generated Code**:
 
-   ```json
-   {
-     "type": "write_files",
-     "artifact": "generated_code",
-     "root": "output/src"
-   }
-   ```
+```json
+{
+  "type": "write_files",
+  "artifact": "generated_code",
+  "root": "output/src"
+}
+```
 
-2. **Project-Specific Output**:
+**Project-Specific Output**:
 
-   ```json
-   {
-     "type": "write_files",
-     "artifact": "project_files",
-     "root": "output/{{project_name}}"
-   }
-   ```
+```json
+{
+  "type": "write_files",
+  "artifact": "project_files",
+  "root": "output/{{project_name}}"
+}
+```
 
-3. **Component Generation**:
-   ```json
-   {
-     "type": "write_files",
-     "artifact": "component_result",
-     "root": "output/components"
-   }
-   ```
+**Component Generation**:
+
+```json
+{
+  "type": "write_files",
+  "artifact": "component_result",
+  "root": "output/components"
+}
+```
 
 ## Important Notes
 
-1. Directories are created automatically if they don't exist
-2. Files are overwritten without confirmation if they already exist
-3. All paths are rendered using template variables from the context
-4. File content is written using UTF-8 encoding
-5. Both FileGenerationResult and List[FileSpec] formats are supported
+- Directories are created automatically if they don't exist
+- Files are overwritten without confirmation if they already exist
+- All paths are rendered using template variables from the context
+- File content is written using UTF-8 encoding
+- Both FileGenerationResult and List[FileSpec] formats are supported

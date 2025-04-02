@@ -62,7 +62,7 @@ The prompt can include template variables from the context:
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "specs/component_spec.md",
       "artifact": "spec"
     },
@@ -110,36 +110,6 @@ The artifact key can be templated to create dynamic storage locations:
 }
 ```
 
-## Implementation Details
-
-The GenerateWithLLMStep works by:
-
-1. Rendering the prompt with the current context
-2. Rendering the model identifier
-3. Rendering the artifact key (if it contains templates)
-4. Calling the LLM with the rendered prompt and model
-5. Storing the result in the context under the artifact key
-
-```python
-def execute(self, context: Context) -> None:
-    # Process the artifact key using templating if needed
-    artifact_key = self.config.artifact
-    if "{{" in artifact_key and "}}" in artifact_key:
-        artifact_key = render_template(artifact_key, context)
-
-    # Render the prompt and model with the current context
-    rendered_prompt = render_template(self.config.prompt, context)
-    rendered_model = render_template(self.config.model, context)
-
-    # Call the LLM
-    self.logger.info(f"Calling LLM with prompt for artifact: {artifact_key}")
-    response = call_llm(rendered_prompt, rendered_model)
-
-    # Store the LLM response in context
-    context[artifact_key] = response
-    self.logger.debug(f"LLM response stored in context under '{artifact_key}'")
-```
-
 ## LLM Response Format
 
 The response from call_llm is a FileGenerationResult object:
@@ -155,59 +125,45 @@ result = FileGenerationResult(
 )
 ```
 
-## Error Handling
-
-The GenerateWithLLMStep can raise several types of errors:
-
-```python
-try:
-    generate_step.execute(context)
-except ValueError as e:
-    # Template rendering or model format errors
-    print(f"Value error: {e}")
-except RuntimeError as e:
-    # LLM call failures
-    print(f"Runtime error: {e}")
-```
-
 ## Common Use Cases
 
-1. **Code Generation**:
+**Code Generation**:
 
-   ```json
-   {
-     "type": "generate",
-     "prompt": "Generate Python code for: {{specification}}",
-     "model": "{{model|default:'openai:o3-mini'}}",
-     "artifact": "code_result"
-   }
-   ```
+```json
+{
+  "type": "generate",
+  "prompt": "Generate Python code for: {{specification}}",
+  "model": "{{model|default:'openai:o3-mini'}}",
+  "artifact": "code_result"
+}
+```
 
-2. **Content Creation**:
+**Content Creation**:
 
-   ```json
-   {
-     "type": "generate",
-     "prompt": "Write a blog post about: {{topic}}",
-     "model": "anthropic:claude-3-haiku",
-     "artifact": "blog_post"
-   }
-   ```
+```json
+{
+  "type": "generate",
+  "prompt": "Write a blog post about: {{topic}}",
+  "model": "anthropic:claude-3-haiku",
+  "artifact": "blog_post"
+}
+```
 
-3. **Analysis and Transformation**:
-   ```json
-   {
-     "type": "generate",
-     "prompt": "Analyze this code and suggest improvements:\n\n{{code}}",
-     "model": "{{model|default:'openai:o3-mini'}}",
-     "artifact": "code_analysis"
-   }
-   ```
+**Analysis and Transformation**:
+
+```json
+{
+  "type": "generate",
+  "prompt": "Analyze this code and suggest improvements:\n\n{{code}}",
+  "model": "{{model|default:'openai:o3-mini'}}",
+  "artifact": "code_analysis"
+}
+```
 
 ## Important Notes
 
-1. The artifact key can be dynamic using template variables
-2. The prompt is rendered using the current context before sending to the LLM
-3. The model identifier follows the format "provider:model_name"
-4. The LLM response is a FileGenerationResult object with files and commentary
-5. LLM calls may incur costs with the respective provider
+- The artifact key can be dynamic using template variables
+- The prompt is rendered using the current context before sending to the LLM
+- The model identifier follows the format "provider:model_name"
+- The LLM response is a FileGenerationResult object with files and commentary
+- LLM calls may incur costs with the respective provider

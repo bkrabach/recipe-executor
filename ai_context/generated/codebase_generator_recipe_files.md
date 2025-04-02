@@ -2,12 +2,12 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/dev_guides/DEV_GUIDE_FOR_{{language | upcase}}.md",
       "artifact": "dev_guide",
       "optional": true

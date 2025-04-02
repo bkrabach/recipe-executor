@@ -10,12 +10,12 @@ This recipe demonstrates a multi-step workflow that:
 ```json
 [
   {
-    "type": "read_file",
+    "type": "read_files",
     "path": "recipes/example_complex/specs/main_spec.txt",
     "artifact": "main_spec"
   },
   {
-    "type": "read_file",
+    "type": "read_files",
     "path": "recipes/example_complex/specs/auxiliary_spec.txt",
     "artifact": "aux_spec"
   },

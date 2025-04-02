@@ -1,17 +1,17 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_docs.md",
       "artifact": "executor_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_docs.md",
       "artifact": "logger_docs"
     },

@@ -1,22 +1,22 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{candidate_spec_path}}",
       "artifact": "candidate_spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
       "artifact": "component_docs_spec_guide"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },

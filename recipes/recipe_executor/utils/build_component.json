@@ -1,12 +1,12 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
       "artifact": "spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
       "artifact": "usage_docs",
       "optional": true

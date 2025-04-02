@@ -43,13 +43,13 @@ executor = Executor()
 executor.execute("path/to/recipe.json", context)
 
 # Or from a JSON string
-json_string = '{"steps": [{"type": "read_file", "path": "example.txt", "artifact": "content"}]}'
+json_string = '{"steps": [{"type": "read_files", "path": "example.txt", "artifact": "content"}]}'
 executor.execute(json_string, context)
 
 # Or from a dictionary
 recipe_dict: Dict[str, List[Dict[str, Any]]] = {
     "steps": [
-        {"type": "read_file", "path": "example.txt", "artifact": "content"}
+        {"type": "read_files", "path": "example.txt", "artifact": "content"}
     ]
 }
 executor.execute(recipe_dict, context)
@@ -65,7 +65,7 @@ The recipe structure must contain a "steps" key, which is a list of step definit
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "input.txt",
       "artifact": "input_content"
     },
@@ -84,7 +84,7 @@ The recipe structure must contain a "steps" key, which is a list of step definit
 recipe_dict = {
     "steps": [
         {
-            "type": "read_file",
+            "type": "read_files",
             "path": "input.txt",
             "artifact": "input_content"
         },
@@ -118,7 +118,7 @@ The executor uses the Step Registry to instantiate steps based on their type:
 ```python
 # Each step in a recipe must have a "type" field:
 step: Dict[str, Any] = {
-    "type": "read_file",  # Must match a key in STEP_REGISTRY
+    "type": "read_files",  # Must match a key in STEP_REGISTRY
     "path": "input.txt",
     "artifact": "content"
 }

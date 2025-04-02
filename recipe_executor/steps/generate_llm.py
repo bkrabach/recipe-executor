@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
 
-from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.context import Context
 from recipe_executor.llm import call_llm
+from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
 
@@ -23,44 +23,38 @@ class GenerateLLMConfig(StepConfig):
 
 class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     """
-    Step that generates content using a large language model (LLM).
-    It processes templates for the prompt, model, and artifact key, calls the LLM, and stores the result in the context.
+    GenerateWithLLMStep enables recipes to generate content using large language models.
+    It processes prompt templates using context data, supports configurable model selection,
+    calls the LLM for content generation, and then stores the generated results in the context.
     """
 
     def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
+        # Convert the config dict into a GenerateLLMConfig Pydantic model
         super().__init__(GenerateLLMConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        # Process the artifact key using templating if needed
-        artifact_key: str = self.config.artifact
-        if '{{' in artifact_key and '}}' in artifact_key:
-            try:
-                artifact_key = render_template(artifact_key, context)
-            except Exception as e:
-                self.logger.error(f"Error rendering artifact template '{artifact_key}': {e}")
-                raise ValueError(f"Invalid artifact template: {artifact_key}")
+        """
+        Execute the LLM generation step by rendering templates, calling the LLM, and storing the result.
 
-        # Render the prompt and model using the current context
+        Args:
+            context (Context): The execution context containing artifacts and configuration.
+
+        Raises:
+            Exception: Propagates exceptions from LLM call failures.
+        """
         try:
-            rendered_prompt: str = render_template(self.config.prompt, context)
-        except Exception as e:
-            self.logger.error(f"Error rendering prompt template: {e}")
-            raise ValueError(f"Invalid prompt template: {self.config.prompt}")
+            # Render the prompt, model identifier, and artifact key using the provided context
+            rendered_prompt = render_template(self.config.prompt, context)
+            rendered_model = render_template(self.config.model, context)
+            artifact_key = render_template(self.config.artifact, context)
 
-        try:
-            rendered_model: str = render_template(self.config.model, context)
-        except Exception as e:
-            self.logger.error(f"Error rendering model template: {e}")
-            raise ValueError(f"Invalid model template: {self.config.model}")
-
-        self.logger.debug(f"LLM call is being made for artifact '{artifact_key}' with model '{rendered_model}'.")
-
-        # Call the LLM and store the response
-        try:
+            self.logger.debug("Calling LLM with prompt: %s using model: %s", rendered_prompt, rendered_model)
+            # Call the large language model with the rendered prompt and model identifier
             response = call_llm(rendered_prompt, rendered_model, logger=self.logger)
-        except Exception as e:
-            self.logger.error(f"LLM call failed for artifact '{artifact_key}': {e}", exc_info=True)
-            raise RuntimeError(f"LLM call failed: {e}")
 
-        context[artifact_key] = response
-        self.logger.debug(f"LLM response stored in context under '{artifact_key}'")
+            # Store the generation result in the context under the dynamically rendered artifact key
+            context[artifact_key] = response
+
+        except Exception as e:
+            self.logger.error("LLM call failed for prompt: %s with error: %s", self.config.prompt, str(e))
+            raise e

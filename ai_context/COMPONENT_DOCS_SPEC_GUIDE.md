@@ -8,17 +8,17 @@ This guide outlines how to create high-quality component documentation and speci
 
 This guide serves multiple purposes:
 
-1. To help **evaluate candidate specifications** to determine if they contain sufficient information
-2. To generate **clarifying questions** when information is insufficient
-3. To create clear, comprehensive **documentation and specification files** that support modular AI code generation
+- To help **evaluate candidate specifications** to determine if they contain sufficient information
+- To generate **clarifying questions** when information is insufficient
+- To create clear, comprehensive **documentation and specification files** that support modular AI code generation
 
 ### Core Principles of Documentation and Specification
 
-1. **Separation of Concerns**: Documentation focuses on component usage, while specifications focus on component implementation
-2. **Complete Information**: Together, documentation and specifications must provide all information needed for both component users and implementers
-3. **Clear Boundaries**: Explicit API contracts and interfaces enable independent development
-4. **Implementation Freedom**: Specifications should constrain only what's necessary, allowing creative implementation approaches
-5. **Consistency**: Terminology, structure, and formatting should be consistent across all components
+- **Separation of Concerns**: Documentation focuses on component usage, while specifications focus on component implementation
+- **Complete Information**: Together, documentation and specifications must provide all information needed for both component users and implementers
+- **Clear Boundaries**: Explicit API contracts and interfaces enable independent development
+- **Implementation Freedom**: Specifications should constrain only what's necessary, allowing creative implementation approaches
+- **Consistency**: Terminology, structure, and formatting should be consistent across all components
 
 ## A Complete Blueprint
 
@@ -61,7 +61,7 @@ executor = Executor()
 executor.execute("path/to/recipe.json", context)
 
 # Or from a JSON string
-json_string = '{"steps": [{"type": "read_file", "path": "example.txt", "artifact": "content"}]}'
+json_string = '{"steps": [{"type": "read_files", "path": "example.txt", "artifact": "content"}]}'
 executor.execute(json_string, context)
 ```
 
@@ -290,7 +290,7 @@ A well-structured component specification MUST include all of the following sect
 
 The implementation section may use one of three standard variations, based on the level of detail and specificity needed:
 
-1. **Implementation Considerations** (Standard): Use for general guidance on implementation approach without dictating exact solutions. This is the default option suitable for most components.
+- **Implementation Considerations** (Standard): Use for general guidance on implementation approach without dictating exact solutions. This is the default option suitable for most components.
 
    Example:
    ```markdown
@@ -301,53 +301,53 @@ The implementation section may use one of three standard variations, based on th
    - Provide clear error messages for missing keys
 ````
 
-2. **Implementation Details** (Specific): Use when providing more precise implementation instructions, often including specific code examples or detailed algorithms.
+- **Implementation Details** (Specific): Use when providing more precise implementation instructions, often including specific code examples or detailed algorithms.
 
-   Example:
+  Example:
 
-   ````markdown
-   ## Implementation Details
+  ````markdown
+  ## Implementation Details
 
-   ```python
-   def main() -> None:
-       """
-       CLI entry point for the Recipe Executor Tool.
+  ```python
+  def main() -> None:
+      """
+      CLI entry point for the Recipe Executor Tool.
 
-       Parses command-line arguments, sets up logging, creates the context, and runs the recipe executor.
-       """
-       # Parse command-line arguments
-       parser = argparse.ArgumentParser(
-           description="Recipe Executor Tool - Executes a recipe with additional context information."
-       )
-       parser.add_argument("recipe_path", help="Path to the recipe file to execute.")
-       ...
-   ```
-   ````
+      Parses command-line arguments, sets up logging, creates the context, and runs the recipe executor.
+      """
+      # Parse command-line arguments
+      parser = argparse.ArgumentParser(
+          description="Recipe Executor Tool - Executes a recipe with additional context information."
+      )
+      parser.add_argument("recipe_path", help="Path to the recipe file to execute.")
+      ...
+  ```
+  ````
 
-   ```
+  ```
 
-   ```
+  ```
 
-3. **Implementation Hints** (Targeted): Use for brief, specific suggestions or tips that guide implementation without full code examples.
+- **Implementation Hints** (Targeted): Use for brief, specific suggestions or tips that guide implementation without full code examples.
 
-   Example:
+  Example:
 
-   ````markdown
-   ## Implementation Hints
+  ````markdown
+  ## Implementation Hints
 
-   ```python
-   azure_client = AsyncAzureOpenAI(
-       azure_ad_token_provider=token_provider,
-       azure_endpoint=AZURE_OPENAI_ENDPOINT,
-       api_version=AZURE_OPENAI_API_VERSION,
-       azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME,
-   )
-   ```
-   ````
+  ```python
+  azure_client = AsyncAzureOpenAI(
+      azure_ad_token_provider=token_provider,
+      azure_endpoint=AZURE_OPENAI_ENDPOINT,
+      api_version=AZURE_OPENAI_API_VERSION,
+      azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME,
+  )
+  ```
+  ````
 
-   ```
+  ```
 
-   ```
+  ```
 
 When working with families of related components (e.g., multiple steps), maintain consistency in section naming across the family. Each component should use the same section variants as other components of the same type.
 

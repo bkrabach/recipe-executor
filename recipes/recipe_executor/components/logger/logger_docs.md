@@ -103,7 +103,7 @@ executor.execute(recipe_path, context, logger=logger)
 Steps receive the logger in their constructor:
 
 ```python
-class ReadFileStep(BaseStep):
+class ReadFilesStep(BaseStep):
     def __init__(self, config: dict, logger: Optional[logging.Logger] = None):
         self.logger = logger or logging.getLogger("RecipeExecutor")
         # ...

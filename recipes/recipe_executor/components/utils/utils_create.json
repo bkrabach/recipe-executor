@@ -1,7 +1,7 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
       "artifact": "context_docs"
     },

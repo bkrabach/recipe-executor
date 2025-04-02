@@ -2,22 +2,22 @@
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{candidate_spec_path}}",
 "artifact": "candidate_spec"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
 "artifact": "COMPONENT_DOCS_SPEC_GUIDE"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy"
 },
@@ -51,17 +51,17 @@
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
 "artifact": "COMPONENT_DOCS_SPEC_GUIDE"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy"
 },
@@ -88,22 +88,22 @@
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{candidate_spec_path}}",
 "artifact": "candidate_spec"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
 "artifact": "COMPONENT_DOCS_SPEC_GUIDE"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy"
 },
@@ -305,22 +305,22 @@ def admin_route():
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{candidate_spec_path}}",
 "artifact": "candidate_spec"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
 "artifact": "COMPONENT_DOCS_SPEC_GUIDE"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy"
 },
@@ -348,24 +348,24 @@ def admin_route():
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{project_recipe_path}}/specs/{{component_id}}.md",
 "artifact": "spec"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{project_recipe_path}}/docs/{{component_id}}.md",
 "artifact": "usage_docs",
 "optional": true
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy",
 "optional": true
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy",
 "optional": true
@@ -454,30 +454,30 @@ Example:
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{target_project}}/{{component_id}}.py",
 "artifact": "existing_code",
 "optional": true
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{project_recipe_path}}/specs/{{component_id}}.md",
 "artifact": "spec"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "{{project_recipe_path}}/docs/{{component_id}}.md",
 "artifact": "usage_docs",
 "optional": true
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
 "artifact": "implementation_philosophy",
 "optional": true
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
 "artifact": "modular_design_philosophy",
 "optional": true
@@ -546,7 +546,7 @@ The {{component_name}} component depends on:
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "recipes/blueprint_generator/includes/docs_template.md",
 "artifact": "docs_template"
 },
@@ -568,12 +568,12 @@ The {{component_name}} component depends on:
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "recipes/blueprint_generator/includes/create_recipe_template.json",
 "artifact": "create_recipe_template"
 },
 {
-"type": "read_file",
+"type": "read_files",
 "path": "recipes/blueprint_generator/includes/edit_recipe_template.json",
 "artifact": "edit_recipe_template"
 },
@@ -595,7 +595,7 @@ The {{component_name}} component depends on:
 {
 "steps": [
 {
-"type": "read_file",
+"type": "read_files",
 "path": "recipes/blueprint_generator/includes/spec_template.md",
 "artifact": "spec_template"
 },

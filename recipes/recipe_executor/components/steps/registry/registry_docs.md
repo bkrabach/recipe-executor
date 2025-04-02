@@ -20,7 +20,7 @@ STEP_REGISTRY: Dict[str, Type[BaseStep]] = {
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
     "parallel": ParallelStep,
-    "read_file": ReadFileStep,
+    "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,
 }
 ```
@@ -59,7 +59,7 @@ def execute_step(step: Dict[str, Any], context: Context, logger: logging.Logger)
 
 ## Important Notes
 
-1. Step type names must be unique across the entire system
-2. Steps must be registered before the executor tries to use them
-3. Standard steps are automatically registered when the package is imported
-4. Custom steps need to be explicitly registered by the user
+- Step type names must be unique across the entire system
+- Steps must be registered before the executor tries to use them
+- Standard steps are automatically registered when the package is imported
+- Custom steps need to be explicitly registered by the user

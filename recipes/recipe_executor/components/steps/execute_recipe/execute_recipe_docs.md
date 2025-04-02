@@ -95,7 +95,7 @@ Sub-recipes can be composed to create more complex workflows:
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "specs/project_spec.md",
       "artifact": "project_spec"
     },
@@ -118,95 +118,47 @@ Sub-recipes can be composed to create more complex workflows:
 }
 ```
 
-## Implementation Details
-
-The ExecuteRecipeStep works by:
-
-1. Rendering the recipe path with the current context
-2. Applying context overrides (also rendered with the current context)
-3. Creating a Executor instance
-4. Executing the sub-recipe with the modified context
-
-```python
-def execute(self, context: Context) -> None:
-    # Merge any context overrides into the current context
-    if hasattr(self.config, "context_overrides") and self.config.context_overrides:
-        for key, value in self.config.context_overrides.items():
-            context[key] = render_template(value, context)
-
-    # Render the recipe path
-    recipe_path = render_template(self.config.recipe_path, context)
-
-    # Verify recipe exists
-    if not os.path.exists(recipe_path):
-        raise FileNotFoundError(f"Sub-recipe file not found: {recipe_path}")
-
-    # Log sub-recipe execution
-    self.logger.info(f"Executing sub-recipe: {recipe_path}")
-
-    # Execute the sub-recipe
-    executor = Executor()
-    executor.execute(recipe=recipe_path, context=context, logger=self.logger)
-
-    # Log completion
-    self.logger.info(f"Completed sub-recipe: {recipe_path}")
-```
-
-## Error Handling
-
-The ExecuteRecipeStep can raise several types of errors:
-
-```python
-try:
-    execute_recipe_step.execute(context)
-except FileNotFoundError as e:
-    # Sub-recipe file not found
-    print(f"File error: {e}")
-except ValueError as e:
-    # Recipe format or execution errors
-    print(f"Recipe error: {e}")
-```
-
 ## Common Use Cases
 
-1. **Component Generation**:
+**Component Generation**:
 
-   ```json
-   {
-     "type": "execute_recipe",
-     "recipe_path": "recipes/generate_component.json",
-     "context_overrides": {
-       "component_id": "utils",
-       "component_name": "Utils Component"
-     }
-   }
-   ```
+```json
+{
+  "type": "execute_recipe",
+  "recipe_path": "recipes/generate_component.json",
+  "context_overrides": {
+    "component_id": "utils",
+    "component_name": "Utils Component"
+  }
+}
+```
 
-2. **Template-Based Recipes**:
+**Template-Based Recipes**:
 
-   ```json
-   {
-     "type": "execute_recipe",
-     "recipe_path": "recipes/component_template.json",
-     "context_overrides": {
-       "template_type": "create",
-       "component_id": "{{component_id}}"
-     }
-   }
-   ```
+```json
+{
+  "type": "execute_recipe",
+  "recipe_path": "recipes/component_template.json",
+  "context_overrides": {
+    "template_type": "create",
+    "component_id": "{{component_id}}"
+  }
+}
+```
 
-3. **Multi-Step Workflows**:
-   ```json
-   {
-     "type": "execute_recipe",
-     "recipe_path": "recipes/workflow/{{workflow_name}}.json"
-   }
-   ```
+**Multi-Step Workflows**:
+
+```json
+{
+  "type": "execute_recipe",
+  "recipe_path": "recipes/workflow/{{workflow_name}}.json"
+}
+```
 
 ## Important Notes
 
-1. The sub-recipe receives the same context object as the parent recipe
-2. Context overrides are applied before sub-recipe execution
-3. Changes made to the context by the sub-recipe persist after it completes
-4. Template variables in both recipe_path and context_overrides are resolved before execution
-5. Sub-recipes can execute their own sub-recipes (nested execution)
+- The sub-recipe receives the same context object as the parent recipe
+- Context overrides are applied before sub-recipe execution
+- Changes made to the context by the sub-recipe persist after it completes
+- Template variables in both recipe_path and context_overrides are resolved before execution
+- Sub-recipes can execute their own sub-recipes (nested execution)

@@ -858,15 +858,15 @@ from recipe_executor.steps.registry import STEP_REGISTRY
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.generate_llm import GenerateWithLLMStep
 from recipe_executor.steps.parallel import ParallelStep
-from recipe_executor.steps.read_file import ReadFileStep
+from recipe_executor.steps.read_files import ReadFilesStep
 from recipe_executor.steps.write_files import WriteFilesStep
 
-# Register standard steps in the registry
+# Register steps by updating the registry
 STEP_REGISTRY.update({
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
     "parallel": ParallelStep,
-    "read_file": ReadFileStep,
+    "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,
 })
 
@@ -874,61 +874,59 @@ STEP_REGISTRY.update({
 === File: recipe_executor/steps/base.py ===
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Optional
+from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel
+from recipe_executor.context import Context  # Assumed to exist in the project
 
-from recipe_executor.context import Context
 
-# Base configuration class for all step configurations
 class StepConfig(BaseModel):
-    """Base class for step configurations. Extend this class for specific steps."""
+    """Base class for all step configurations. Extend this class in each step's configuration."""
     pass
 
-# Generic type variable for step configuration types
-ConfigType = TypeVar("ConfigType", bound=StepConfig)
+
+# Type variable for configuration types bound to StepConfig
+ConfigType = TypeVar('ConfigType', bound=StepConfig)
 
 
 class BaseStep(ABC, Generic[ConfigType]):
-    """Base class for all step implementations in the Recipe Executor system.
+    """
+    Base class for all step implementations in the Recipe Executor system.
+    Subclasses must implement the `execute` method.
 
-    Subclasses must implement the execute(context) method. Each step receives a config
-    object and a logger instance. If no logger is provided, a default logger named 'RecipeExecutor'
-    will be used.
+    Each step is initialized with a configuration object and an optional logger.
 
     Args:
-        config (ConfigType): Configuration for the step.
-        logger (Optional[logging.Logger]): Logger instance; defaults to a logger with name "RecipeExecutor".
+        config (ConfigType): Configuration for the step, validated using Pydantic.
+        logger (Optional[logging.Logger]): Logger instance; defaults to the 'RecipeExecutor' logger.
     """
 
     def __init__(self, config: ConfigType, logger: Optional[logging.Logger] = None) -> None:
         self.config: ConfigType = config
         self.logger = logger or logging.getLogger("RecipeExecutor")
-        # Log at debug level when the step component is initialized
-        self.logger.debug(f"Step component initialized with configuration: {self.config.json()}")
+        self.logger.debug(f"Initialized {self.__class__.__name__} with config: {self.config}")
 
     @abstractmethod
     def execute(self, context: Context) -> None:
-        """Execute the step with the given context.
+        """
+        Execute the step using the provided context.
 
         Args:
-            context: A context object for data sharing among steps.
+            context (Context): Shared context for data exchange between steps.
 
         Raises:
-            NotImplementedError: If the subclass does not implement this method.
+            NotImplementedError: Must be implemented in subclasses.
         """
-        raise NotImplementedError("Each step must implement the execute() method.")
-
+        raise NotImplementedError("Each step must implement the `execute()` method.")
 
 
 === File: recipe_executor/steps/execute_recipe.py ===
 import os
-import logging
-from typing import Dict, Optional
+from typing import Dict, Any
 
-from recipe_executor.context import Context
-from recipe_executor.executor import Executor
 from recipe_executor.steps.base import BaseStep, StepConfig
+from recipe_executor.executor import Executor
+from recipe_executor.context import Context
 from recipe_executor.utils import render_template
 
 
@@ -944,76 +942,67 @@ class ExecuteRecipeConfig(StepConfig):
 
 
 class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
-    """Step to execute a sub-recipe using a provided recipe file path and context overrides.
+    """Step that executes a sub-recipe with optional context overrides.
 
-    This step:
-      - Applies template rendering on the recipe path and on context overrides.
-      - Shares the current context with the sub-recipe, modifying it as needed with overrides.
-      - Validates that the sub-recipe file exists before executing it.
-      - Logs the start and completion details of sub-recipe execution.
-      - Uses the existing Executor to run the sub-recipe.
+    This component uses template rendering for dynamic resolution of recipe paths and context overrides, 
+    validates that the target recipe file exists, applies context overrides, and executes the sub-recipe 
+    using a shared Executor instance. Execution start and completion are logged as info messages.
     """
 
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        # Initialize with config converted by ExecuteRecipeConfig
+    def __init__(self, config: dict, logger: Any = None) -> None:
         super().__init__(ExecuteRecipeConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        """Execute the sub-recipe with context overrides and template rendering.
+        """Execute the sub-recipe with rendered paths and context overrides.
 
         Args:
-            context (Context): The execution context received from the parent recipe.
+            context (Context): The shared context object.
 
         Raises:
-            FileNotFoundError: If the sub-recipe file does not exist.
-            Exception: Propagates any error encountered during sub-recipe execution.
+            RuntimeError: If the sub-recipe file does not exist or if execution fails.
         """
-        # Apply context overrides using template rendering
-        if hasattr(self.config, 'context_overrides') and self.config.context_overrides:
+        try:
+            # Render the recipe path using the current context
+            rendered_recipe_path = render_template(self.config.recipe_path, context)
+            
+            # Render context overrides
+            rendered_overrides: Dict[str, str] = {}
             for key, value in self.config.context_overrides.items():
-                try:
-                    rendered_value = render_template(value, context)
-                    context[key] = rendered_value
-                except Exception as e:
-                    self.logger.error(f"Error rendering context override for key '{key}': {str(e)}")
-                    raise
-
-        # Render the recipe path using the current context
-        try:
-            recipe_path = render_template(self.config.recipe_path, context)
-        except Exception as e:
-            self.logger.error(f"Error rendering recipe path '{self.config.recipe_path}': {str(e)}")
-            raise
-
-        # Validate that the sub-recipe file exists
-        if not os.path.exists(recipe_path):
-            error_msg = f"Sub-recipe file not found: {recipe_path}"
-            self.logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
-
-        # Log sub-recipe execution start
-        self.logger.info(f"Executing sub-recipe: {recipe_path}")
-
-        try:
-            # Execute the sub-recipe using the same executor
+                rendered_overrides[key] = render_template(value, context)
+            
+            # Validate that the sub-recipe file exists
+            if not os.path.isfile(rendered_recipe_path):
+                error_msg = f"Sub-recipe file not found: {rendered_recipe_path}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+            
+            # Log start of execution
+            self.logger.info(f"Starting execution of sub-recipe: {rendered_recipe_path}")
+            
+            # Apply context overrides before sub-recipe execution
+            for key, value in rendered_overrides.items():
+                context[key] = value
+            
+            # Execute the sub-recipe with the same context and logger
             executor = Executor()
-            executor.execute(recipe=recipe_path, context=context, logger=self.logger)
-        except Exception as e:
-            # Log error with sub-recipe path and propagate
-            self.logger.error(f"Error during sub-recipe execution ({recipe_path}): {str(e)}")
-            raise
+            executor.execute(rendered_recipe_path, context, self.logger)
+            
+            # Log completion of sub-recipe execution
+            self.logger.info(f"Completed execution of sub-recipe: {rendered_recipe_path}")
 
-        # Log sub-recipe execution completion
-        self.logger.info(f"Completed sub-recipe: {recipe_path}")
+        except Exception as e:
+            error_msg = f"Error executing sub-recipe '{self.config.recipe_path}': {str(e)}"
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
 
 
 === File: recipe_executor/steps/generate_llm.py ===
 import logging
 from typing import Optional
 
-from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.context import Context
 from recipe_executor.llm import call_llm
+from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
 
@@ -1033,57 +1022,51 @@ class GenerateLLMConfig(StepConfig):
 
 class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     """
-    Step that generates content using a large language model (LLM).
-    It processes templates for the prompt, model, and artifact key, calls the LLM, and stores the result in the context.
+    GenerateWithLLMStep enables recipes to generate content using large language models.
+    It processes prompt templates using context data, supports configurable model selection,
+    calls the LLM for content generation, and then stores the generated results in the context.
     """
 
     def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
+        # Convert the config dict into a GenerateLLMConfig Pydantic model
         super().__init__(GenerateLLMConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        # Process the artifact key using templating if needed
-        artifact_key: str = self.config.artifact
-        if '{{' in artifact_key and '}}' in artifact_key:
-            try:
-                artifact_key = render_template(artifact_key, context)
-            except Exception as e:
-                self.logger.error(f"Error rendering artifact template '{artifact_key}': {e}")
-                raise ValueError(f"Invalid artifact template: {artifact_key}")
+        """
+        Execute the LLM generation step by rendering templates, calling the LLM, and storing the result.
 
-        # Render the prompt and model using the current context
+        Args:
+            context (Context): The execution context containing artifacts and configuration.
+
+        Raises:
+            Exception: Propagates exceptions from LLM call failures.
+        """
         try:
-            rendered_prompt: str = render_template(self.config.prompt, context)
-        except Exception as e:
-            self.logger.error(f"Error rendering prompt template: {e}")
-            raise ValueError(f"Invalid prompt template: {self.config.prompt}")
+            # Render the prompt, model identifier, and artifact key using the provided context
+            rendered_prompt = render_template(self.config.prompt, context)
+            rendered_model = render_template(self.config.model, context)
+            artifact_key = render_template(self.config.artifact, context)
 
-        try:
-            rendered_model: str = render_template(self.config.model, context)
-        except Exception as e:
-            self.logger.error(f"Error rendering model template: {e}")
-            raise ValueError(f"Invalid model template: {self.config.model}")
-
-        self.logger.debug(f"LLM call is being made for artifact '{artifact_key}' with model '{rendered_model}'.")
-
-        # Call the LLM and store the response
-        try:
+            self.logger.debug("Calling LLM with prompt: %s using model: %s", rendered_prompt, rendered_model)
+            # Call the large language model with the rendered prompt and model identifier
             response = call_llm(rendered_prompt, rendered_model, logger=self.logger)
-        except Exception as e:
-            self.logger.error(f"LLM call failed for artifact '{artifact_key}': {e}", exc_info=True)
-            raise RuntimeError(f"LLM call failed: {e}")
 
-        context[artifact_key] = response
-        self.logger.debug(f"LLM response stored in context under '{artifact_key}'")
+            # Store the generation result in the context under the dynamically rendered artifact key
+            context[artifact_key] = response
+
+        except Exception as e:
+            self.logger.error("LLM call failed for prompt: %s with error: %s", self.config.prompt, str(e))
+            raise e
 
 
 === File: recipe_executor/steps/parallel.py ===
+from typing import List, Dict, Any, Optional
+import logging
 import time
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List, Optional
 
-from recipe_executor.context import Context
 from recipe_executor.steps.base import BaseStep, StepConfig
+from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
 
@@ -1092,160 +1075,224 @@ class ParallelConfig(StepConfig):
     Config for ParallelStep.
 
     Fields:
-        substeps: List of sub-step configurations to execute in parallel.
-                  Each substep must be an execute_recipe step definition.
-        max_concurrency: Maximum number of substeps to run concurrently.
-                         Default = 0 means no explicit limit.
-        delay: Optional delay (in seconds) between launching each substep.
-               Default = 0 means no delay.
+        substeps: List of sub-step configurations to execute in parallel. Each substep should be an execute_recipe step definition.
+        max_concurrency: Maximum number of substeps to run concurrently. Default = 0 means no explicit limit.
+        delay: Optional delay (in seconds) between launching each substep. Default = 0 means no delay.
     """
     substeps: List[Dict[str, Any]]
     max_concurrency: int = 0
-    delay: float = 0
+    delay: float = 0.0
 
 
 class ParallelStep(BaseStep[ParallelConfig]):
     """
-    ParallelStep executes multiple sub-recipes concurrently.
+    ParallelStep executes multiple sub-steps concurrently within a single step.
 
-    Each sub-recipe is executed in its own cloned context.
-    Fail-fast behavior is implemented to stop execution upon a substep failure.
-    """
-
-    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None) -> None:
-        # Convert the config dict to ParallelConfig object
-        super().__init__(ParallelConfig(**config), logger)
-
-    def execute(self, context: Context) -> None:
-        self.logger.info(f"Starting ParallelStep with {len(self.config.substeps)} substeps.")
-
-        # Determine the maximum concurrency to use
-        if self.config.max_concurrency and self.config.max_concurrency > 0:
-            max_workers = self.config.max_concurrency
-        else:
-            max_workers = len(self.config.substeps) if self.config.substeps else 1
-
-        futures = []
-        exception_occurred = False
-
-        def run_substep(index: int, substep: Dict[str, Any], parent_context: Context) -> None:
-            substep_type = substep.get("type", "unknown")
-            # Clone the parent context to ensure isolation
-            cloned_context = parent_context.clone()
-            self.logger.debug(f"[Substep {index}] Cloned context for substep: {substep}.")
-            try:
-                # Get the step class from the registry
-                if substep_type not in STEP_REGISTRY:
-                    raise ValueError(f"Substep type '{substep_type}' is not registered in STEP_REGISTRY.")
-                step_cls = STEP_REGISTRY[substep_type]
-                self.logger.debug(f"[Substep {index}] Instantiating step of type '{substep_type}'.")
-                # Instantiate the step
-                step_instance = step_cls(substep, self.logger)
-                self.logger.info(f"[Substep {index}] Execution started for substep with config: {substep}.")
-                # Execute the substep
-                step_instance.execute(cloned_context)
-                self.logger.info(f"[Substep {index}] Execution completed successfully.")
-            except Exception as e:
-                error_msg = (f"[Substep {index}] Substep execution failed for type '{substep_type}' "
-                             f"with recipe_path '{substep.get('recipe_path', 'N/A')}'. Error: {str(e)}")
-                self.logger.error(error_msg)
-                raise Exception(error_msg) from e
-
-        # Use ThreadPoolExecutor to execute substeps concurrently
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for idx, substep in enumerate(self.config.substeps):
-                # Before launching a new substep, check if an error has already occurred
-                if exception_occurred:
-                    self.logger.debug(f"[Substep {idx}] Skipped launching due to previous errors.")
-                    break
-                self.logger.debug(f"[Substep {idx}] Submitting substep for execution.")
-                future = executor.submit(run_substep, idx, substep, context)
-                futures.append((idx, future))
-                # Apply launch delay if specified and if this is not the last substep
-                if self.config.delay > 0 and idx < len(self.config.substeps) - 1:
-                    self.logger.debug(f"Delaying next substep launch by {self.config.delay} seconds.")
-                    time.sleep(self.config.delay)
-
-            # Monitor the futures for completion and fail-fast in case of exception
-            for idx, future in futures:
-                try:
-                    # This will re-raise any exception encountered during execution
-                    future.result()
-                except Exception as e:
-                    self.logger.error(f"Fail-fast: Cancelling remaining substeps due to failure in substep {idx}.")
-                    exception_occurred = True
-                    # Cancel any futures that haven't completed yet
-                    for _, f in futures:
-                        if not f.done():
-                            f.cancel()
-                    # Propagate the error
-                    raise e
-
-        self.logger.info(f"ParallelStep completed. All substeps finished successfully.")
-
-
-=== File: recipe_executor/steps/read_file.py ===
-import os
-import logging
-from typing import Any, Dict, Optional
-
-from recipe_executor.context import Context
-from recipe_executor.steps.base import BaseStep, StepConfig
-from recipe_executor.utils import render_template
-
-
-class ReadFileConfig(StepConfig):
-    """
-    Configuration for ReadFileStep.
-
-    Fields:
-        path (str): Path to the file to read (may be templated).
-        artifact (str): Name to store the file contents in context.
-        optional (bool): Whether to continue if the file is not found.
-    """
-    path: str
-    artifact: str
-    optional: bool = False
-
-
-class ReadFileStep(BaseStep[ReadFileConfig]):
-    """
-    ReadFileStep reads a file from the filesystem using a dynamic path resolved via templating.
-    It stores the file content in the provided context under the specified artifact key.
+    It clones the provided context for each sub-step, executes sub-steps concurrently using a ThreadPoolExecutor,
+    supports an optional delay between launching each sub-step, implements fail-fast behavior, and waits for all
+    sub-steps to complete before proceeding.
     """
 
     def __init__(self, config: Dict[str, Any], logger: Optional[logging.Logger] = None) -> None:
-        # Convert dict to ReadFileConfig using pydantic or similar underlying mechanism
-        super().__init__(ReadFileConfig(**config), logger)
+        # Initialize with ParallelConfig created from the provided dict config
+        super().__init__(ParallelConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        # Render the file path using context and provided template
-        rendered_path = render_template(self.config.path, context)
-        self.logger.debug(f"Attempting to read file from path: {rendered_path}")
+        self.logger.info("Starting ParallelStep execution.")
+        substeps = self.config.substeps
+        if not substeps:
+            self.logger.info("No substeps provided. Exiting ParallelStep.")
+            return
 
-        # Check if file exists
-        if not os.path.exists(rendered_path):
-            if self.config.optional:
-                self.logger.warning(f"Optional file not found at path: {rendered_path}. Continuing with empty content.")
-                context[self.config.artifact] = ""
-                return
-            else:
-                error_message = f"ReadFileStep: file not found at path: {rendered_path}"
-                self.logger.error(error_message)
-                raise FileNotFoundError(error_message)
+        # Determine max_workers based on configuration
+        max_workers = self.config.max_concurrency if self.config.max_concurrency > 0 else len(substeps)
 
-        # Read the file using UTF-8 encoding
-        self.logger.info(f"Reading file from: {rendered_path}")
+        futures = []
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        error_occurred = None
+
         try:
-            with open(rendered_path, "r", encoding="utf-8") as f:
-                content = f.read()
-        except Exception as e:
-            self.logger.error(f"Error reading file at {rendered_path}: {e}")
-            raise
+            for index, sub_config in enumerate(substeps):
+                # If an error has already occurred, do not launch further substeps (fail-fast behavior)
+                if error_occurred:
+                    self.logger.error("Fail-fast: Aborting launch of further substeps due to earlier error.")
+                    break
 
-        # Store the file content in context under the specified artifact key
-        context[self.config.artifact] = content
-        self.logger.debug(f"Stored file contents in context under key: '{self.config.artifact}'")
+                # Clone the context for isolation
+                cloned_context = context.clone()
+
+                # Determine sub-step type and ensure it is registered
+                step_type = sub_config.get("type")
+                if step_type not in STEP_REGISTRY:
+                    raise ValueError(f"Sub-step type '{step_type}' is not registered in STEP_REGISTRY.")
+
+                sub_step_class = STEP_REGISTRY[step_type]
+                sub_step = sub_step_class(sub_config, self.logger)
+
+                self.logger.debug(f"Launching sub-step {index + 1}/{len(substeps)} of type '{step_type}'.")
+
+                # Define the runner function for the sub-step
+                def run_sub_step(step=sub_step, ctx=cloned_context, idx=index):
+                    self.logger.debug(f"Sub-step {idx + 1} started.")
+                    step.execute(ctx)
+                    self.logger.debug(f"Sub-step {idx + 1} completed.")
+
+                # Submit the sub-step for execution
+                future = executor.submit(run_sub_step)
+                futures.append(future)
+
+                # Optional delay between launching each sub-step
+                if self.config.delay > 0 and index < len(substeps) - 1:
+                    self.logger.debug(f"Delaying launch of next sub-step by {self.config.delay} seconds.")
+                    time.sleep(self.config.delay)
+
+            # Wait for all futures to complete, handling any exception immediately (fail-fast behavior)
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as exc:
+                    error_occurred = exc
+                    self.logger.error(f"A sub-step raised an exception: {exc}. Cancelling pending substeps.")
+                    # Cancel pending substeps
+                    for f in futures:
+                        if not f.done():
+                            f.cancel()
+                    # Shutdown executor immediately, cancelling futures if supported
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    raise exc
+        finally:
+            executor.shutdown(wait=True)
+
+        self.logger.info(f"ParallelStep completed: {len(substeps)} substeps executed.")
+
+
+=== File: recipe_executor/steps/read_files.py ===
+import os
+import logging
+from typing import List, Union, Optional, Dict
+
+from recipe_executor.steps.base import BaseStep, StepConfig
+from recipe_executor.context import Context
+from recipe_executor.utils import render_template
+
+
+class ReadFilesConfig(StepConfig):
+    """
+    Configuration for ReadFilesStep.
+
+    Fields:
+        path (Union[str, List[str]]): Path or list of paths to the file(s) to read (may be templated).
+        artifact (str): Name to store the file contents in context.
+        optional (bool): Whether to continue if a file is not found.
+        merge_mode (str): How to handle multiple files' content. Options:
+            - "concat" (default): Concatenate all files with newlines between filenames + contents
+            - "dict": Store a dictionary with filenames as keys and contents as values
+    """
+    path: Union[str, List[str]]
+    artifact: str
+    optional: bool = False
+    merge_mode: str = "concat"
+
+
+class ReadFilesStep(BaseStep[ReadFilesConfig]):
+    """
+    A step that reads one or more files from the filesystem and stores their contents in the execution context.
+
+    It supports both single file and multiple file operations, template-based path resolution,
+    and flexible merging modes for multiple files.
+    """
+
+    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
+        # Convert dict to ReadFilesConfig instance
+        super().__init__(ReadFilesConfig(**config), logger)
+
+    def execute(self, context: Context) -> None:
+        """
+        Execute the file reading step. Resolves template-based paths, reads file(s), handles optional files,
+        and stores the content into the context using the artifact key.
+
+        Args:
+            context (Context): The execution context.
+
+        Raises:
+            FileNotFoundError: If a required file does not exist.
+        """
+        # Resolve artifact key using template rendering
+        artifact_key = render_template(self.config.artifact, context)
+
+        # Ensure paths is a list
+        paths_input = self.config.path
+        if isinstance(paths_input, str):
+            paths_list: List[str] = [paths_input]
+        else:
+            paths_list = paths_input
+
+        # This will hold the results for multiple files
+        file_contents: Union[str, Dict[str, str]] = "" if self.config.merge_mode == "concat" else {}
+        multiple_files = len(paths_list) > 1
+
+        # Temp storage for individual file contents
+        contents_list: List[str] = []
+        contents_dict: Dict[str, str] = {}
+
+        for path_template in paths_list:
+            # Render the file path using the context
+            rendered_path = render_template(path_template, context)
+            self.logger.debug(f"Attempting to read file: {rendered_path}")
+
+            if not os.path.exists(rendered_path):
+                message = f"File not found: {rendered_path}"
+                if self.config.optional:
+                    self.logger.warning(message + " [optional]")
+                    # For optional files, handle based on merge mode
+                    if multiple_files and self.config.merge_mode == "dict":
+                        # Use the basename as key with empty content
+                        contents_dict[os.path.basename(rendered_path)] = ""
+                    elif multiple_files and self.config.merge_mode == "concat":
+                        # Skip file in concatenation mode
+                        continue
+                    else:
+                        # Single file optional: store empty string
+                        file_contents = ""
+                        self.logger.info(f"Stored empty content for optional file: {rendered_path}")
+                        context[artifact_key] = file_contents
+                        continue
+                else:
+                    self.logger.error(message)
+                    raise FileNotFoundError(message)
+            else:
+                try:
+                    with open(rendered_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    self.logger.info(f"Successfully read file: {rendered_path}")
+                except Exception as e:
+                    self.logger.error(f"Error reading file {rendered_path}: {str(e)}")
+                    raise e
+
+                # Process content based on merge mode
+                if multiple_files:
+                    if self.config.merge_mode == "dict":
+                        key = os.path.basename(rendered_path)
+                        contents_dict[key] = content
+                    else:  # Default to 'concat'
+                        # Append filename and content separated by newlines
+                        formatted = f"{rendered_path}\n{content}"
+                        contents_list.append(formatted)
+                else:
+                    # Single file; simply assign content
+                    file_contents = content
+
+        # Merge file contents if multiple files
+        if multiple_files:
+            if self.config.merge_mode == "dict":
+                file_contents = contents_dict
+            else:  # concat
+                # Join each file's formatted content with double newlines
+                file_contents = "\n\n".join(contents_list)
+
+        # Store the final content under the artifact key in the context
+        context[artifact_key] = file_contents
+        self.logger.info(f"Stored file content under key: '{artifact_key}'")
 
 
 === File: recipe_executor/steps/registry.py ===
@@ -1253,18 +1300,18 @@ from typing import Dict, Type
 
 from recipe_executor.steps.base import BaseStep
 
-# Global dictionary to store step registrations
+# Global registry for step implementations
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {}
 
 
 === File: recipe_executor/steps/write_files.py ===
 import os
 import logging
-from typing import List, Optional
+from typing import List, Union, Any
 
 from recipe_executor.steps.base import BaseStep, StepConfig
-from recipe_executor.models import FileSpec, FileGenerationResult
 from recipe_executor.context import Context
+from recipe_executor.models import FileSpec, FileGenerationResult
 from recipe_executor.utils import render_template
 
 
@@ -1272,74 +1319,89 @@ class WriteFilesConfig(StepConfig):
     """
     Config for WriteFilesStep.
 
-    Attributes:
-        artifact (str): Name of the context key holding a FileGenerationResult or List[FileSpec].
-        root (str): Optional base path to prepend to all output file paths.
+    Fields:
+        artifact: Name of the context key holding a FileGenerationResult or List[FileSpec].
+        root: Optional base path to prepend to all output file paths.
     """
     artifact: str
-    root: str = "."
+    root: str = "." 
 
 
 class WriteFilesStep(BaseStep[WriteFilesConfig]):
     """
-    WriteFilesStep writes generated files to disk based on the content in the context.
-    It supports both FileGenerationResult and list of FileSpec formats.
-    It renders file paths using templates, creates necessary directories, and writes the file content.
+    WriteFilesStep component responsible for writing generated files to disk.
+
+    It supports both FileGenerationResult and List[FileSpec] formats, creates directories 
+    as needed, applies template rendering to the file paths, and logs file operation details.
     """
 
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        # Convert dict to WriteFilesConfig using StepConfig capabilities
+    def __init__(self, config: dict, logger: Any = None) -> None:
         super().__init__(WriteFilesConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        # Retrieve the artifact from the context
-        data = context.get(self.config.artifact)
-        if data is None:
-            raise ValueError(f"No artifact found at key: {self.config.artifact}")
+        # Retrieve the files artifact from the context using the configured artifact key
+        artifact_key = self.config.artifact
+        if artifact_key not in context:
+            error_msg = f"Artifact '{artifact_key}' not found in the context."
+            self.logger.error(error_msg)
+            raise KeyError(error_msg)
 
-        # Determine the list of files to write
-        files: List[FileSpec] = []
-        if isinstance(data, FileGenerationResult):
-            files = data.files
-        elif isinstance(data, list) and all(isinstance(f, FileSpec) for f in data):
-            files = data
+        raw_files = context[artifact_key]
+
+        # Determine if raw_files is a FileGenerationResult or list of FileSpec
+        files_to_write: List[FileSpec] = []
+        if isinstance(raw_files, FileGenerationResult):
+            files_to_write = raw_files.files
+        elif isinstance(raw_files, list):
+            # Validate that every element in the list is a FileSpec
+            if all(isinstance(f, FileSpec) for f in raw_files):
+                files_to_write = raw_files
+            else:
+                error_msg = f"Artifact '{artifact_key}' does not contain valid FileSpec objects."
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
         else:
-            raise TypeError("Expected FileGenerationResult or list of FileSpec objects")
+            error_msg = f"Artifact '{artifact_key}' must be a FileGenerationResult or a list of FileSpec, got {type(raw_files)}."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
 
-        try:
-            # Render the output root path using template rendering
-            output_root = render_template(self.config.root, context)
-        except Exception as e:
-            self.logger.error(f"Failed to render template for root path: {e}")
-            raise ValueError(f"Failed to render template for root path: {e}")
-
-        # Process each file in the list
-        for file in files:
+        # Render the root template and ensure it's a proper directory path
+        rendered_root = render_template(self.config.root, context)
+        if not os.path.isdir(rendered_root):
             try:
-                # Render the file path using template rendering
-                rel_path = render_template(file.path, context)
-                full_path = os.path.join(output_root, rel_path)
-
-                # Log debug information before writing
-                self.logger.debug(f"Writing file at path: {full_path} with content size: {len(file.content)}")
-
-                # Create parent directories if they don't exist
-                parent_dir = os.path.dirname(full_path)
-                if parent_dir and not os.path.exists(parent_dir):
-                    os.makedirs(parent_dir, exist_ok=True)
-
-                # Write the file content using UTF-8 encoding
-                with open(full_path, "w", encoding="utf-8") as f:
-                    f.write(file.content)
-
-                # Log success of file write operation
-                self.logger.info(f"Wrote file: {full_path} (size: {len(file.content)} bytes)")
-            except IOError as ioe:
-                self.logger.error(f"I/O error writing file: {ioe}")
-                raise
+                os.makedirs(rendered_root, exist_ok=True)
+                self.logger.debug(f"Created directory: {rendered_root}")
             except Exception as e:
-                self.logger.error(f"Error processing file {file.path}: {e}")
-                raise
+                error_msg = f"Failed to create root directory '{rendered_root}': {str(e)}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+
+        # Write each file
+        for file_spec in files_to_write:
+            # Render file path using the current context
+            rendered_file_path = render_template(file_spec.path, context)
+            # Combine with rendered root
+            full_path = os.path.join(rendered_root, rendered_file_path)
+            parent_dir = os.path.dirname(full_path)
+            if not os.path.isdir(parent_dir):
+                try:
+                    os.makedirs(parent_dir, exist_ok=True)
+                    self.logger.debug(f"Created directory: {parent_dir}")
+                except Exception as e:
+                    error_msg = f"Failed to create directory '{parent_dir}': {str(e)}"
+                    self.logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+            
+            # Log debug information before writing
+            self.logger.debug(f"Writing file '{full_path}' with content length {len(file_spec.content)}")
+            try:
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(file_spec.content)
+                self.logger.info(f"Successfully wrote file '{full_path}' (size: {len(file_spec.content)} bytes)")
+            except Exception as e:
+                error_msg = f"Error writing file '{full_path}': {str(e)}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
 
 
 === File: recipe_executor/utils.py ===

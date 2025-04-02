@@ -2,22 +2,22 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{candidate_spec_path}}",
       "artifact": "candidate_spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
       "artifact": "component_docs_spec_guide"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },
@@ -52,22 +52,22 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{candidate_spec_path}}",
       "artifact": "candidate_spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
       "artifact": "component_docs_spec_guide"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },
@@ -278,22 +278,22 @@ def admin_route():
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{candidate_spec_path}}",
       "artifact": "candidate_spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
       "artifact": "component_docs_spec_guide"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },
@@ -322,22 +322,22 @@ def admin_route():
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{project_recipe_path}}/{{component_id}}/{{component_id}}_spec.md",
       "artifact": "spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{project_recipe_path}}/{{component_id}}/{{component_id}}_docs.md",
       "artifact": "usage_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },
@@ -509,27 +509,27 @@ result = {component_instance}.{method2_name}({example_params2})
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{target_project}}/components/{{component_id}}/{{component_id}}.py",
       "artifact": "existing_code"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{project_recipe_path}}/components/{{component_id}}/{{component_id}}_spec.md",
       "artifact": "spec"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{project_recipe_path}}/components/{{component_id}}/{{component_id}}_docs.md",
       "artifact": "usage_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
       "artifact": "implementation_philosophy"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
       "artifact": "modular_design_philosophy"
     },
@@ -670,13 +670,23 @@ If no special integration considerations exist, explicitly state "None". -->
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/docs_template.md",
       "artifact": "docs_template"
     },
     {
+      "type": "read_files",
+      "path": "recipes/recipe_executor/components/executor/executor_docs.md",
+      "artifact": "example_01"
+    },
+    {
+      "type": "read_files",
+      "path": "recipes/recipe_executor/components/context/context_docs.md",
+      "artifact": "example_02"
+    },
+    {
       "type": "generate",
-      "prompt": "You are an expert developer creating component documentation. Based on the component specification and information, create comprehensive usage documentation following the template structure.\n\nComponent Specification:\n{{generated_spec}}\n\nComponent ID: {{component_id}}\nComponent Name: {{component_name}}\nModule Path: {{module_path|default:''}}\nComponent Type: {{component_type|default:''}}\n\nDocumentation Template:\n{{docs_template}}\n\nUse the following guides for context:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\nIMPORTANT GUIDELINES:\n1. Create complete, detailed documentation for the component\n2. Include clear examples, method documentation, and integration guidance\n3. Within the documentation, use the component_id (\"{{component_id}}\") as the base name for all classes, modules, and file references unless explicitly overridden in the candidate spec\n4. Format your response as a FileGenerationResult with a single file named \"{{component_id}}_docs.md\"\n\nDo not include the component name or other text in the filename - it must be exactly \"{{component_id}}_docs.md\".",
+      "prompt": "You are an expert developer creating component documentation. Based on the component specification and information, create comprehensive usage documentation following the template structure.\n\nComponent Specification:\n{{generated_spec}}\n\nComponent ID: {{component_id}}\nComponent Name: {{component_name}}\nModule Path: {{module_path|default:''}}\nComponent Type: {{component_type|default:''}}\n\nDocumentation Template:\n{{docs_template}}\n\nUse the following guides for context:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\nHere are two samples to give a sense of the detail level and writing style to consider for the new files:\n<EXAMPLE_01>\n{{ example_01 }}\n</EXAMPLE_01>\n<EXAMPLE_02>\n{{ example_02 }}\n</EXAMPLE_02>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\nIMPORTANT GUIDELINES:\n1. Create complete, detailed documentation for the component\n2. Include clear examples, method documentation, and integration guidance\n3. Within the documentation, use the component_id (\"{{component_id}}\") as the base name for all classes, modules, and file references unless explicitly overridden in the candidate spec\n4. Format your response as a FileGenerationResult with a single file named \"{{component_id}}_docs.md\"\n\nDo not include the component name or other text in the filename - it must be exactly \"{{component_id}}_docs.md\".",
       "model": "{{model|default:'openai:o3-mini'}}",
       "artifact": "generated_doc"
     },
@@ -716,12 +726,12 @@ If no special integration considerations exist, explicitly state "None". -->
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/create_recipe_template.json",
       "artifact": "create_recipe_template"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/edit_recipe_template.json",
       "artifact": "edit_recipe_template"
     },
@@ -744,19 +754,29 @@ If no special integration considerations exist, explicitly state "None". -->
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/spec_template.md",
       "artifact": "spec_template"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
+      "path": "recipes/recipe_executor/components/executor/executor_spec.md",
+      "artifact": "example_01"
+    },
+    {
+      "type": "read_files",
+      "path": "recipes/recipe_executor/components/context/context_spec.md",
+      "artifact": "example_02"
+    },
+    {
+      "type": "read_files",
       "path": "{{output_root|default:'output'}}/{{target_project}}/components/{{component_id}}/{{component_id}}_docs.md",
       "artifact": "generated_docs",
       "optional": true
     },
     {
       "type": "generate",
-      "prompt": "You are an expert developer creating a formal component specification. Based on the candidate specification and component information, create a detailed specification document following the template structure.\n\nCandidate Specification:\n{{candidate_spec}}\n\nComponent ID: {{component_id}}\nComponent Name: {{component_name}}\nModule Path: {{module_path|default:''}}\nComponent Type: {{component_type|default:''}}\nKey Dependencies: {{key_dependencies|default:''}}\n\nSpecification Template:\n{{spec_template}}\n\nUse the following guides for context:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<MODULAR_DESIGN_PHILOSOPHY>\n{{modular_design_philosophy}}\n</MODULAR_DESIGN_PHILOSOPHY>\n\nIMPORTANT GUIDELINES:\n1. Create a complete, detailed specification for the component\n2. Within the specification, use the component_id (\"{{component_id}}\") as the base name for all classes, modules, and file references unless explicitly overridden in the candidate spec\n3. Format your response as a FileGenerationResult with a single file named \"{{component_id}}_spec.md\"\n\nDo not include the component name or other text in the filename - it must be exactly \"{{component_id}}_spec.md\".{% if generated_docs %}\n\nHere are the component docs so that you can see what is already being covered:\n<COMPONENT_DOCS>\n{{generated_docs}}\n</COMPONENT_DOCS>{% endif %}",
+      "prompt": "You are an expert developer creating a formal component specification. Based on the candidate specification and component information, create a detailed specification document following the template structure.\n\nCandidate Specification:\n{{candidate_spec}}\n\nComponent ID: {{component_id}}\nComponent Name: {{component_name}}\nModule Path: {{module_path|default:''}}\nComponent Type: {{component_type|default:''}}\nKey Dependencies: {{key_dependencies|default:''}}\n\nSpecification Template:\n{{spec_template}}\n\nUse the following guides for context:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\nHere are two samples to give a sense of the detail level and writing style to consider for the new files:\n<EXAMPLE_01>\n{{ example_01 }}\n</EXAMPLE_01>\n<EXAMPLE_02>\n{{ example_02 }}\n</EXAMPLE_02>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<MODULAR_DESIGN_PHILOSOPHY>\n{{modular_design_philosophy}}\n</MODULAR_DESIGN_PHILOSOPHY>\n\nIMPORTANT GUIDELINES:\n1. Create a complete, detailed specification for the component\n2. Within the specification, use the component_id (\"{{component_id}}\") as the base name for all classes, modules, and file references unless explicitly overridden in the candidate spec\n3. Format your response as a FileGenerationResult with a single file named \"{{component_id}}_spec.md\"\n\nDo not include the component name or other text in the filename - it must be exactly \"{{component_id}}_spec.md\".{% if generated_docs %}\n\nHere are the component docs so that you can see what is already being covered:\n<COMPONENT_DOCS>\n{{generated_docs}}\n</COMPONENT_DOCS>{% endif %}",
       "model": "{{model|default:'openai:o3-mini'}}",
       "artifact": "generated_spec"
     },

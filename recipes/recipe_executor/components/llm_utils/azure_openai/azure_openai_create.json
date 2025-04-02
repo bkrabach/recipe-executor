@@ -1,12 +1,12 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/AZURE_IDENTITY_CLIENT_DOCS.md",
       "artifact": "azure_identity_client_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/PYDANTIC_AI_DOCS.md",
       "artifact": "pydantic_ai_docs"
     },

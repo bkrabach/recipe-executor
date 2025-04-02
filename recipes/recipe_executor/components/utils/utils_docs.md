@@ -107,7 +107,7 @@ except ValueError as e:
 The primary use of template rendering is in step execution:
 
 ```python
-# Example from ReadFileStep.execute()
+# Example from ReadFilesStep.execute()
 def execute(self, context: Context) -> None:
     # Render the path using the current context
     path = render_template(self.config.path, context)
@@ -129,7 +129,7 @@ Templates are typically used in recipe step configurations:
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "specs/{{component_id}}_spec.md",
       "artifact": "component_spec"
     },

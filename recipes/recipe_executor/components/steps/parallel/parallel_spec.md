@@ -43,7 +43,7 @@ None
 
 ## Output Files
 
-- `recipe_executor/steps/parallel/parallel.py` - Implementation of the ParallelStep class
+- `steps/parallel.py` - Implementation of the ParallelStep class
 
 ## Logging
 

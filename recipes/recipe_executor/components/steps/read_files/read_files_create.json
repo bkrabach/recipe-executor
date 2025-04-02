@@ -1,17 +1,17 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
@@ -19,7 +19,7 @@
       "type": "execute_recipe",
       "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
       "context_overrides": {
-        "component_id": "read_file",
+        "component_id": "read_files",
         "component_path": "/steps",
         "existing_code": "{{existing_code}}",
         "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"

@@ -1,12 +1,12 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/create_recipe_template.json",
       "artifact": "create_recipe_template"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "recipes/blueprint_generator/includes/edit_recipe_template.json",
       "artifact": "edit_recipe_template"
     },

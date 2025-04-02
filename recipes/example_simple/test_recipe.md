@@ -5,7 +5,7 @@ This recipe demonstrates a simple workflow.
 ```json
 [
   {
-    "type": "read_file",
+    "type": "read_files",
     "path": "recipes/example_simple/specs/sample_spec.txt",
     "artifact": "spec_text"
   },

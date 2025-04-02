@@ -1,17 +1,17 @@
 {
   "steps": [
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_docs.md",
       "artifact": "models_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_docs.md",
       "artifact": "azure_openai_docs"
     },
     {
-      "type": "read_file",
+      "type": "read_files",
       "path": "ai_context/PYDANTIC_AI_DOCS.md",
       "artifact": "pydantic_ai_docs"
     },

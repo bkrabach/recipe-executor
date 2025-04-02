@@ -5,7 +5,7 @@ This sub-recipe generates a Python utility module based on additional requiremen
 ```json
 [
   {
-    "type": "read_file",
+    "type": "read_files",
     "path": "recipes/example_complex/specs/sub_spec.txt",
     "artifact": "sub_spec"
   },

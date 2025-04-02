@@ -31,8 +31,8 @@ ConfigType = TypeVar("ConfigType", bound=StepConfig)
 Example of extending StepConfig:
 
 ```python
-class ReadFileConfig(StepConfig):
-    """Configuration for ReadFileStep"""
+class ReadsFileConfig(StepConfig):
+    """Configuration for ReadFilesStep"""
     path: str
     artifact: str
     encoding: str = "utf-8"  # With default value
@@ -149,8 +149,8 @@ def execute(self, context: Context) -> None:
 
 ## Important Notes
 
-1. All step implementations must inherit from BaseStep
-2. The execute method must be implemented by all subclasses
-3. Steps should validate their configuration using Pydantic models
-4. Steps receive and modify a shared Context object
-5. Steps should use the logger for appropriate messages
+- All step implementations must inherit from BaseStep
+- The execute method must be implemented by all subclasses
+- Steps should validate their configuration using Pydantic models
+- Steps receive and modify a shared Context object
+- Steps should use the logger for appropriate messages

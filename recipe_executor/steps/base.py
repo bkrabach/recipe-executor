@@ -1,47 +1,46 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Optional
+from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel
+from recipe_executor.context import Context  # Assumed to exist in the project
 
-from recipe_executor.context import Context
 
-# Base configuration class for all step configurations
 class StepConfig(BaseModel):
-    """Base class for step configurations. Extend this class for specific steps."""
+    """Base class for all step configurations. Extend this class in each step's configuration."""
     pass
 
-# Generic type variable for step configuration types
-ConfigType = TypeVar("ConfigType", bound=StepConfig)
+
+# Type variable for configuration types bound to StepConfig
+ConfigType = TypeVar('ConfigType', bound=StepConfig)
 
 
 class BaseStep(ABC, Generic[ConfigType]):
-    """Base class for all step implementations in the Recipe Executor system.
+    """
+    Base class for all step implementations in the Recipe Executor system.
+    Subclasses must implement the `execute` method.
 
-    Subclasses must implement the execute(context) method. Each step receives a config
-    object and a logger instance. If no logger is provided, a default logger named 'RecipeExecutor'
-    will be used.
+    Each step is initialized with a configuration object and an optional logger.
 
     Args:
-        config (ConfigType): Configuration for the step.
-        logger (Optional[logging.Logger]): Logger instance; defaults to a logger with name "RecipeExecutor".
+        config (ConfigType): Configuration for the step, validated using Pydantic.
+        logger (Optional[logging.Logger]): Logger instance; defaults to the 'RecipeExecutor' logger.
     """
 
     def __init__(self, config: ConfigType, logger: Optional[logging.Logger] = None) -> None:
         self.config: ConfigType = config
         self.logger = logger or logging.getLogger("RecipeExecutor")
-        # Log at debug level when the step component is initialized
-        self.logger.debug(f"Step component initialized with configuration: {self.config.json()}")
+        self.logger.debug(f"Initialized {self.__class__.__name__} with config: {self.config}")
 
     @abstractmethod
     def execute(self, context: Context) -> None:
-        """Execute the step with the given context.
+        """
+        Execute the step using the provided context.
 
         Args:
-            context: A context object for data sharing among steps.
+            context (Context): Shared context for data exchange between steps.
 
         Raises:
-            NotImplementedError: If the subclass does not implement this method.
+            NotImplementedError: Must be implemented in subclasses.
         """
-        raise NotImplementedError("Each step must implement the execute() method.")
-
+        raise NotImplementedError("Each step must implement the `execute()` method.")

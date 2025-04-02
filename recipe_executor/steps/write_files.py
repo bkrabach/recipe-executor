@@ -1,10 +1,10 @@
 import os
 import logging
-from typing import List, Optional
+from typing import List, Union, Any
 
 from recipe_executor.steps.base import BaseStep, StepConfig
-from recipe_executor.models import FileSpec, FileGenerationResult
 from recipe_executor.context import Context
+from recipe_executor.models import FileSpec, FileGenerationResult
 from recipe_executor.utils import render_template
 
 
@@ -12,71 +12,86 @@ class WriteFilesConfig(StepConfig):
     """
     Config for WriteFilesStep.
 
-    Attributes:
-        artifact (str): Name of the context key holding a FileGenerationResult or List[FileSpec].
-        root (str): Optional base path to prepend to all output file paths.
+    Fields:
+        artifact: Name of the context key holding a FileGenerationResult or List[FileSpec].
+        root: Optional base path to prepend to all output file paths.
     """
     artifact: str
-    root: str = "."
+    root: str = "." 
 
 
 class WriteFilesStep(BaseStep[WriteFilesConfig]):
     """
-    WriteFilesStep writes generated files to disk based on the content in the context.
-    It supports both FileGenerationResult and list of FileSpec formats.
-    It renders file paths using templates, creates necessary directories, and writes the file content.
+    WriteFilesStep component responsible for writing generated files to disk.
+
+    It supports both FileGenerationResult and List[FileSpec] formats, creates directories 
+    as needed, applies template rendering to the file paths, and logs file operation details.
     """
 
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        # Convert dict to WriteFilesConfig using StepConfig capabilities
+    def __init__(self, config: dict, logger: Any = None) -> None:
         super().__init__(WriteFilesConfig(**config), logger)
 
     def execute(self, context: Context) -> None:
-        # Retrieve the artifact from the context
-        data = context.get(self.config.artifact)
-        if data is None:
-            raise ValueError(f"No artifact found at key: {self.config.artifact}")
+        # Retrieve the files artifact from the context using the configured artifact key
+        artifact_key = self.config.artifact
+        if artifact_key not in context:
+            error_msg = f"Artifact '{artifact_key}' not found in the context."
+            self.logger.error(error_msg)
+            raise KeyError(error_msg)
 
-        # Determine the list of files to write
-        files: List[FileSpec] = []
-        if isinstance(data, FileGenerationResult):
-            files = data.files
-        elif isinstance(data, list) and all(isinstance(f, FileSpec) for f in data):
-            files = data
+        raw_files = context[artifact_key]
+
+        # Determine if raw_files is a FileGenerationResult or list of FileSpec
+        files_to_write: List[FileSpec] = []
+        if isinstance(raw_files, FileGenerationResult):
+            files_to_write = raw_files.files
+        elif isinstance(raw_files, list):
+            # Validate that every element in the list is a FileSpec
+            if all(isinstance(f, FileSpec) for f in raw_files):
+                files_to_write = raw_files
+            else:
+                error_msg = f"Artifact '{artifact_key}' does not contain valid FileSpec objects."
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
         else:
-            raise TypeError("Expected FileGenerationResult or list of FileSpec objects")
+            error_msg = f"Artifact '{artifact_key}' must be a FileGenerationResult or a list of FileSpec, got {type(raw_files)}."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
 
-        try:
-            # Render the output root path using template rendering
-            output_root = render_template(self.config.root, context)
-        except Exception as e:
-            self.logger.error(f"Failed to render template for root path: {e}")
-            raise ValueError(f"Failed to render template for root path: {e}")
-
-        # Process each file in the list
-        for file in files:
+        # Render the root template and ensure it's a proper directory path
+        rendered_root = render_template(self.config.root, context)
+        if not os.path.isdir(rendered_root):
             try:
-                # Render the file path using template rendering
-                rel_path = render_template(file.path, context)
-                full_path = os.path.join(output_root, rel_path)
-
-                # Log debug information before writing
-                self.logger.debug(f"Writing file at path: {full_path} with content size: {len(file.content)}")
-
-                # Create parent directories if they don't exist
-                parent_dir = os.path.dirname(full_path)
-                if parent_dir and not os.path.exists(parent_dir):
-                    os.makedirs(parent_dir, exist_ok=True)
-
-                # Write the file content using UTF-8 encoding
-                with open(full_path, "w", encoding="utf-8") as f:
-                    f.write(file.content)
-
-                # Log success of file write operation
-                self.logger.info(f"Wrote file: {full_path} (size: {len(file.content)} bytes)")
-            except IOError as ioe:
-                self.logger.error(f"I/O error writing file: {ioe}")
-                raise
+                os.makedirs(rendered_root, exist_ok=True)
+                self.logger.debug(f"Created directory: {rendered_root}")
             except Exception as e:
-                self.logger.error(f"Error processing file {file.path}: {e}")
-                raise
+                error_msg = f"Failed to create root directory '{rendered_root}': {str(e)}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+
+        # Write each file
+        for file_spec in files_to_write:
+            # Render file path using the current context
+            rendered_file_path = render_template(file_spec.path, context)
+            # Combine with rendered root
+            full_path = os.path.join(rendered_root, rendered_file_path)
+            parent_dir = os.path.dirname(full_path)
+            if not os.path.isdir(parent_dir):
+                try:
+                    os.makedirs(parent_dir, exist_ok=True)
+                    self.logger.debug(f"Created directory: {parent_dir}")
+                except Exception as e:
+                    error_msg = f"Failed to create directory '{parent_dir}': {str(e)}"
+                    self.logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+            
+            # Log debug information before writing
+            self.logger.debug(f"Writing file '{full_path}' with content length {len(file_spec.content)}")
+            try:
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(file_spec.content)
+                self.logger.info(f"Successfully wrote file '{full_path}' (size: {len(file_spec.content)} bytes)")
+            except Exception as e:
+                error_msg = f"Error writing file '{full_path}': {str(e)}"
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
