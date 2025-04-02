@@ -1,27 +1,12 @@
 {
   "steps": [
     {
-      "type": "read_file",
-      "path": "ai_context/SPEC_DOC_GUIDE.md",
-      "artifact": "spec_doc_guide"
-    },
-    {
-      "type": "read_file",
-      "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
-      "artifact": "implementation_philosophy"
-    },
-    {
-      "type": "read_file",
-      "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
-      "artifact": "modular_design_philosophy"
+      "type": "execute_recipe",
+      "recipe_path": "recipes/component_blueprint_generator/recipes/create_docs.json"
     },
     {
       "type": "execute_recipe",
       "recipe_path": "recipes/component_blueprint_generator/recipes/create_spec.json"
-    },
-    {
-      "type": "execute_recipe",
-      "recipe_path": "recipes/component_blueprint_generator/recipes/create_doc.json"
     },
     {
       "type": "execute_recipe",

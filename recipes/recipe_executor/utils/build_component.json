@@ -8,7 +8,7 @@
     {
       "type": "read_file",
       "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
-      "artifact": "usage_doc",
+      "artifact": "usage_docs",
       "optional": true
     },
     {
@@ -20,7 +20,7 @@
         "output_path": "recipe_executor{{component_path}}",
         "language": "{{language|default:'python'}}",
         "spec": "{{spec}}",
-        "usage_doc": "{{usage_doc}}",
+        "usage_docs": "{{usage_docs}}",
         "existing_code": "{{existing_code}}",
         "additional_content": "{{additional_content}}"
       }

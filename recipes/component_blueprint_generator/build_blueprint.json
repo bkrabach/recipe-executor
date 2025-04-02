@@ -7,8 +7,8 @@
     },
     {
       "type": "read_file",
-      "path": "ai_context/SPEC_DOC_GUIDE.md",
-      "artifact": "spec_doc_guide"
+      "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
+      "artifact": "component_docs_spec_guide"
     },
     {
       "type": "read_file",

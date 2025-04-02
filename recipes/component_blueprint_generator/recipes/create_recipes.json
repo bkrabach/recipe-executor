@@ -19,7 +19,7 @@
     {
       "type": "write_files",
       "artifact": "recipe_files",
-      "root": "{{output_root|default:'output'}}/{{target_project}}/recipes"
+      "root": "{{output_root|default:'output'}}/{{target_project}}/components/{{component_id}}"
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "type": "read_file",
+      "path": "recipes/component_blueprint_generator/includes/docs_template.md",
+      "artifact": "docs_template"
+    },
+    {
+      "type": "generate",
+      "prompt": "You are an expert developer creating component documentation. Based on the component specification and information, create comprehensive usage documentation following the template structure.\n\nComponent Specification:\n{{generated_spec}}\n\nComponent ID: {{component_id}}\nComponent Name: {{component_name}}\nModule Path: {{module_path|default:''}}\nComponent Type: {{component_type|default:''}}\n\nDocumentation Template:\n{{docs_template}}\n\nUse the following guides for context:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\nIMPORTANT GUIDELINES:\n1. Create complete, detailed documentation for the component\n2. Include clear examples, method documentation, and integration guidance\n3. Within the documentation, use the component_id (\"{{component_id}}\") as the base name for all classes, modules, and file references unless explicitly overridden in the candidate spec\n4. Format your response as a FileGenerationResult with a single file named \"{{component_id}}_docs.md\"\n\nDo not include the component name or other text in the filename - it must be exactly \"{{component_id}}_docs.md\".",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "generated_doc"
+    },
+    {
+      "type": "write_files",
+      "artifact": "generated_doc",
+      "root": "{{output_root|default:'output'}}/{{target_project}}/components/{{component_id}}"
+    }
+  ]
+}
