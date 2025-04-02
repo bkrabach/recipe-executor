@@ -4,6 +4,10 @@ This document provides guidance for developers working on the Recipe Extractor p
 
 These are the early days of using LLMs for assistance in software development in this particular way and it has a lot of benefits and also introduces some new challenges. The goal of this project is to help us accelerate our own work as much as possible while also encoding our learnings back into automations that we can re-use for further acceleration and to share the knowledge and automations with others. This is a new way of working and we are all learning together.
 
+Please do not open issues for this project. There are so many things that do not work as we want yet and we are well aware of and won't have time to even go after all of them. If you find value in the current state, great! If you don't, thanks for checking it out and feel free to check back in later.
+
+Due to the expectation of frequent breaking changes, we encourage you to fork the project, work with something that works for you, hack on it, experiment with it, share your learnings, and help us all learn together. We are all learning together and we appreciate your understanding and support as we figure this out. Don't be quick to bring in the latest changes from upstream until you are ready to do so - and when you do, try passing the updated `ai_context/generated` files + your recipes/specs/docs to your assistant/LLM and see if it can help you with the changes. If it can't, then you can always revert back to your forked version. This is a new way of working and we are all learning together.
+
 ## Contributing to the Project
 
 **MOST CONTRIBUTIONS TO THIS PROJECT _WILL_ BE REJECTED**
