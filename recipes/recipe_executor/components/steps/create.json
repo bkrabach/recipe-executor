@@ -25,7 +25,7 @@
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_file/read_file_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_create.json"
         },
         {
           "type": "execute_recipe",
