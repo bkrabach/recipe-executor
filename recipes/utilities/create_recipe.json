@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "{{input|default:'__ERROR__: Request file missing'}}",
+      "artifact": "recipe_idea",
+      "optional": true
+    },
+    {
+      "type": "read_files",
+      "path": [
+        "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
+        "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+        "ai_context/generated/recipe_executor_code_files.md",
+        "ai_context/generated/recipe_executor_recipe_files.md"
+      ],
+      "artifact": "context_files"
+    },
+    {
+      "type": "read_files",
+      "path": "{{files}}",
+      "artifact": "additional_files",
+      "optional": true
+    },
+    {
+      "type": "generate",
+      "prompt": "Create a new recipe file based on the following content:\n- Recipe Idea: {{recipe_idea}}\n- Context Files: {{context_files}}\n{% if additional_files != '' %}\n- Additional Files: {{additional_files}}\n{% endif %}\n\nSave the generated recipe file as {{target_file|default:'generated_recipe.json'}}, unless the `target_file` is set to a different value in the recipe_idea.",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "generated_recipe"
+    },
+    {
+      "type": "write_files",
+      "artifact": "generated_recipe",
+      "root": "{{output_root|default:'output'}}"
+    }
+  ]
+}

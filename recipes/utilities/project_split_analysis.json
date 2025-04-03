@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "{{input}}",
+      "artifact": "project_definition",
+      "optional": true
+    },
+    {
+      "type": "read_files",
+      "path": [
+        "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
+        "ai_context/IMPLEMENTATION_PHILOSOPHY.md"
+      ],
+      "artifact": "context_files",
+      "merge_mode": "concat"
+    },
+    {
+      "type": "read_files",
+      "path": "{{files}}",
+      "artifact": "additional_files",
+      "optional": true,
+      "merge_mode": "concat"
+    },
+    {
+      "type": "generate",
+      "prompt": "Analyze the project defined below using the provided documents.\n\nProject Definition:\n{{project_definition}}\n\nContext Documents:\n{{context_files}}\n\nAdditional Files:\n{{additional_files}}\n\nBased on the modular design philosophy and implementation principles contained in these documents, provide an in-depth analysis of the project and break it down into a list of appropriately sized components. The analysis output should be formatted for use as a report and should be saved to project_component_breakdown_analysis.md.",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "generated_analysis"
+    },
+    {
+      "type": "write_files",
+      "artifact": "generated_analysis",
+      "root": "{{output_root|default:'output'}}"
+    }
+  ]
+}

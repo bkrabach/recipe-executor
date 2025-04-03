@@ -1,0 +1,51 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "{{candidate_spec_path}}",
+      "artifact": "candidate_spec"
+    },
+    {
+      "type": "read_files",
+      "path": "{{clarification_questions_path}}",
+      "artifact": "clarification_questions"
+    },
+    {
+      "type": "read_files",
+      "path": "{{context_files}}",
+      "artifact": "context_content"
+    },
+    {
+      "type": "read_files",
+      "path": "ai_context/COMPONENT_DOCS_SPEC_GUIDE.md",
+      "artifact": "component_docs_spec_guide"
+    },
+    {
+      "type": "read_files",
+      "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+      "artifact": "implementation_philosophy"
+    },
+    {
+      "type": "read_files",
+      "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
+      "artifact": "modular_design_philosophy"
+    },
+    {
+      "type": "generate",
+      "prompt": "You are an expert developer helping to improve a candidate component specification by answering clarification questions. Based on the candidate specification, the clarification questions, the provided context files, and understanding of effective component design, create an comprehensive set of answers that would help make the specification complete and implementable.\n\nCandidate Specification:\n{{candidate_spec}}\n\nClarification Questions:\n<CLARIFICATION_QUESTIONS>\n{{clarification_questions}}\n</CLARIFICATION_QUESTIONS>\n\nContext Files:\n<CONTEXT_FILES>\n{{context_content}}\n</CONTEXT_FILES>\n\nUse the following guides to understand what information is needed in an effective specification:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<MODULAR_DESIGN_PHILOSOPHY>\n{{modular_design_philosophy}}\n</MODULAR_DESIGN_PHILOSOPHY>\n\nEnsure your answers are clear, specific, and directly relevant to the candidate specification. For each question, provide a detailed answer that addresses the question and explains why this information is important for implementation. If a question is not applicable or cannot be answered, explain why.",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "clarification_answers"
+    },
+    {
+      "type": "generate",
+      "prompt": "You are an expert developer improving a candidate component specification by incorporating answers obtained for some clarifying questions that were asked of the current candidate specification. Based on the candidate specification, the clarification questions and answers, the provided context files, and understanding of effective component design, create an updated version of the specification that is more complete and implementable.\n\nCandidate Specification:\n{{candidate_spec}}\n\nClarification Questions:\n<CLARIFICATION_QUESTIONS>\n{{clarification_questions}}\n</CLARIFICATION_QUESTIONS>\n\nClarification Answers:\n<CLARIFICATION_ANSWERS>\n{{clarification_answers}}\n</CLARIFICATION_ANSWERS>\n\nContext Files:\n<CONTEXT_FILES>\n{{context_content}}\n</CONTEXT_FILES>\n\nUse the following guides to understand what information is needed in an effective specification:\n<COMPONENT_DOCS_SPEC_GUIDE>\n{{component_docs_spec_guide}}\n</COMPONENT_DOCS_SPEC_GUIDE>\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<MODULAR_DESIGN_PHILOSOPHY>\n{{modular_design_philosophy}}\n</MODULAR_DESIGN_PHILOSOPHY>\n\nEnsure your updates are clear, specific, and directly relevant to the candidate specification scope of work. While you are aware of the rest of the project beyond this component, this specification is meant to be built in isolation from the rest by someone who will not have context on the other components or surrounding system, so please write it up accordingly.\n\nFormat your response as a FileGenerationResult with a single file named '<component_id>_candidate_spec_revised.md' (use the component name if it can be identified).",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "revised_candidate_spec"
+    },
+    {
+      "type": "write_files",
+      "artifact": "revised_candidate_spec",
+      "root": "{{output_root|default:'output'}}"
+    }
+  ]
+}
