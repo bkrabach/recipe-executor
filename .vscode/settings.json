@@ -64,6 +64,7 @@
     "generatecode",
     "levelname",
     "PYDANTIC",
+    "setrecursionlimit",
     "stype",
     "substep",
     "substeps",
