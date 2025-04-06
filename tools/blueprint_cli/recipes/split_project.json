@@ -1,0 +1,34 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "{{input}}",
+      "artifact": "project_spec",
+      "optional": false
+    },
+    {
+      "type": "read_files",
+      "path": "{{analysis_result}}",
+      "artifact": "analysis_result_json",
+      "optional": false
+    },
+    {
+      "type": "read_files",
+      "path": "{{files}}",
+      "artifact": "context_files",
+      "optional": true,
+      "merge_mode": "concat"
+    },
+    {
+      "type": "generate",
+      "prompt": "# Project Splitting Task\n\nYou are an expert software architect tasked with splitting a project into multiple components based on a previous analysis.\n\n## Project Specification\n\n<PROJECT_SPEC>\n{{project_spec}}\n</PROJECT_SPEC>\n\n## Analysis Result\n\n<ANALYSIS_RESULT>\n{{analysis_result_json}}\n</ANALYSIS_RESULT>\n\n{% if context_files != '' %}\n## Context Files\n\n<CONTEXT_FILES>\n{{context_files}}\n</CONTEXT_FILES>\n{% endif %}\n\n## Your Task\n\nCreate detailed component specifications for each component identified in the analysis result. For each component, create a complete specification that includes:\n\n1. Component name and ID (from the analysis)\n2. Purpose and responsibility\n3. Core requirements and functionality\n4. API and interfaces\n5. Dependencies (both internal and external)\n6. Implementation considerations\n7. Error handling approach\n8. Testing strategy\n\nEach component specification should be comprehensive enough that it could be implemented independently by a developer who has only this specification and the identified dependencies.\n\n## Output Format\n\nCreate a separate markdown file for each component with the naming pattern `<component_id>_spec.md`.\n\nAdditionally, create a components manifest file that lists all generated components, with the following JSON structure:\n\n```json\n[\n  {\n    \"component_id\": \"component_identifier\",\n    \"component_name\": \"Human Readable Component Name\",\n    \"spec_file\": \"component_identifier_spec.md\",\n    \"description\": \"Brief description of this component\",\n    \"dependencies\": [\"dependency_1\", \"dependency_2\"]\n  },\n  ...\n]\n```\n\nFilename should be `components_manifest.json` with no directories or paths.",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "component_specs"
+    },
+    {
+      "type": "write_files",
+      "artifact": "component_specs",
+      "root": "{{output_root}}"
+    }
+  ]
+}
