@@ -7,7 +7,7 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 
 from recipe_executor.context import Context
-from executor import Executor
+from recipe_executor.executor import Executor
 from recipe_executor.logger import init_logger
 
 
@@ -29,9 +29,9 @@ def parse_context(context_list: Optional[list]) -> Dict[str, str]:
         return context_dict
 
     for item in context_list:
-        if '=' not in item:
+        if "=" not in item:
             raise ValueError(f"Invalid context format: '{item}'. Expected key=value.")
-        key, value = item.split('=', 1)
+        key, value = item.split("=", 1)
         if not key:
             raise ValueError(f"Context key cannot be empty in pair: '{item}'.")
         context_dict[key] = value
@@ -44,21 +44,10 @@ def main() -> None:
 
     # Setup argument parser
     parser = argparse.ArgumentParser(description="Recipe Executor Tool")
+    parser.add_argument("recipe_path", type=str, help="Path to the recipe file to execute")
+    parser.add_argument("--log-dir", type=str, default="logs", help="Directory for log files (default: logs)")
     parser.add_argument(
-        "recipe_path",
-        type=str,
-        help="Path to the recipe file to execute"
-    )
-    parser.add_argument(
-        "--log-dir",
-        type=str,
-        default="logs",
-        help="Directory for log files (default: logs)"
-    )
-    parser.add_argument(
-        "--context",
-        action="append",
-        help="Context values as key=value pairs (can be used multiple times)"
+        "--context", action="append", help="Context values as key=value pairs (can be used multiple times)"
     )
 
     args = parser.parse_args()
@@ -82,11 +71,11 @@ def main() -> None:
     logger.debug(f"Starting main function with arguments: {args}")
     logger.debug(f"Context artifacts: {context_artifacts}")
 
-    # Create the execution context
-    context = Context(artifacts=context_artifacts)
-
     # Initialize Executor
     executor = Executor()
+
+    # Create the execution context
+    context = Context(executor=executor, artifacts=context_artifacts)
 
     try:
         logger.info("Starting Recipe Executor Tool")
@@ -109,5 +98,5 @@ def main() -> None:
         logger.info(f"Total execution time: {elapsed_time:.2f} seconds")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,5 +1,12 @@
-from typing import Any, Dict, Iterator, Optional
 import copy
+import logging
+from typing import Any, Dict, Iterator, Optional, Protocol, Union
+
+
+class Executor(Protocol):
+    def execute(
+        self, recipe: Union[str, Dict[str, Any]], context: "Context", logger: Optional[logging.Logger] = None
+    ) -> None: ...
 
 
 class Context:
@@ -7,12 +14,17 @@ class Context:
     Context is the shared state container for the Recipe Executor system,
     providing a dictionary-like interface for storing and retrieving artifacts
     along with separate configuration values.
-    
+    Additionally, it provides an executor, for steps that need to execute
+    recipes.
+
     Attributes:
+        executor (Executor): The executor for executing recipes.
         config (Dict[str, Any]): A dictionary holding the configuration values.
     """
 
-    def __init__(self, artifacts: Optional[Dict[str, Any]] = None, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+        self, executor: Executor, artifacts: Optional[Dict[str, Any]] = None, config: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
         Initialize the Context with optional artifacts and configuration.
 
@@ -23,6 +35,7 @@ class Context:
         # Use deep copy to prevent external modifications
         self.__artifacts: Dict[str, Any] = copy.deepcopy(artifacts) if artifacts is not None else {}
         self.config: Dict[str, Any] = copy.deepcopy(config) if config is not None else {}
+        self.executor = executor
 
     def __setitem__(self, key: str, value: Any) -> None:
         """Dictionary-like setting of artifacts."""
@@ -67,4 +80,4 @@ class Context:
         """Return a deep copy of the current context, including artifacts and configuration."""
         cloned_artifacts = copy.deepcopy(self.__artifacts)
         cloned_config = copy.deepcopy(self.config)
-        return Context(artifacts=cloned_artifacts, config=cloned_config)
+        return Context(executor=self.executor, artifacts=cloned_artifacts, config=cloned_config)
