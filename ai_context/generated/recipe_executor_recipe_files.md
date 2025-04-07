@@ -744,7 +744,7 @@ The LLM component provides a unified interface for interacting with various larg
 - Additional LLM providers
 - Enhanced parameter control for model fine-tuning
 
-## Dependency Integration Considerstions
+## Dependency Integration Considerations
 
 ### PydanticAI
 

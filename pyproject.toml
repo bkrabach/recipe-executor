@@ -10,12 +10,19 @@ dependencies = [
     "dotenv>=0.9.9",
     "pydantic-ai>=0.0.46",
     "pydantic-settings>=2.8.1",
+    "pytest>=8.3.5",
     "python-dotenv>=1.1.0",
     "python-liquid>=2.0.1",
 ]
 
 [dependency-groups]
-dev = ["pyright>=1.1.389", "ruff>=0.11.2"]
+dev = [
+    "pyright>=1.1.389",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.11.2",
+]
 
 [tool.uv]
 package = true
