@@ -78,6 +78,13 @@ def build_context_files() -> None:
             "exclude": collect_files.DEFAULT_EXCLUDE,
             "include": [],
         },
+        # Task 6: Collect files from tools/blueprint_cli
+        {
+            "patterns": ["tools/blueprint_cli"],
+            "output": f"{OUTPUT_DIR}/blueprint_cli_code_files.md",
+            "exclude": collect_files.DEFAULT_EXCLUDE + ["ai_context"],
+            "include": [],
+        },
     ]
 
     # Execute each task

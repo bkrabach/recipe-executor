@@ -10,8 +10,35 @@ import sys
 import threading
 from typing import Dict, List, Optional
 
+from config import ProjectConfig
+
 # Global print lock to prevent output interleaving
 print_lock = threading.Lock()
+
+
+def pause_for_user(config: ProjectConfig) -> None:
+    """
+    Pause for user input if auto_run is not enabled.
+
+    Args:
+        config: Project configuration
+    """
+    return  # disabled
+    if config.auto_run:
+        return
+
+    user_input = input("Continue with the next step? (Y/n/all): ").strip().lower()
+    if user_input in ["y", "yes", ""]:
+        return
+    elif user_input in ["n", "no"]:
+        print("Exiting...")
+        sys.exit(0)
+    elif user_input in ["a", "all"]:
+        print("Continuing with all steps...")
+        config.auto_run = True
+    else:
+        print("Invalid input. Please enter 'Y', 'n', or 'all'.")
+        pause_for_user(config)
 
 
 def safe_print(*args, **kwargs):

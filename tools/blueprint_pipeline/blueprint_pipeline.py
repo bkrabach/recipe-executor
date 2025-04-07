@@ -10,30 +10,23 @@ blueprint_pipeline/
 ├── generator.py            # Blueprint and code generation
 └── utils.py                # Utility functions
 """
-from datetime import datetime
+
 import argparse
 import os
 import sys
+from datetime import datetime
 
-from blueprint_pipeline.flow_control import ActionState, FlowControl, pause_and_check
-from blueprint_pipeline.utils import safe_print, find_latest_spec
-
-from blueprint_pipeline.config import parse_args, setup_directories, get_base_context
-from blueprint_pipeline.flow_control import (
-    FlowControl,
-    ActionState,
-    pause_and_check,
-    handle_human_review_feedback
-)
-from blueprint_pipeline.utils import safe_print, find_latest_spec
 from blueprint_pipeline.component_processor import (
     analyze_component_dependencies,
-    process_project_analysis,
+    determine_components_to_process,
     process_component_split,
     process_components_in_parallel,
-    determine_components_to_process
+    process_project_analysis,
 )
+from blueprint_pipeline.config import get_base_context, parse_args, setup_directories
+from blueprint_pipeline.flow_control import ActionState, FlowControl, handle_human_review_feedback, pause_and_check
 from blueprint_pipeline.generator import generate_blueprints_and_code_in_parallel
+from blueprint_pipeline.utils import find_latest_spec, safe_print
 
 
 def main():
@@ -42,7 +35,7 @@ def main():
     args = parse_args()
 
     # Check for resume flag
-    resume = '--resume' in sys.argv
+    resume = "--resume" in sys.argv
     if resume:
         safe_print("Resume mode enabled. Will skip steps with existing output files.")
 
@@ -65,7 +58,7 @@ def main():
 
     # Track completion status for components
     component_status = {}  # component_id -> "complete" or "needs_review"
-    dependency_map = {}    # component_id -> list of component IDs it depends on
+    dependency_map = {}  # component_id -> list of component IDs it depends on
 
     iteration_count = 0
     all_complete = False
@@ -107,9 +100,7 @@ def main():
         # Only run project analysis and split to components on first iteration
         if iteration_count == 1:
             # Step 1: Project Split Analysis
-            result_flow_mode, last_action = process_project_analysis(
-                args, base_context, flow_mode, last_action
-            )
+            result_flow_mode, last_action = process_project_analysis(args, base_context, flow_mode, last_action)
 
             # Return early if the step failed
             if result_flow_mode is None:
@@ -122,9 +113,7 @@ def main():
                 continue
 
             # Step 2: Split to Components
-            result_flow_mode, last_action = process_component_split(
-                args, base_context, flow_mode, last_action
-            )
+            result_flow_mode, last_action = process_component_split(args, base_context, flow_mode, last_action)
 
             # Return early if the step failed
             if result_flow_mode is None:
@@ -138,8 +127,8 @@ def main():
 
         # Determine which components to process in this iteration and analyze dependencies
         component_specs, component_status, dependency_map = determine_components_to_process(
-             args.output_dir, component_status, iteration_count, args.component_filter
-         )
+            args.output_dir, component_status, iteration_count, args.component_filter
+        )
 
         # Log dependency information if verbose
         if args.verbose and dependency_map:
@@ -168,7 +157,7 @@ def main():
             args.verbose,
             flow_mode,
             args.max_workers,
-            dependency_map
+            dependency_map,
         )
 
         # Save component status for possible future resume
@@ -285,7 +274,7 @@ def main():
         args.target_project,
         args.verbose,
         flow_mode,
-        args.max_workers
+        args.max_workers,
     )
 
     # Final Summary
@@ -318,7 +307,9 @@ def main():
     with open(f"{args.output_dir}/pipeline_complete.txt", "w") as f:
         f.write(f"Pipeline completed at: {timestamp}\n")
         f.write(f"Total components: {len(component_status)}\n")
-        f.write(f"Successfully completed components: {len([s for s in component_status.values() if s == 'complete'])}\n")
+        f.write(
+            f"Successfully completed components: {len([s for s in component_status.values() if s == 'complete'])}\n"
+        )
         f.write(f"Successfully generated code for: {len(successful_components)} components\n")
         f.write(f"Failed code generation for: {len(failed_components)} components\n")
 

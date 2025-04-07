@@ -8,14 +8,28 @@
     },
     {
       "type": "read_files",
-      "path": "{{files}}",
-      "artifact": "context_files",
+      "path": "{{guidance_files}}",
+      "artifact": "guidance_files_content",
+      "optional": false,
+      "merge_mode": "concat"
+    },
+    {
+      "type": "read_files",
+      "path": "{{context_files}}",
+      "artifact": "context_files_content",
+      "optional": true,
+      "merge_mode": "concat"
+    },
+    {
+      "type": "read_files",
+      "path": "{{reference_docs}}",
+      "artifact": "reference_docs_content",
       "optional": true,
       "merge_mode": "concat"
     },
     {
       "type": "generate",
-      "prompt": "# Project Analysis Task\n\nYou are an expert software architect analyzing a project specification to determine if it should be split into multiple components according to modular design principles.\n\n## Project Specification\n\n<PROJECT_SPEC>\n{{project_spec}}\n</PROJECT_SPEC>\n\n{% if context_files != '' %}\n## Context Files\n\n<CONTEXT_FILES>\n{{context_files}}\n</CONTEXT_FILES>\n{% endif %}\n\n## Your Task\n\nAnalyze the project specification and determine if it represents a component that is appropriately sized for implementation, or if it should be split into smaller components.\n\nA component is appropriately sized if:\n1. It has a single, well-defined responsibility (follows Single Responsibility Principle)\n2. It has a clear and coherent API\n3. It can be developed and tested independently\n4. It has a reasonable number of dependencies (typically 0-5 external dependencies)\n5. It can be implemented by a single developer in a reasonable timeframe (1-2 weeks)\n\nIf the project needs to be split, briefly outline what the major components should be, with a 1-2 sentence description for each.\n\n## Output Format\n\nProvide your analysis as a JSON object with the following structure:\n\n```json\n{\n  \"needs_splitting\": true/false,\n  \"reasoning\": \"Explanation of your decision\",\n  \"recommended_components\": [\n    {\n      \"component_id\": \"component_identifier\",\n      \"component_name\": \"Human Readable Component Name\",\n      \"description\": \"Brief description of this component\"\n    },\n    ...\n  ]\n}\n```\n\nIf the project doesn't need splitting, the `recommended_components` array should be empty.\n\nComponent IDs should be in snake_case, lowercase, and descriptive of the component's purpose.\n\nFilename should be `project_analysis_result.json` with no directories or paths.",
+      "prompt": "# Project Analysis Task\n\nYou are an expert software architect analyzing a project to determine if it should be split into multiple components according to our modular design guidance philosophy.\n\n## Project Specification (overrides context files or reference docs where discrepancies)\n\n<PROJECT_SPEC>\n{{project_spec}}\n</PROJECT_SPEC>\n\n## Guidance Philosophy (how to make decisions)\n\n<GUIDANCE_FILES>\n{{guidance_files_content}}\n</GUIDANCE_FILES>{% if context_files %}\n\n## Context Files\n\n<CONTEXT_FILES>\n{{context_files_content}}\n</CONTEXT_FILES>{% endif %}{% if reference_docs_content %}\n\n## Reference Docs\n\n<REFERENCE_DOCS>\n{{reference_docs_content}}\n</REFERENCE_DOCS>{% endif %}\n\n## Your Task\n\nAnalyze the project specification and determine if it represents a component that is appropriately sized for implementation, or if it should be split into smaller components, per our modular design guidance philosophy.\n\nIf the project needs to be split, briefly outline what the major components should be, with a 1-2 sentence description for each.\n\n## Output Format\n\nProvide your analysis as a JSON object with the following structure:\n\n```json\n{\n  \"needs_splitting\": true/false,\n  \"reasoning\": \"Explanation of your decision\",\n  \"recommended_components\": [\n    {\n      \"component_id\": \"component_identifier\",\n      \"component_name\": \"Human Readable Component Name\",\n      \"description\": \"Brief description of this component\"\n    }\n  ]\n}\n```\n\nIf the project doesn't need splitting, the `recommended_components` array should be empty.\n\nComponent IDs should be in snake_case, lowercase, and descriptive of the component's purpose.\n\nFilename should be `analysis_result.json` with no directories or paths.",
       "model": "{{model|default:'openai:o3-mini'}}",
       "artifact": "analysis_result"
     },
@@ -26,7 +40,7 @@
     },
     {
       "type": "generate",
-      "prompt": "# Project Analysis Summary\n\nYou are an expert software architect creating a readable summary of a project analysis. You've analyzed a project specification and determined whether it should be split into multiple components.\n\n## Project Specification\n\n<PROJECT_SPEC>\n{{project_spec}}\n</PROJECT_SPEC>\n\n## Analysis Result\n\n<ANALYSIS_RESULT>\n{{analysis_result}}\n</ANALYSIS_RESULT>\n\n## Your Task\n\nCreate a human-readable markdown document that summarizes your analysis. The document should include:\n\n1. A brief overview of the project\n2. Your assessment of whether the project needs to be split and why\n3. If splitting is recommended, a description of each recommended component\n4. Next steps based on your analysis\n\nMake your summary clear, concise, and actionable for the project team.\n\n## Output Format\n\nProvide your summary as a markdown document. The filename should be `project_analysis_summary.md` with no directories or paths.",
+      "prompt": "# Project Analysis Summary\n\nYou are an expert software architect creating a readable summary of a project analysis. You've analyzed a project specification and determined whether it should be split into multiple components.\n\n## Project Specification\n\n<PROJECT_SPEC>\n{{project_spec}}\n</PROJECT_SPEC>\n\n## Analysis Result\n\n<ANALYSIS_RESULT>\n{{analysis_result}}\n</ANALYSIS_RESULT>\n\n## Your Task\n\nCreate a human-readable markdown document that summarizes your analysis. The document should include:\n\n1. A brief overview of the project\n2. Your assessment of whether the project needs to be split and why\n3. If splitting is recommended, a description of each recommended component\n4. Next steps based on your analysis\n\nMake your summary clear, concise, and actionable for the project team.\n\n## Output Format\n\nProvide your summary as a markdown document. The filename should be `analysis_summary.md` with no directories or paths.",
       "model": "{{model|default:'openai:o3-mini'}}",
       "artifact": "analysis_summary"
     },
