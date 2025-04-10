@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The GenerateWithLLMStep component enables recipes to generate content using large language models (LLMs). It serves as the bridge between recipes and the LLM subsystem, handling prompt templating, model selection, and storing generation results in the context.
+The GenerateWithLLMStep component enables recipes to generate content using large language models (LLMs). It serves as the bridge between recipes and the LLM subsystem, handling prompt templating, model selection, and storing generation results in the execution context.
 
 ## Core Requirements
 
@@ -23,17 +23,18 @@ The GenerateWithLLMStep component enables recipes to generate content using larg
 
 ## Logging
 
-- Debug: Log that the LLM call is being made (leave the details to the LLM component to log)
+- Debug: Log when an LLM call is being made (details of the call are handled by the LLM component)
 - Info: None
 
 ## Component Dependencies
 
 ### Internal Components
 
-- **Steps Base** - (Required) Extends BaseStep to implement the step interface
-- **Context** - (Required) Retrieves input values and stores generation results
-- **LLM** - (Required) Uses call_llm function to interact with language models
-- **Utils** - (Required) Uses render_template for dynamic content resolution in prompts and model identifiers
+- **Protocols** – (Required) Uses ContextProtocol for context data access and StepProtocol for the step interface (decouples from concrete Context and BaseStep classes)
+- **Step Interface** – (Required) Implements the step behavior via StepProtocol
+- **Context** – (Required) Uses a context implementing ContextProtocol to retrieve input values and store generation results
+- **LLM** – (Required) Uses the LLM component (e.g. call_llm function) to interact with language models
+- **Utils** – (Required) Uses render_template for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries
 
@@ -56,4 +57,4 @@ None
 
 ## Future Considerations
 
-- Additional LLM parameters (temperature, max tokens, etc.)
+- Additional LLM parameters (e.g. temperature, max tokens, etc.)

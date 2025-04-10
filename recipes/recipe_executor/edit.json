@@ -21,19 +21,15 @@
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm/llm_edit.json"
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_edit.json"
-        },
-        {
-          "type": "execute_recipe",
           "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_edit.json"
         },
         {
           "type": "execute_recipe",
           "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_edit.json"
+        },
+        {
+          "type": "execute_recipe",
+          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_edit.json"
         }
       ],
       "max_concurrency": 0,
@@ -41,7 +37,11 @@
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/edit.json"
+      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/create.json"
+    },
+    {
+      "type": "execute_recipe",
+      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/create.json"
     }
   ]
 }

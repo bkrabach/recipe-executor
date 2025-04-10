@@ -6,13 +6,18 @@
       "artifact": "context_docs"
     },
     {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_docs.md",
+      "artifact": "protocols_docs"
+    },
+    {
       "type": "execute_recipe",
       "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
       "context_overrides": {
         "component_id": "utils",
         "component_path": "/",
         "existing_code": "{{existing_code}}",
-        "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>"
+        "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
       }
     }
   ]

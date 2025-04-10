@@ -70,7 +70,7 @@ You can override specific context values for the sub-recipe execution:
 
 ## Template-Based Values
 
-Both the recipe path and context overrides can include template variables:
+Both the `recipe_path` and `context_overrides` can include template variables:
 
 ```json
 {
@@ -157,8 +157,8 @@ Sub-recipes can be composed to create more complex workflows:
 
 ## Important Notes
 
-- The sub-recipe receives the same context object as the parent recipe
-- Context overrides are applied before sub-recipe execution
+- The sub-recipe receives the **same context object** as the parent recipe (the shared context implements ContextProtocol)
+- Context overrides are applied **before** sub-recipe execution
 - Changes made to the context by the sub-recipe persist after it completes
-- Template variables in both recipe_path and context_overrides are resolved before execution
+- Template variables in both `recipe_path` and `context_overrides` are resolved before execution
 - Sub-recipes can execute their own sub-recipes (nested execution)

@@ -1,4 +1,4 @@
-# Parallel Component Usage
+# ParallelStep Component Usage
 
 The **ParallelStep** component enables the concurrent execution of multiple sub-steps within a recipe. It is ideal for improving performance when independent tasks can be executed in parallel.
 
@@ -44,7 +44,7 @@ STEP_REGISTRY["parallel"] = ParallelStep
 
 ## Basic Usage in Recipes
 
-The ParallelStep allows you to run multiple steps concurrently. Sub-steps are defined within a dedicated `steps` array.
+The ParallelStep allows you to run multiple steps concurrently. Sub-steps are defined within a dedicated `substeps` array.
 
 ### Example Recipe (JSON)
 
@@ -80,8 +80,8 @@ The ParallelStep allows you to run multiple steps concurrently. Sub-steps are de
 
 The ParallelStep is designed to integrate seamlessly with the rest of your recipe:
 
-- **Copies of Context:** All sub-steps are provided a copy of the same context, enabling them to read from common data.
-- **Independent Execution:** Use ParallelStep only for tasks that do not depend on each other nor write back to context beyond the lifecycle of the parallel execution, as the context is discarded after the parallel block completes.
+- **Copies of Context:** All sub-steps are provided a copy of the same context (the shared context implements ContextProtocol), enabling them to read from common data.
+- **Independent Execution:** Use ParallelStep only for tasks that do not depend on each other nor write back to context beyond the parallel block’s lifecycle, as each cloned context is discarded after the parallel block completes.
 
 ## Important Notes
 

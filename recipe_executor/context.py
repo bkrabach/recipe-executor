@@ -1,70 +1,76 @@
-from typing import Any, Dict, Iterator, Optional
 import copy
+from typing import Any, Dict, Iterator, Optional
+
+from recipe_executor.protocols import ContextProtocol
 
 
-class Context:
+class Context(ContextProtocol):
     """
-    Context is the shared state container for the Recipe Executor system,
-    providing a dictionary-like interface for storing and retrieving artifacts
-    along with separate configuration values.
-    
-    Attributes:
-        config (Dict[str, Any]): A dictionary holding the configuration values.
+    Context component for Recipe Executor system.
+
+    Maintains a store for artifacts and configuration values, and provides a dictionary-like interface
+    for accessing and modifying artifacts. Configuration is stored separately in a 'config' attribute.
+
+    Example usage:
+
+        context = Context(artifacts={"input": "data"}, config={"mode": "test"})
+        context["result"] = 42
+        value = context["result"]
+        if "result" in context:
+            print(context["result"])
+
+    The clone() method creates a deep copy of both artifacts and configuration, ensuring isolation when needed.
     """
 
     def __init__(self, artifacts: Optional[Dict[str, Any]] = None, config: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Initialize the Context with optional artifacts and configuration.
-
-        Args:
-            artifacts: Initial artifacts to store
-            config: Configuration values
-        """
-        # Use deep copy to prevent external modifications
-        self.__artifacts: Dict[str, Any] = copy.deepcopy(artifacts) if artifacts is not None else {}
+        # Deep copy to ensure caller modifications do not affect internal state
+        self._artifacts: Dict[str, Any] = copy.deepcopy(artifacts) if artifacts is not None else {}
         self.config: Dict[str, Any] = copy.deepcopy(config) if config is not None else {}
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        """Dictionary-like setting of artifacts."""
-        self.__artifacts[key] = value
-
     def __getitem__(self, key: str) -> Any:
-        """Dictionary-like access to artifacts.
+        if key in self._artifacts:
+            return self._artifacts[key]
+        raise KeyError(f"Key '{key}' not found in Context.")
 
-        Raises:
-            KeyError: If the key does not exist in the artifacts.
-        """
-        if key not in self.__artifacts:
+    def __setitem__(self, key: str, value: Any) -> None:
+        self._artifacts[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        if key in self._artifacts:
+            del self._artifacts[key]
+        else:
             raise KeyError(f"Key '{key}' not found in Context.")
-        return self.__artifacts[key]
 
-    def get(self, key: str, default: Optional[Any] = None) -> Any:
-        """Get an artifact with an optional default value."""
-        return self.__artifacts.get(key, default)
-
-    def __contains__(self, key: str) -> bool:
-        """Check if a key exists in artifacts."""
-        return key in self.__artifacts
+    def __contains__(self, key: object) -> bool:
+        return key in self._artifacts
 
     def __iter__(self) -> Iterator[str]:
-        """Iterate over artifact keys."""
-        # Return a list copy of keys to ensure immutability
-        return iter(list(self.__artifacts.keys()))
-
-    def keys(self) -> Iterator[str]:
-        """Return an iterator over the keys of artifacts."""
-        return iter(list(self.__artifacts.keys()))
+        # Return an iterator over a snapshot of the keys
+        return iter(list(self._artifacts.keys()))
 
     def __len__(self) -> int:
-        """Return the number of artifacts."""
-        return len(self.__artifacts)
+        return len(self._artifacts)
+
+    def keys(self) -> Iterator[str]:
+        """
+        Return an iterator of keys in the artifacts store.
+        """
+        return iter(list(self._artifacts.keys()))
+
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
+        return self._artifacts.get(key, default)
 
     def as_dict(self) -> Dict[str, Any]:
-        """Return a deep copy of the artifacts as a dictionary to ensure immutability."""
-        return copy.deepcopy(self.__artifacts)
+        """
+        Return a deep copy of the artifacts as a dictionary.
+        """
+        return copy.deepcopy(self._artifacts)
 
-    def clone(self) -> "Context":
-        """Return a deep copy of the current context, including artifacts and configuration."""
-        cloned_artifacts = copy.deepcopy(self.__artifacts)
-        cloned_config = copy.deepcopy(self.config)
-        return Context(artifacts=cloned_artifacts, config=cloned_config)
+    def clone(self) -> ContextProtocol:
+        """
+        Create a deep copy of the Context including both artifacts and configuration.
+        """
+        return Context(artifacts=copy.deepcopy(self._artifacts), config=copy.deepcopy(self.config))
+
+
+__all__ = ["Context"]

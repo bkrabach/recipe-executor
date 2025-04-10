@@ -12,7 +12,7 @@
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm/llm_docs.md",
+      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_docs.md",
       "artifact": "llm_docs"
     },
     {

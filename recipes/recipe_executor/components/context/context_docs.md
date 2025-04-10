@@ -4,150 +4,97 @@
 
 ```python
 from recipe_executor.context import Context
+from recipe_executor.protocols import ContextProtocol
 ```
+
+_(The `ContextProtocol` interface is imported for typing or interface reference, while `Context` is the concrete class you instantiate.)_
 
 ## Initialization
 
-The Context can be initialized with optional artifacts and configuration:
+You can create a Context with or without initial data:
 
 ```python
-# Method signature
-def __init__(self, artifacts: Optional[Dict[str, Any]] = None, config: Optional[Dict[str, Any]] = None) -> None:
-    """
-    Initialize the Context with optional artifacts and configuration.
-
-    Args:
-        artifacts: Initial artifacts to store
-        config: Configuration values
-    """
-```
-
-Examples:
-
-```python
-# Empty context
+# Create an empty context
 context = Context()
 
 # With initial artifacts
-context = Context(artifacts={"spec": "specification content"})
+context = Context(artifacts={"input": "example data"})
 
-# With configuration
-context = Context(config={"output_dir": "./output"})
+# With configuration values
+context = Context(config={"run_mode": "test"})
 
-# With both
+# With both artifacts and configuration
 context = Context(
-    artifacts={"spec": "specification content"},
-    config={"output_dir": "./output"}
+    artifacts={"input": "example data"},
+    config={"run_mode": "test"}
 )
 ```
 
+When providing initial artifacts or config, Context will deep-copy them. Changes to the original dictionaries after creation won’t affect the Context.
+
 ## Core API
+
+Once you have a Context, you use it like a dictionary for artifacts:
 
 ### Storing Values
 
 ```python
-def __setitem__(self, key: str, value: Any) -> None:
-    """Dictionary-like setting of artifacts."""
+context["result"] = 42
 ```
+
+Stores the value `42` under the key `"result"` in the context’s artifacts.
 
 ### Retrieving Values
 
 ```python
-def __getitem__(self, key: str) -> Any:
-    """Dictionary-like access to artifacts."""
-
-def get(self, key: str, default: Optional[Any] = None) -> Any:
-    """Get an artifact with an optional default value."""
-
-# Usage examples
-value = context["key"]  # Raises KeyError if not found
-value = context.get("key", default=None)  # Returns default if not found
+value = context["result"]          # Retrieves the value for "result" (KeyError if missing)
+value_or_default = context.get("missing", default_value)
 ```
 
-### Checking Keys
+Use `context[key]` for direct access (which will throw an error if the key is not present), or `context.get(key, default)` to safely retrieve a value with a fallback.
+
+### Checking for Keys
 
 ```python
-def __contains__(self, key: str) -> bool:
-    """Check if a key exists in artifacts."""
-
-# Usage example
-if "key" in context:
-    # Key exists
-    pass
+if "result" in context:
+    # Key exists in context
+    print(context["result"])
 ```
 
-### Iteration
+The `in` operator checks if a given artifact key exists in the context.
+
+### Iterating over Keys
 
 ```python
-def __iter__(self) -> Iterator[str]:
-    """Iterate over artifact keys."""
-
-def keys(self) -> Iterator[str]:
-    """Return an iterator over the keys of artifacts."""
-
-def __len__(self) -> int:
-    """Return the number of artifacts."""
-
-# Usage examples
 for key in context:
-    value = context[key]
-    print(f"{key}: {value}")
+    print(key, context[key])
 
-# Get number of artifacts
-num_artifacts = len(context)
+# Or equivalently:
+for key in context.keys():
+    print(key, context[key])
 ```
+
+Context supports iteration, yielding each artifact key (internally, it iterates over a snapshot list of keys to avoid issues if you modify the context during iteration). You can also call `keys()` to get an iterator of keys explicitly. The `len(context)` function returns the number of artifacts currently stored.
 
 ### Getting All Values
 
 ```python
-def as_dict(self) -> Dict[str, Any]:
-    """Return a copy of the artifacts as a dictionary to ensure immutability."""
-
-# Usage example
-all_artifacts = context.as_dict()
+snapshot = context.as_dict()
 ```
 
-### Accessing Configuration
+`as_dict()` returns a deep copy of all artifacts in the context as a regular Python dictionary. This is useful if you need to inspect or serialize the entire state without risk of modifying the Context itself.
+
+### Cloning the Context
 
 ```python
-# Configuration is accessed via the config attribute
-# Type: Dict[str, Any]
-
-# Usage example
-output_dir = context.config.get("output_dir", "./default")
+new_context = context.clone()
 ```
 
-### Cloning Context
-
-```python
-def clone(self) -> Context:
-    """Return a deep copy of the current context."""
-
-# Usage example
-cloned_context = context.clone()
-```
-
-## Integration with Steps
-
-Steps receive the context in their `execute` method:
-
-```python
-def execute(self, context: Context) -> None:
-    # Read from context
-    input_value = context.get("input", "default")
-
-    # Process...
-    result = process(input_value)
-
-    # Store in context
-    context["output"] = result
-```
+The `clone()` method creates a deep copy of the Context, including all artifacts and configuration. The returned object is a new `Context` instance that can be modified independently of the original. This is often used when running sub-recipes or parallel steps to ensure each execution has an isolated context state.
 
 ## Important Notes
 
-- Context is mutable and shared between steps
-- Values can be of any type
-- Configuration is read-only in typical usage (but not enforced)
-- Step authors should document keys they read/write
-- Context provides no thread safety - it's designed for sequential execution
-- Use `clone` to create a snapshot of the context if needed - for parallel execution
+- **Shared State**: The Context is shared across all steps in a recipe execution. Any step that writes to the context (e.g., `context["x"] = value`) is making that data available to subsequent steps. This is how data flows through a recipe.
+- **No Thread Safety**: The Context class does not implement any locking or thread-safety mechanisms. It assumes sequential access. If you need to use it in parallel, each parallel thread or process should work on a cloned copy of the Context to avoid race conditions (as done in the Parallel step implementation).
+- **Protocols Interface**: The `Context` class implements the `ContextProtocol` interface defined in the Protocols component. When writing code that interacts with contexts, you can use `ContextProtocol` in type hints to allow any context implementation. In practice, you will typically use the provided `Context` class unless you extend the system.
+- **Configuration vs Artifacts**: Remember that `context.config` is a public attribute (a dict) meant for static configuration values. It is not manipulated via the dictionary interface (`__getitem__`/`__setitem__`). This separation is by convention; Context does not prevent you from modifying `context.config` directly, so it’s up to the user to treat config as read-only during execution.

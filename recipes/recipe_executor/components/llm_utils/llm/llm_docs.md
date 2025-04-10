@@ -3,7 +3,7 @@
 ## Importing
 
 ```python
-from recipe_executor.llm import call_llm
+from recipe_executor.llm_utils.llm import call_llm
 ```
 
 ## Basic Usage
@@ -112,7 +112,7 @@ The LLM component is primarily used by the GenerateWithLLMStep:
 
 ```python
 # Example from GenerateWithLLMStep.execute()
-def execute(self, context: Context) -> None:
+def execute(self, context: ContextProtocol) -> None:
     rendered_prompt = render_template(self.config.prompt, context)
     rendered_model = render_template(self.config.model, context)
 

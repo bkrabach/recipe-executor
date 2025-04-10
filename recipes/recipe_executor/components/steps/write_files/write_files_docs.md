@@ -19,7 +19,6 @@ class WriteFilesConfig(StepConfig):
         artifact: Name of the context key holding a FileGenerationResult or List[FileSpec].
         root: Optional base path to prepend to all output file paths.
     """
-
     artifact: str
     root: str = "."
 ```
@@ -147,8 +146,8 @@ FileSpec(
 
 ## Important Notes
 
-- Directories are created automatically if they don't exist
+- Directories are created automatically if they don’t exist
 - Files are overwritten without confirmation if they already exist
-- All paths are rendered using template variables from the context
+- All paths are rendered using template variables from the context (ContextProtocol)
 - File content is written using UTF-8 encoding
-- Both FileGenerationResult and List[FileSpec] formats are supported
+- Both FileGenerationResult and List[FileSpec] input formats are supported

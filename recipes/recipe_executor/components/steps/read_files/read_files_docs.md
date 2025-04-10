@@ -23,7 +23,6 @@ class ReadFilesConfig(StepConfig):
             - "concat" (default): Concatenate all files with newlines between filenames + contents
             - "dict": Store a dictionary with filenames as keys and contents as values
     """
-
     path: Union[str, List[str]]
     artifact: str
     optional: bool = False
@@ -45,7 +44,7 @@ STEP_REGISTRY["read_files"] = ReadFilesStep
 
 ### Reading a Single File
 
-The ReadFilesStep can be used to read a single file just like the original read_file step:
+The ReadFilesStep can be used to read a single file (just like the original `read_file` step):
 
 ```json
 {
@@ -61,7 +60,7 @@ The ReadFilesStep can be used to read a single file just like the original read_
 
 ### Reading Multiple Files
 
-You can read multiple files by providing a comma-separated string:
+You can read multiple files by providing a comma-separated string of paths:
 
 ```json
 {
@@ -75,7 +74,7 @@ You can read multiple files by providing a comma-separated string:
 }
 ```
 
-You can read multiple files by providing a list of paths:
+You can also read multiple files by providing a list of path strings:
 
 ```json
 {
@@ -92,7 +91,7 @@ You can read multiple files by providing a list of paths:
 
 ### Reading Multiple Files as a Dictionary
 
-You can also store multiple files as a dictionary with filenames as keys:
+You can store multiple files as a dictionary with filenames as keys:
 
 ```json
 {
@@ -109,7 +108,7 @@ You can also store multiple files as a dictionary with filenames as keys:
 
 ## Template-Based Paths
 
-The path can include template variables from the context:
+The `path` parameter can include template variables from the context:
 
 ```json
 {
@@ -123,7 +122,7 @@ The path can include template variables from the context:
 }
 ```
 
-Template variables can also be used in list paths:
+Template variables can also be used within list paths:
 
 ```json
 {
@@ -142,7 +141,7 @@ Template variables can also be used in list paths:
 
 ## Optional Files
 
-You can specify that files are optional, and execution will continue even if files don't exist:
+You can specify that files are optional. If an optional file doesn't exist, execution will continue:
 
 ```json
 {
@@ -160,8 +159,8 @@ You can specify that files are optional, and execution will continue even if fil
 If an optional file is not found:
 
 - For a single file: an empty string is stored in the context
-- For multiple files with `merge_mode: "concat"`: the file is skipped in the concatenation
-- For multiple files with `merge_mode: "dict"`: an empty string is stored for that file key
+- For multiple files with `merge_mode: "concat"`: the missing file is skipped in the concatenated result
+- For multiple files with `merge_mode: "dict"`: an empty string is stored for that file’s key
 
 ## Common Use Cases
 
@@ -208,9 +207,13 @@ If an optional file is not found:
 
 **Command Line Integration**:
 
+You can also supply paths via command-line context values:
+
 ```bash
 python -m recipe_executor.main recipes/generate.json --context files_to_read="specs/component_a.md,specs/component_b.md"
 ```
+
+Then in the recipe you can use that context value:
 
 ```json
 {
@@ -227,8 +230,8 @@ python -m recipe_executor.main recipes/generate.json --context files_to_read="sp
 ## Important Notes
 
 - The step uses UTF-8 encoding by default for all files
-- When a file is optional and missing, it's handled differently based on merge_mode
+- When a file is optional and missing, it is handled according to the specified `merge_mode`
 - Template variables in all paths are resolved before reading the files
-- For backwards compatibility, single file behavior matches the original read_file step
-- When using merge_mode "dict", the keys are the basenames of the files (not full paths)
-- All paths support template rendering, including paths in a list
+- For backwards compatibility, single-file behavior matches the original `read_file` step
+- When using `merge_mode: "dict"`, the keys in the output are the base names of the files (not the full paths)
+- All paths support template rendering (including each path in a list)

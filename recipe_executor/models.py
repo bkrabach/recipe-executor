@@ -1,5 +1,5 @@
-from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from typing import List, Dict, Optional
+from pydantic import BaseModel
 
 
 class FileSpec(BaseModel):
@@ -9,8 +9,8 @@ class FileSpec(BaseModel):
         path (str): Relative path where the file should be written.
         content (str): The content of the file.
     """
-    path: str = Field(..., description="Relative path where the file should be written")
-    content: str = Field(..., description="The content of the file")
+    path: str
+    content: str
 
 
 class FileGenerationResult(BaseModel):
@@ -20,8 +20,8 @@ class FileGenerationResult(BaseModel):
         files (List[FileSpec]): List of files to generate.
         commentary (Optional[str]): Optional commentary from the LLM.
     """
-    files: List[FileSpec] = Field(..., description="List of files to generate")
-    commentary: Optional[str] = Field(None, description="Optional commentary from the LLM")
+    files: List[FileSpec]
+    commentary: Optional[str] = None
 
 
 class RecipeStep(BaseModel):
@@ -31,8 +31,8 @@ class RecipeStep(BaseModel):
         type (str): The type of the recipe step.
         config (Dict): Dictionary containing configuration for the step.
     """
-    type: str = Field(..., description="The type of the recipe step")
-    config: Dict = Field(..., description="Dictionary containing configuration for the step")
+    type: str
+    config: Dict
 
 
 class Recipe(BaseModel):
@@ -41,4 +41,4 @@ class Recipe(BaseModel):
     Attributes:
         steps (List[RecipeStep]): A list containing the steps of the recipe.
     """
-    steps: List[RecipeStep] = Field(..., description="List of steps in the recipe")
+    steps: List[RecipeStep]

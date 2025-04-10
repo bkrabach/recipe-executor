@@ -7,33 +7,34 @@ The WriteFilesStep component writes generated files to disk based on content fro
 ## Core Requirements
 
 - Write one or more files to disk from the context
-- Support both FileGenerationResult and list of FileSpec formats
+- Support both FileGenerationResult and list of FileSpec formats as input
 - Create directories as needed for file paths
 - Apply template rendering to file paths
 - Provide appropriate logging for file operations
-- Follow minimal design with clear error handling
+- Follow a minimal design with clear error handling
 
 ## Implementation Considerations
 
 - Support multiple file output formats (FileGenerationResult or list of FileSpec)
 - Use template rendering for dynamic path resolution
-- Create parent directories automatically
+- Create parent directories automatically if they do not exist
 - Keep the implementation simple and focused on a single responsibility
 - Log details about files written for troubleshooting
 
 ## Logging
 
-- Debug: Log the file path and content being written before writing (in case of failure)
-- Info: Log the successful writing of the file (including path) and its content size
+- Debug: Log each file’s path and content before writing (to help debug failures)
+- Info: Log the successful writing of each file (including its path) and the size of its content
 
 ## Component Dependencies
 
 ### Internal Components
 
-- **Steps Base** - (Required) Extends BaseStep to implement the step interface
-- **Context** - (Required) Retrieves file content from the context
-- **Models** - (Required) Uses FileGenerationResult and FileSpec models for content structure
-- **Utils** - (Required) Uses render_template for dynamic path resolution
+- **Protocols** – (Required) Uses ContextProtocol for reading artifact data and StepProtocol for step interface compliance
+- **Step Interface** – (Required) Follows the step interface via StepProtocol
+- **Context** – (Required) Retrieves file content from a context implementing ContextProtocol
+- **Models** – (Required) Uses FileGenerationResult and FileSpec models for content structure
+- **Utils** – (Required) Uses render_template for dynamic path resolution
 
 ### External Libraries
 
@@ -45,8 +46,8 @@ None
 
 ## Error Handling
 
-- Validate that the artifact exists in context
-- Ensure artifact contains a valid FileGenerationResult or list of FileSpec objects
+- Validate that the specified artifact exists in context
+- Ensure the artifact contains a valid FileGenerationResult or list of FileSpec objects
 - Handle file writing errors with clear messages
 - Log successes and failures appropriately
 
@@ -56,4 +57,4 @@ None
 
 ## Future Considerations
 
-- Dry-run mode that logs without writing
+- “Dry-run” mode that logs intended writes without performing them

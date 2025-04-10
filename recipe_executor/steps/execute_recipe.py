@@ -1,9 +1,9 @@
+import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Optional
 
+from recipe_executor.protocols import ContextProtocol, ExecutorProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
-from recipe_executor.executor import Executor
-from recipe_executor.context import Context
 from recipe_executor.utils import render_template
 
 
@@ -14,60 +14,81 @@ class ExecuteRecipeConfig(StepConfig):
         recipe_path: Path to the recipe to execute.
         context_overrides: Optional values to override in the context.
     """
+
     recipe_path: str
     context_overrides: Dict[str, str] = {}
 
 
 class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
-    """Step that executes a sub-recipe with optional context overrides.
+    """Step to execute a sub-recipe with an optional context override.
 
-    This component uses template rendering for dynamic resolution of recipe paths and context overrides, 
-    validates that the target recipe file exists, applies context overrides, and executes the sub-recipe 
-    using a shared Executor instance. Execution start and completion are logged as info messages.
+    This step uses template rendering to dynamically resolve the recipe path and any context overrides,
+    then executes the sub-recipe using the provided executor. The same executor instance is used to ensure
+    consistency between parent and sub-recipe execution.
     """
 
-    def __init__(self, config: dict, logger: Any = None) -> None:
-        super().__init__(ExecuteRecipeConfig(**config), logger)
-
-    def execute(self, context: Context) -> None:
-        """Execute the sub-recipe with rendered paths and context overrides.
+    def __init__(
+        self, config: dict, logger: Optional[logging.Logger] = None, executor: Optional[ExecutorProtocol] = None
+    ) -> None:
+        """Initialize the ExecuteRecipeStep.
 
         Args:
-            context (Context): The shared context object.
+            config (dict): The step configuration as a dictionary. It must contain the recipe_path, and may
+                           contain context_overrides.
+            logger: Optional logger instance.
+            executor: Optional executor instance. If not provided, a new Executor instance will be created.
+        """
+        super().__init__(ExecuteRecipeConfig(**config), logger)
+        # Use the provided executor or create a new one if none is provided.
+
+        if executor is None:
+            from recipe_executor.executor import Executor
+
+            self.executor = Executor()
+        else:
+            self.executor = executor
+
+    def execute(self, context: ContextProtocol) -> None:
+        """Execute the sub-recipe defined in the configuration.
+
+        This method applies template rendering to the recipe path and context overrides, ensures that the
+        sub-recipe file exists, applies the context overrides, and then executes the sub-recipe using the
+        shared executor instance. Logging is performed at the start and completion of sub-recipe execution.
+
+        Args:
+            context (ContextProtocol): The shared execution context.
 
         Raises:
-            RuntimeError: If the sub-recipe file does not exist or if execution fails.
+            FileNotFoundError: If the resolved sub-recipe file does not exist.
+            Exception: Propagates any errors that occur during sub-recipe execution.
         """
         try:
             # Render the recipe path using the current context
             rendered_recipe_path = render_template(self.config.recipe_path, context)
-            
-            # Render context overrides
+
+            # Verify that the sub-recipe file exists
+            if not os.path.exists(rendered_recipe_path):
+                error_message = f"Sub-recipe file not found: {rendered_recipe_path}"
+                self.logger.error(error_message)
+                raise FileNotFoundError(error_message)
+
+            # Render context overrides and apply them before execution
             rendered_overrides: Dict[str, str] = {}
             for key, value in self.config.context_overrides.items():
-                rendered_overrides[key] = render_template(value, context)
-            
-            # Validate that the sub-recipe file exists
-            if not os.path.isfile(rendered_recipe_path):
-                error_msg = f"Sub-recipe file not found: {rendered_recipe_path}"
-                self.logger.error(error_msg)
-                raise RuntimeError(error_msg)
-            
-            # Log start of execution
-            self.logger.info(f"Starting execution of sub-recipe: {rendered_recipe_path}")
-            
-            # Apply context overrides before sub-recipe execution
-            for key, value in rendered_overrides.items():
-                context[key] = value
-            
-            # Execute the sub-recipe with the same context and logger
-            executor = Executor()
-            executor.execute(rendered_recipe_path, context, self.logger)
-            
-            # Log completion of sub-recipe execution
-            self.logger.info(f"Completed execution of sub-recipe: {rendered_recipe_path}")
+                rendered_value = render_template(value, context)
+                rendered_overrides[key] = rendered_value
+                # Update the context with the override
+                context[key] = rendered_value
 
-        except Exception as e:
-            error_msg = f"Error executing sub-recipe '{self.config.recipe_path}': {str(e)}"
-            self.logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
+            # Log the start of sub-recipe execution
+            self.logger.info(f"Starting execution of sub-recipe: {rendered_recipe_path}")
+
+            # Execute the sub-recipe using the shared executor instance
+            self.executor.execute(rendered_recipe_path, context)
+
+            # Log the successful completion of sub-recipe execution
+            self.logger.info(f"Completed execution of sub-recipe: {rendered_recipe_path}")
+        except Exception as error:
+            # Log the error with sub-recipe path for debugging
+            self.logger.error(f"Error executing sub-recipe '{self.config.recipe_path}': {str(error)}")
+            raise

@@ -2,155 +2,62 @@
 
 ## Importing
 
+Typically, as a recipe or step author, you won't import `BaseStep` or `StepConfig` in end-user code. These are used when defining new steps. However, for completeness:
+
 ```python
 from recipe_executor.steps.base import BaseStep, StepConfig
 ```
 
-## Basic Structure
+When creating a new custom step, you will subclass `BaseStep` and define a `StepConfig` subclass for its configuration.
 
-The Steps Base component provides two primary classes:
+## Defining a New Step (Example)
 
-1. `StepConfig` - Base class for step configuration
-2. `BaseStep` - Abstract base class for step implementations
+To illustrate how `BaseStep` is used, let's say you want to create a new step type called `"EchoStep"` that simply logs a message:
 
-These classes are designed to work together using generics for type safety.
+1. **Define the Configuration**: Subclass `StepConfig` to define any inputs the step needs. If none are required, you could even use `StepConfig` as is, but we'll define one for example:
 
-## Step Configuration
+   ```python
+   class EchoConfig(StepConfig):
+       message: str
+   ```
 
-All step configurations extend the `StepConfig` base class:
+   This uses Pydantic to require a `message` field for the step.
 
-```python
-class StepConfig(BaseModel):
-    """Base class for all step configs. Extend this in each step."""
-    pass
+2. **Define the Step Class**: Subclass `BaseStep` with the config type and implement `execute`:
 
-# Type variable for generic configuration types
-ConfigType = TypeVar("ConfigType", bound=StepConfig)
-```
+   ```python
+   class EchoStep(BaseStep[EchoConfig]):
+       def __init__(self, config: dict, logger=None):
+           super().__init__(EchoConfig(**config), logger)
 
-Example of extending StepConfig:
+       def execute(self, context: ContextProtocol) -> None:
+           # Simply log the message
+           self.logger.info(f"Echo: {self.config.message}")
+   ```
 
-```python
-class ReadsFileConfig(StepConfig):
-    """Configuration for ReadFilesStep"""
-    path: str
-    artifact: str
-    encoding: str = "utf-8"  # With default value
-```
+   A few things to note:
 
-## Base Step Class
+   - We call `super().__init__` with a `EchoConfig(**config)` to parse the raw config dict into a Pydantic model. Now `self.config` is an `EchoConfig` instance (with attribute `message`).
+   - We use `ContextProtocol` in the `execute` signature, meaning any `context` passed that implements the required interface will work. Usually this will be the standard `Context`.
+   - In `execute`, we just log the message. We could also interact with `context` (e.g., read or write `context` entries) if needed.
 
-The BaseStep is an abstract generic class parameterized by the config type:
+3. **Register the Step**: Finally, to use `EchoStep` in recipes, add it to the step registry:
 
-```python
-class BaseStep(Generic[ConfigType]):
-    """
-    Base class for all steps. Subclasses must implement `execute(context)`.
-    Each step receives a config object and a logger.
+   ```python
+   from recipe_executor.steps.registry import STEP_REGISTRY
+   STEP_REGISTRY["echo"] = EchoStep
+   ```
 
-    Args:
-        config (ConfigType): Configuration for the step
-        logger (Optional[logging.Logger]): Logger instance, defaults to "RecipeExecutor"
-    """
-
-    def __init__(self, config: ConfigType, logger: Optional[logging.Logger] = None) -> None:
-        self.config: ConfigType = config
-        self.logger = logger or logging.getLogger("RecipeExecutor")
-
-    def execute(self, context: Context) -> None:
-        """
-        Execute the step with the given context.
-
-        Args:
-            context (Context): Context for execution
-
-        Raises:
-            NotImplementedError: If subclass doesn't implement this method
-        """
-        raise NotImplementedError("Each step must implement the `execute()` method.")
-```
-
-## Implementing a Step
-
-To implement a concrete step, create a class that:
-
-1. Extends BaseStep with a specific config type
-2. Implements the execute method
-3. Takes a dictionary of configuration values in the constructor
-
-Example:
-
-```python
-class ExampleStep(BaseStep[ExampleConfig]):
-    """Example step implementation."""
-
-    def __init__(self, config: dict, logger=None):
-        # Convert dict to the appropriate config type
-        super().__init__(ExampleConfig(**config), logger)
-
-    def execute(self, context: Context) -> None:
-        # Implementation specific to this step
-        self.logger.info("Executing example step")
-
-        # Access configuration values
-        value = self.config.some_field
-
-        # Do something with the context
-        context["result"] = f"Processed {value}"
-```
-
-## Step Registration
-
-All step implementations should be registered in the step registry:
-
-```python
-from recipe_executor.steps.registry import STEP_REGISTRY
-
-# Register the step type
-STEP_REGISTRY["example_step"] = ExampleStep
-```
-
-## Handling Configuration
-
-The base step handles configuration conversion automatically:
-
-```python
-# Step configuration in a recipe
-step_config = {
-    "type": "example_step",
-    "some_field": "value",
-    "another_field": 42
-}
-
-# In the executor
-step_class = STEP_REGISTRY[step_config["type"]]
-step_instance = step_class(step_config, logger)
-
-# Configuration is validated through Pydantic
-# Access in the step through self.config
-```
-
-## Logging
-
-All steps receive a logger in their constructor:
-
-```python
-def __init__(self, config: dict, logger=None):
-    # If logger is None, it defaults to logging.getLogger("RecipeExecutor")
-    super().__init__(ExampleConfig(**config), logger)
-
-def execute(self, context: Context) -> None:
-    # Use the logger for various levels
-    self.logger.debug("Detailed debug information")
-    self.logger.info("Step execution started")
-    self.logger.warning("Potential issue detected")
-    self.logger.error("Error occurred during execution")
-```
+Now, any recipe with a step like `{"type": "echo", "message": "Hello World"}` will use `EchoStep`.
 
 ## Important Notes
 
-- All step implementations must inherit from BaseStep
-- The execute method must be implemented by all subclasses
-- Steps should validate their configuration using Pydantic models
-- Steps receive and modify a shared Context object
-- Steps should use the logger for appropriate messages
+- **Inheriting BaseStep**: All step implementations **must** inherit from `BaseStep` and implement the `execute` method. This ensures they conform to the `StepProtocol` (the interface contract for steps). If a step class does not implement `execute`, it cannot be instantiated due to the abstract base.
+- **Configuration Validation**: Using Pydantic `StepConfig` for your step’s configuration is highly recommended. It will automatically validate types and required fields. In the example above, if a recipe is missing the `"message"` field or if it's not a string, the creation of `EchoConfig` would raise an error, preventing execution with bad config.
+- **Context Usage**: Steps interact with the execution context via the interface methods defined in `ContextProtocol`. For example, a step can do `value = context.get("some_key")` or `context["result"] = data`. By programming against `ContextProtocol`, your step could work with any context implementation. In practice, the provided `Context` is used.
+- **Logging**: Each step gets a logger (`self.logger`). Use it to log important events or data within the step. The logger is typically passed from the Executor, which means all step logs can be captured in the main log output. This is very useful for debugging complex recipes.
+- **BaseStep Utility**: Aside from providing the structure, `BaseStep` doesn't interfere with your step logic. You control what happens in `execute`. However, because `BaseStep` takes care of storing config and logger, you should always call its `__init__` in your step’s constructor (as shown with `super().__init__`). This ensures the config is properly parsed and the logger is set up.
+- **Step Lifecycle**: There is no explicit "tear down" method for steps. If your step allocates resources (files, network connections, etc.), you should handle those within the step itself (and possibly in the `finally` block or context managers inside `execute`). Each step instance is short-lived (used only for one execution and then discarded).
+- **Adhering to StepProtocol**: By following the pattern above, your custom step automatically adheres to `StepProtocol` because it implements `execute(context: ContextProtocol)`. This means you could treat it as a `StepProtocol` in any high-level logic, but more importantly the system (Executor) will treat it correctly as a step.
+
+In summary, `BaseStep` and `StepConfig` provide a minimal framework to create new steps with confidence that they will integrate smoothly. They enforce the presence of an `execute` method and provide convenience in config handling and logging, letting step authors focus on the core logic of the step.

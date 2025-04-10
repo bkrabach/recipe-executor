@@ -2,38 +2,39 @@
 
 ## Purpose
 
-The Utils component provides utility functions for the Recipe Executor system, primarily focusing on template rendering. It enables steps to use dynamic values from the context in their configuration through a simple templating mechanism.
+The Utils component provides general utility functions for recipes, primarily focused on template rendering. It offers a way to render strings with template variables against the execution context, enabling dynamic content generation in recipes.
 
 ## Core Requirements
 
-- Provide a template rendering function using the Liquid templating engine
-- Support substituting values from the Context into templates
-- Handle all context values by converting them to strings
-- Provide clear error handling for template rendering failures
-- Follow minimal design with focused functionality
+- Render strings as templates using context data
+- Utilize a standard templating engine (Liquid) for consistency
+- Ensure that all context values are accessible to the templates
+- Handle errors in template rendering gracefully
+- Keep the utility functions stateless and reusable
 
 ## Implementation Considerations
 
-- Use the Liquid library directly without unnecessary abstraction
+- Use the Liquid templating library directly without unnecessary abstraction
 - Convert context values to strings before rendering to prevent type errors
 - Handle rendering errors gracefully with clear error messages
-- Keep the implementation stateless and focused
+- Keep the implementation stateless and focused on its single responsibility
 
 ## Logging
 
-- Debug: Log the template being rendered and the context keys used
+- Debug: Log the template text being rendered and the context keys used
 - Info: None
 
 ## Component Dependencies
 
 ### Internal Components
 
-- **Context** - (Required) Uses the Context class for accessing artifacts during template rendering
+- **Protocols** – (Required) Uses ContextProtocol definition for context data access
+- **Context** – (Required) Uses a context implementing ContextProtocol for accessing artifacts during template rendering
 
 ### External Libraries
 
-- **Liquid** - (Required) Uses the Liquid templating engine for template rendering (`python-liquid`)
-- **json** - (Required) Uses json module for handling dictionary conversions
+- **Liquid** – (Required) Uses the Liquid templating engine for rendering (`python-liquid`)
+- **json** – (Required) Uses the built-in json module for handling dictionary-to-string conversions (when needed)
 
 ### Configuration Dependencies
 
@@ -42,8 +43,8 @@ None
 ## Error Handling
 
 - Wrap template rendering in try/except blocks
-- Provide specific error messages that indicate the source of template failures
-- Propagate rendering errors with useful context
+- Provide specific error messages indicating the source of template failures
+- Propagate rendering errors with useful context information
 
 ## Output Files
 
@@ -51,6 +52,6 @@ None
 
 ## Future Considerations
 
-- Support for custom template filters or tags
-- Support for template partials or includes
-- Template validation before rendering
+- Support custom template filters or tags
+- Support template partials or includes
+- Template validation or linting before rendering

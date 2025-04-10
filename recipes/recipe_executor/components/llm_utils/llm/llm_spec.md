@@ -56,7 +56,7 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Output Files
 
-- `llm.py`
+- `llm_utils/llm.py`
 
 ## Future Considerations
 

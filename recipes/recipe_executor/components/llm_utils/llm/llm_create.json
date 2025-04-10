@@ -20,7 +20,7 @@
       "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
       "context_overrides": {
         "component_id": "llm",
-        "component_path": "/",
+        "component_path": "/llm_utils",
         "existing_code": "{{existing_code}}",
         "additional_content": "<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<AZURE_OPENAI_DOCUMENTATION>\n{{azure_openai_docs}}\n</AZURE_OPENAI_DOCUMENTATION>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
       }
