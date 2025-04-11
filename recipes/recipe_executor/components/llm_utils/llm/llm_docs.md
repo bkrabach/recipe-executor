@@ -11,7 +11,7 @@ from recipe_executor.llm_utils.llm import call_llm
 The LLM component provides one main function:
 
 ```python
-def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> FileGenerationResult:
+async def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> FileGenerationResult:
     """
     Call the LLM with the given prompt and return a structured FileGenerationResult.
 
@@ -33,10 +33,10 @@ Usage example:
 
 ```python
 # Call LLM with default model
-result = call_llm("Generate a Python utility module for handling dates.")
+result = aync call_llm("Generate a Python utility module for handling dates.")
 
 # Call with specific model
-result = call_llm(
+result = async call_llm(
     prompt="Create a React component for a user profile page.",
     model="openai:o3-mini"
 )
@@ -96,7 +96,7 @@ Example of error handling:
 
 ```python
 try:
-    result = call_llm(prompt, model_id)
+    result = async call_llm(prompt, model_id)
     # Process result
 except ValueError as e:
     # Handle invalid model ID or format
@@ -112,11 +112,11 @@ The LLM component is primarily used by the GenerateWithLLMStep:
 
 ```python
 # Example from GenerateWithLLMStep.execute()
-def execute(self, context: ContextProtocol) -> None:
+async def execute(self, context: ContextProtocol) -> None:
     rendered_prompt = render_template(self.config.prompt, context)
     rendered_model = render_template(self.config.model, context)
 
-    response = call_llm(rendered_prompt, rendered_model)
+    response = async call_llm(rendered_prompt, rendered_model)
 
     artifact_key = render_template(self.config.artifact, context)
     context[artifact_key] = response

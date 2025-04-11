@@ -21,6 +21,10 @@ The ExecuteRecipeStep component enables recipes to execute other recipes as sub-
 - Keep the implementation simple and focused on a single responsibility
 - Log detailed information about sub-recipe execution
 
+## Implementation Hints
+
+- Import the `Executor` within the `execute` method to avoid circular dependencies
+
 ## Logging
 
 - Debug: None

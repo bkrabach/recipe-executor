@@ -1,55 +1,48 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Optional
+from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel
 
-# Assuming ContextProtocol is defined in recipe_executor.protocols
+# Import the ContextProtocol from the protocols component
 from recipe_executor.protocols import ContextProtocol
 
 
 class StepConfig(BaseModel):
-    """Base configuration class for steps using Pydantic.
+    """
+    Base configuration model for step implementations.
 
-    This class serves as the foundation for step-specific configuration models.
-    Concrete steps should subclass this to define their own configuration attributes.
+    This class is intentionally left minimal and should be extended by concrete step configurations.
     """
     pass
 
 
-# Define a TypeVar for configuration types that extend StepConfig
+# Create a type variable that must be a subclass of StepConfig
 ConfigType = TypeVar('ConfigType', bound=StepConfig)
 
 
 class BaseStep(ABC, Generic[ConfigType]):
-    """Abstract base class for all steps in the Recipe Executor system.
+    """
+    Abstract base class for all steps in the Recipe Executor system.
 
-    This class defines the common interface and behavior for steps. Concrete steps must
-    implement the execute method.
+    Attributes:
+        config (ConfigType): The configuration instance for the step.
+        logger (logging.Logger): Logger to record operations, defaults to a module logger named 'RecipeExecutor'.
     """
     def __init__(self, config: ConfigType, logger: Optional[logging.Logger] = None) -> None:
-        """Initialize the step with a given configuration and an optional logger.
-
-        Args:
-            config (ConfigType): The configuration for the step, validated using Pydantic.
-            logger (Optional[logging.Logger]): An optional logger. If not provided, a default
-                                                 logger named 'RecipeExecutor' is used.
-        """
         self.config: ConfigType = config
         self.logger: logging.Logger = logger or logging.getLogger("RecipeExecutor")
-        self.logger.debug(f"Initialized step {self.__class__.__name__} with config: {self.config}")
+        self.logger.debug(f"{self.__class__.__name__} initialized with config: {self.config}")
 
     @abstractmethod
-    def execute(self, context: ContextProtocol) -> None:
-        """Execute the step with the provided context.
-
-        Concrete implementations must override this method to perform step-specific actions.
-        
-        Args:
-            context (ContextProtocol): The execution context which allows interaction with the
-                                         shared state of the recipe execution.
-        
-        Raises:
-            NotImplementedError: If not overridden in a subclass.
+    async def execute(self, context: ContextProtocol) -> None:
         """
-        raise NotImplementedError(f"The execute method is not implemented in {self.__class__.__name__}")
+        Execute the step with the provided context.
+
+        Args:
+            context (ContextProtocol): Execution context conforming to the ContextProtocol interface.
+
+        Raises:
+            NotImplementedError: If a subclass does not implement the execute method.
+        """
+        raise NotImplementedError("Subclasses must implement the execute method.")

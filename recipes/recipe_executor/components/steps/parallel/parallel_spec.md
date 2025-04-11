@@ -10,15 +10,20 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 - Clone the current execution context for each sub-step to ensure isolation
 - Execute sub-steps concurrently with a configurable maximum concurrency limit
 - Support an optional delay between launching each sub-step
-- Wait for all sub-steps to complete before proceeding
+- Wait for all sub-steps to complete before proceeding, with appropriate timeout handling
 - Implement fail-fast behavior: if any sub-step fails, stop launching new ones and report the error
+- Prevent nested thread pool creation that could lead to deadlocks or resource exhaustion
+- Provide reliable completion of all tasks regardless of recipe structure or nesting
 
 ## Implementation Considerations
 
-- Use a ThreadPoolExecutor to manage parallel execution of sub-steps
+- Use asyncio for concurrency control and task management
+- Implement an async execution model to allow for non-blocking I/O operations
+- When executing substeps, properly await async operations and run sync operations directly
+- Add configurable timeouts to prevent indefinite waiting for task completion
 - Use `Context.clone()` to create independent context copies for each sub-step
-- Implement a configurable launch delay (using `time.sleep`) for staggered start times
-- Monitor exceptions from each thread and implement fail-fast behavior
+- Implement a configurable launch delay (using `asyncio.sleep`) for staggered start times
+- Monitor exceptions and implement fail-fast behavior
 - Provide clear logging for sub-step lifecycle events and execution summary
 - Manage resources efficiently to prevent memory or thread leaks
 
@@ -64,4 +69,6 @@ None
 - Support arbitrary step types beyond just execute_recipe
 - Aggregate results from sub-steps back into the parent context
 - Dynamic concurrency control based on system load
-- Timeout and isolation options for sub-steps
+- Configurable per-step timeouts with proper cancellation
+- Task prioritization within the global executor
+- Monitoring and reporting for resource usage across the task queue

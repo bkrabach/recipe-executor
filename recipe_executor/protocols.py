@@ -1,13 +1,10 @@
-from typing import Any, Dict, Iterator, Optional, Protocol, Union, runtime_checkable
+from typing import Protocol, runtime_checkable, Any, Optional, Iterator, Dict, Union
 import logging
 
 
 @runtime_checkable
 class ContextProtocol(Protocol):
-    """
-    Defines the interface for context-like objects that hold shared state.
-    It supports dictionary-like operations and additional utility methods.
-    """
+    """Interface for context objects holding shared state with dictionary-like access."""
 
     def __getitem__(self, key: str) -> Any:
         ...
@@ -18,54 +15,46 @@ class ContextProtocol(Protocol):
     def __delitem__(self, key: str) -> None:
         ...
 
-    def __contains__(self, key: object) -> bool:
-        ...
-
     def __iter__(self) -> Iterator[str]:
         ...
 
-    def keys(self) -> Iterator[str]:
+    def __len__(self) -> int:
         ...
 
     def get(self, key: str, default: Any = None) -> Any:
         ...
 
     def as_dict(self) -> Dict[str, Any]:
+        """Return a copy of the internal state as a dictionary."""
         ...
 
     def clone(self) -> 'ContextProtocol':
-        """
-        Returns a deep copy of the context.
-        """
+        """Return a deep copy of the context."""
         ...
 
 
 @runtime_checkable
 class StepProtocol(Protocol):
-    """
-    Protocol for an executable step in a recipe.
-    
-    The step must implement the execute method which takes a context
-    and performs its operations.
-    """
+    """Interface for executable steps in the recipe."""
 
-    def execute(self, context: ContextProtocol) -> None:
+    async def execute(self, context: ContextProtocol) -> None:
+        """Execute the step using the provided context."""
         ...
 
 
 @runtime_checkable
 class ExecutorProtocol(Protocol):
-    """
-    Protocol for recipe executors.
-    
-    The executor must be able to execute a recipe given in various formats (string, JSON string, or dict)
-    using a provided context and an optional logger. It is expected to raise exceptions on errors.
-    """
+    """Interface for recipe executors that run recipes using a given context and optional logger."""
 
-    def execute(
-        self, 
-        recipe: Union[str, Dict[str, Any]], 
-        context: ContextProtocol, 
+    async def execute(
+        self,
+        recipe: Union[str, Dict[str, Any]],
+        context: ContextProtocol,
         logger: Optional[logging.Logger] = None
     ) -> None:
+        """Execute a recipe represented as a file path, JSON string, or dictionary using the context.
+
+        Raises:
+            Exception: When execution fails.
+        """
         ...

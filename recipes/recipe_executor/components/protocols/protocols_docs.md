@@ -14,7 +14,7 @@ Specifies the interface for an executable step. It declares a single method `exe
 
 ### `ExecutorProtocol`
 
-Describes the interface for recipe executors. It currently defines one primary method: `execute(recipe, context, logger=None) -> None`. An `ExecutorProtocol` implementor (like the concrete `Executor` class) must be able to take a recipe (in various forms) and a context (any `ContextProtocol` implementation) and execute the recipe's steps sequentially. The optional logger parameter allows injection of a logging facility.
+Describes the interface for recipe executors. It currently defines one primary method: `async execute(recipe, context, logger=None) -> None`. An `ExecutorProtocol` implementor (like the concrete `Executor` class) must be able to take a recipe (in various forms) and a context (any `ContextProtocol` implementation) and execute the recipe's steps sequentially. The optional (use typing.Optional) logger parameter allows injection of a logging facility.
 
 ## How to Use These Protocols
 

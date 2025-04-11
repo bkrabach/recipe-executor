@@ -9,6 +9,7 @@ class FileSpec(BaseModel):
         path (str): Relative path where the file should be written.
         content (str): The content of the file.
     """
+
     path: str
     content: str
 
@@ -20,6 +21,7 @@ class FileGenerationResult(BaseModel):
         files (List[FileSpec]): List of files to generate.
         commentary (Optional[str]): Optional commentary from the LLM.
     """
+
     files: List[FileSpec]
     commentary: Optional[str] = None
 
@@ -31,6 +33,7 @@ class RecipeStep(BaseModel):
         type (str): The type of the recipe step.
         config (Dict): Dictionary containing configuration for the step.
     """
+
     type: str
     config: Dict
 
@@ -41,4 +44,5 @@ class Recipe(BaseModel):
     Attributes:
         steps (List[RecipeStep]): A list containing the steps of the recipe.
     """
+
     steps: List[RecipeStep]

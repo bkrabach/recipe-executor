@@ -10,7 +10,7 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Load environment variables from a `.env` file at startup (using python-dotenv).
 - Parse context values supplied via command-line arguments (`--context key=value`) into an initial Context state.
 - Initialize a logging system and direct log output to a specified directory.
-- Create the Context and Executor instances and orchestrate the recipe execution by calling `Executor.execute` with the provided context.
+- Create the Context and Executor instances and orchestrate the recipe execution by running an asyncio event loop to call `await Executor.execute` with the provided context.
 - Handle successful completion by reporting execution time, and handle errors by logging and exiting with a non-zero status.
 
 ## Implementation Considerations
@@ -18,7 +18,11 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Use Python's built-in `argparse` for argument parsing.
 - Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of strings.
 - Use the `ContextProtocol` interface (via the concrete `Context` implementation) to store context data. The Main component should not depend on the internal details of Context beyond the interface.
-- Use the `ExecutorProtocol` interface (via the concrete `Executor` class) to run recipes. This decouples Main from the Executor's implementation except for the known `execute` method contract.
+- Use the `ExecutorProtocol` interface (via the concrete `Executor` class) to run recipes. This decouples Main from the Executor's implementation except for the known async `execute` method contract.
+- Implement asynchronous execution:
+  - Define an async `main_async` function that performs the core execution logic
+  - In the `main` entry point, run this async function using `asyncio.run(main_async())`
+  - This enables proper async/await usage throughout the execution pipeline
 - Prevent import cycles by importing the Executor and Context through the package (ensuring the Protocols component is used for type references, but in implementation Main will instantiate the concrete classes).
 - Keep the main logic linear and straightforward: parse inputs, setup context and logger, run executor, handle errors. Avoid additional complexity or long-running logic in Main; delegate to Executor and other components.
 - Ensure that any exception raised during execution is caught and results in a clean error message to `stderr` and an appropriate exit code (`1` for failure).
@@ -38,6 +42,7 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 - **python-dotenv** - (Required) Loads environment variables from a file at startup.
 - **argparse** - (Required) Parses command-line arguments.
+- **asyncio** - (Required) Manages the event loop for asynchronous execution.
 - **logging** - (Required) The Python standard logging library is used indirectly via the Logger component and for any ad-hoc logging in Main.
 - **sys** and **time** - (Required) Used for exiting with status codes and measuring execution time.
 - **typing** - (Optional) Used for type annotations (e.g., `Dict[str, str]` for context parsing).
@@ -70,4 +75,6 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Support additional command-line arguments for features like selecting a specific execution model or verbosity level for logging.
 - Possibly allow Main to accept recipes in other formats or from other sources (e.g., via URL or stdin) in the future, with minimal changes.
 - Integration with a higher-level CLI framework or packaging (for instance, making `recipe-executor` an installable CLI command, which is already partially done via the `pyproject.toml` script entry).
+- Support for concurrent recipe execution with progress tracking
+- Advanced asyncio features like custom event loop policies or timeouts for the entire execution
 - Additional error codes for different failure modes (though currently all failures are generalized to exit code 1 for simplicity).

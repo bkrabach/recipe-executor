@@ -30,7 +30,7 @@ To illustrate how `BaseStep` is used, let's say you want to create a new step ty
        def __init__(self, config: dict, logger=None):
            super().__init__(EchoConfig(**config), logger)
 
-       def execute(self, context: ContextProtocol) -> None:
+       async def execute(self, context: ContextProtocol) -> None:
            # Simply log the message
            self.logger.info(f"Echo: {self.config.message}")
    ```

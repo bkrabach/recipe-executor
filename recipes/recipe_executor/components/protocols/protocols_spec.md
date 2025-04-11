@@ -7,8 +7,9 @@ The Protocols component defines the shared interface contracts for core parts of
 ## Core Requirements
 
 - Define a `ContextProtocol` that captures the required behaviors of the Context (dictionary-like access, retrieval, iteration, cloning).
-- Define a `StepProtocol` that captures the execution interface for any step (the `execute(context)` method signature).
-- Define an `ExecutorProtocol` that captures the interface of the executor (the `execute(recipe, context, logger)` method signature).
+- Define a `StepProtocol` that captures the execution interface for any step (the async `execute(context)` method signature).
+- Define an `ExecutorProtocol` that captures the interface of the executor (the async `execute(recipe, context, logger)` method signature).
+- Support asynchronous execution throughout the system to enable non-blocking I/O operations.
 - Ensure these protocols are the single source of truth for their respective contracts, referenced throughout the codebase for type annotations and documentation.
 - Eliminate direct references to concrete classes (e.g., `Context` or `Executor`) in other components’ interfaces by using these protocol definitions, thereby avoiding circular dependencies.
 - Follow the project's minimalist design philosophy: interfaces should be concise, containing only what is necessary for inter-component communication.
@@ -18,8 +19,8 @@ The Protocols component defines the shared interface contracts for core parts of
 - Use Python's `typing.Protocol` to define interfaces in a structural subtyping manner. This allows classes to implement the protocols without explicit inheritance, maintaining loose coupling.
 - Mark protocol interfaces with `@runtime_checkable` to allow runtime enforcement (e.g., in tests) if needed, without impacting normal execution.
 - The `ContextProtocol` should include all methods that other components (steps, executor) rely on. This includes standard mapping methods (`__getitem__`, `__setitem__`, etc.), as well as `get`, `clone`, and any other utility needed for context usage (like `keys`, `as_dict`).
-- The `StepProtocol` interface is minimal by design (just the `execute` method with a `ContextProtocol` parameter), since step initialization and configuration are handled separately. This focuses the contract on execution behavior only.
-- The `ExecutorProtocol` should accept a recipe in various forms (string path, JSON string, or dict) and a context implementing `ContextProtocol`. It returns `None` and is expected to raise exceptions on errors (as documented in Executor component). Logging is passed optionally.
+- The `StepProtocol` interface is minimal by design (just the async `execute` method with a `ContextProtocol` parameter), since step initialization and configuration are handled separately. This focuses the contract on execution behavior only.
+- The `ExecutorProtocol` should define an async `execute` method that accepts a recipe in various forms (string path, JSON string, or dict) and a context implementing `ContextProtocol`. It returns `None` and is expected to raise exceptions on errors (as documented in Executor component). Logging is passed optionally.
 - No actual business logic or data storage should exist in `protocols.py`; it strictly contains interface definitions with `...` (ellipsis) as method bodies. This keeps it aligned with the "contracts only" role of the component.
 - Ensure naming and signatures exactly match those used in concrete classes to avoid confusion. For example, `ContextProtocol.clone()` returns a `ContextProtocol` to allow flexibility in context implementations.
 - Keep the protocols in a single file (`protocols.py`) at the root of the package (no sub-package), consistent with single-file component convention. This file becomes a lightweight dependency for any module that needs the interfaces.

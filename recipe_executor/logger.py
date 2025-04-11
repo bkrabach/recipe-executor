@@ -1,11 +1,10 @@
 import logging
 import os
 import sys
-from logging import Logger
 from typing import Optional
 
 
-def init_logger(log_dir: str = "logs") -> Logger:
+def init_logger(log_dir: str = "logs") -> logging.Logger:
     """
     Initializes a logger that writes to stdout and to log files (debug/info/error).
     Clears existing logs on each run.
@@ -19,59 +18,66 @@ def init_logger(log_dir: str = "logs") -> Logger:
     Raises:
         Exception: If log directory cannot be created or log files cannot be opened.
     """
-    logger = logging.getLogger("RecipeExecutor")
-    logger.setLevel(logging.DEBUG)  # Capture all levels
-
-    # Reset any existing handlers to ensure consistent configuration
-    if logger.hasHandlers():
-        logger.handlers.clear()
-
-    # Create log directory if it does not exist, with error handling
+    # Create log directory if it doesn’t exist
     try:
         os.makedirs(log_dir, exist_ok=True)
     except Exception as e:
-        # Log to stderr since file logging isn't configured yet
         error_message = f"Failed to create log directory '{log_dir}': {e}"
-        sys.stderr.write(error_message + "\n")
-        raise Exception(error_message)
+        print(error_message, file=sys.stderr)
+        raise Exception(error_message) from e
 
-    # Define a consistent log format
-    log_format = "%(asctime)s [%(levelname)s] %(message)s"
-    formatter = logging.Formatter(log_format)
+    # Create or get the logger for RecipeExecutor
+    logger = logging.getLogger("RecipeExecutor")
+    logger.setLevel(logging.DEBUG)  # Capture all messages
+    logger.propagate = False  # Avoid duplicate logs if root logger is configured
 
-    # Create File Handlers with mode 'w' to clear previous logs
+    # Clear existing handlers
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Define log format
+    log_format = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+
+    # File handler for DEBUG level (all messages)
     try:
-        debug_file = os.path.join(log_dir, "debug.log")
-        debug_handler = logging.FileHandler(debug_file, mode='w')
+        debug_handler = logging.FileHandler(os.path.join(log_dir, "debug.log"), mode='w')
         debug_handler.setLevel(logging.DEBUG)
-        debug_handler.setFormatter(formatter)
-
-        info_file = os.path.join(log_dir, "info.log")
-        info_handler = logging.FileHandler(info_file, mode='w')
-        info_handler.setLevel(logging.INFO)
-        info_handler.setFormatter(formatter)
-
-        error_file = os.path.join(log_dir, "error.log")
-        error_handler = logging.FileHandler(error_file, mode='w')
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(formatter)
+        debug_handler.setFormatter(log_format)
+        logger.addHandler(debug_handler)
     except Exception as e:
-        error_message = f"Failed to set up log file handlers: {e}"
-        sys.stderr.write(error_message + "\n")
-        raise Exception(error_message)
+        error_message = f"Failed to create debug log file: {e}"
+        logger.error(error_message)
+        raise Exception(error_message) from e
 
-    # Create console (stdout) handler with level INFO
+    # File handler for INFO level and above
+    try:
+        info_handler = logging.FileHandler(os.path.join(log_dir, "info.log"), mode='w')
+        info_handler.setLevel(logging.INFO)
+        info_handler.setFormatter(log_format)
+        logger.addHandler(info_handler)
+    except Exception as e:
+        error_message = f"Failed to create info log file: {e}"
+        logger.error(error_message)
+        raise Exception(error_message) from e
+
+    # File handler for ERROR level and above
+    try:
+        error_handler = logging.FileHandler(os.path.join(log_dir, "error.log"), mode='w')
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(log_format)
+        logger.addHandler(error_handler)
+    except Exception as e:
+        error_message = f"Failed to create error log file: {e}"
+        logger.error(error_message)
+        raise Exception(error_message) from e
+
+    # Console handler for INFO level and above
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
-
-    # Add all handlers to the logger
-    logger.addHandler(debug_handler)
-    logger.addHandler(info_handler)
-    logger.addHandler(error_handler)
+    console_handler.setFormatter(log_format)
     logger.addHandler(console_handler)
 
-    # Log debug message for initialization
-    logger.debug("Initializing logger component")
+    # Log debug message indicating initialization
+    logger.debug("Initializing RecipeExecutor logger with log directory: '%s'", log_dir)
 
     return logger

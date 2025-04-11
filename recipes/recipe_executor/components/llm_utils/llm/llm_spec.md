@@ -9,6 +9,7 @@ The LLM component provides a unified interface for interacting with various larg
 - Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Gemini (not Vertex))
 - Provide model initialization based on a standardized model identifier format
 - Encapsulate LLM API details behind a unified interface
+- Use PydanticAI's async interface for non-blocking LLM calls
 - Use PydanticAI for consistent handling and validation of LLM responses
 - Implement basic error handling
 - Support structured output format for file generation
@@ -22,7 +23,9 @@ The LLM component provides a unified interface for interacting with various larg
   - pydantic_ai.models.anthropic.AnthropicModel
   - pydantic_ai.models.gemini.GeminiModel
 - Create a PydanticAI Agent with the model and a structured output type
-- Use the `run_sync` method of the Agent to make requests
+- Implement fully asynchronous execution:
+  - Make `call_llm` an async function (`async def call_llm`)
+  - Use `await agent.run(prompt)` method of the Agent to make requests
 - CRITICAL: make sure to return the result.data in the call_llm method
 
 ## Logging

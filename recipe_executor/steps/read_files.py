@@ -1,9 +1,10 @@
 import os
-from typing import Union, List
+import logging
+from typing import Any, List, Union, Optional
 
+from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
-from recipe_executor.protocols import ContextProtocol
 
 
 class ReadFilesConfig(StepConfig):
@@ -18,6 +19,7 @@ class ReadFilesConfig(StepConfig):
             - "concat" (default): Concatenate all files with newlines between filenames + contents
             - "dict": Store a dictionary with filenames as keys and contents as values
     """
+
     path: Union[str, List[str]]
     artifact: str
     optional: bool = False
@@ -25,94 +27,108 @@ class ReadFilesConfig(StepConfig):
 
 
 class ReadFilesStep(BaseStep[ReadFilesConfig]):
-    def __init__(self, config: dict, logger=None):
-        # Initialize configuration and logger using the base step
-        super().__init__(ReadFilesConfig(**config), logger)
+    """
+    ReadFilesStep reads one or more files from the filesystem, processes templated paths, and stores their content
+    in the execution context under the specified artifact key. It supports single or multiple file reads and
+    flexible content merging options.
+    """
+    
+    def __init__(self, config: Any, logger: Optional[logging.Logger] = None) -> None:
+        # Ensure config is a ReadFilesConfig object, not a raw dict
+        if not isinstance(config, ReadFilesConfig):
+            config = ReadFilesConfig(**config)
+        super().__init__(config, logger)
+    
+    async def execute(self, context: ContextProtocol) -> None:
+        # Resolve the raw paths from configuration
+        raw_paths: Union[str, List[str]] = self.config.path
+        file_paths: List[str] = []
 
-    def execute(self, context: ContextProtocol) -> None:
-        """
-        Execute the step: read one or more files, merge their contents as specified,
-        and store the result into the context under the given artifact key.
-        """
-        # Normalize the input paths
-        raw_paths = self.config.path
-        if isinstance(raw_paths, str):
-            # Check if the string contains comma-separated paths
+        if isinstance(raw_paths, list):
+            file_paths = raw_paths
+        elif isinstance(raw_paths, str):
             if "," in raw_paths:
-                paths = [p.strip() for p in raw_paths.split(",") if p.strip()]
+                file_paths = [p.strip() for p in raw_paths.split(",") if p.strip()]
             else:
-                paths = [raw_paths.strip()]
-        elif isinstance(raw_paths, list):
-            paths = raw_paths
+                file_paths = [raw_paths.strip()]
         else:
-            raise ValueError(f"Invalid type for path: {type(raw_paths)}")
+            raise ValueError(f"Unsupported type for path: {type(raw_paths)}")
 
         # Render template for each path
         rendered_paths: List[str] = []
-        for path in paths:
+        for path in file_paths:
             try:
                 rendered = render_template(path, context)
                 rendered_paths.append(rendered)
+                self.logger.debug(f"Rendered path: '{path}' to '{rendered}'")
             except Exception as e:
                 self.logger.error(f"Error rendering template for path '{path}': {e}")
                 raise
 
-        # Read file(s) and accumulate their contents
-        # We store tuples of (identifier, content). For 'dict' mode, identifier is basename.
-        file_contents: List[tuple] = []
-        merge_mode = self.config.merge_mode
+        # Initialize storage based on merge_mode
+        merge_mode = self.config.merge_mode.lower()
+        # For single file, even with concat mode, we return a string for backward compatibility
+        is_single = len(rendered_paths) == 1
 
-        for path in rendered_paths:
-            self.logger.debug(f"Attempting to read file: {path}")
+        # Initialize both storage variables to avoid "possibly unbound" errors
+        aggregated_result: dict = {}
+        aggregated_result_list: List[str] = []
+        final_content: Any = None
 
-            if not os.path.exists(path):
-                message = f"File not found: {path}"
+        # Validate merge_mode
+        if merge_mode not in ["dict", "concat"]:
+            raise ValueError(f"Unsupported merge_mode: {self.config.merge_mode}")
+
+        # Iterate over each rendered file path and read the contents
+        for rendered_path in rendered_paths:
+            self.logger.debug(f"Attempting to read file: {rendered_path}")
+            if not os.path.exists(rendered_path):
+                msg = f"File not found: {rendered_path}"
                 if self.config.optional:
-                    self.logger.warning(message + " (optional file, handling accordingly)")
+                    self.logger.warning(msg + " (optional file, continuing)")
                     if merge_mode == "dict":
-                        file_contents.append((os.path.basename(path), ""))
-                    else:
-                        # For concat mode, skip missing files
-                        continue
+                        # Use empty string for missing optional file
+                        key = os.path.basename(rendered_path)
+                        aggregated_result[key] = ""
+                    elif merge_mode == "concat":
+                        # For single file, assign empty string; for multiple files, skip missing file
+                        if is_single:
+                            aggregated_result_list.append("")
+                        else:
+                            self.logger.debug(f"Skipping missing optional file: {rendered_path}")
+                    continue
                 else:
-                    raise FileNotFoundError(message)
+                    self.logger.error(msg)
+                    raise FileNotFoundError(msg)
+
             try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                self.logger.info(f"Successfully read file: {path}")
-                if merge_mode == "dict":
-                    file_contents.append((os.path.basename(path), content))
-                else:
-                    file_contents.append((path, content))
+                with open(rendered_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                self.logger.info(f"Successfully read file: {rendered_path}")
             except Exception as e:
-                self.logger.error(f"Error reading file '{path}': {e}")
+                self.logger.error(f"Error reading file {rendered_path}: {e}")
                 raise
 
-        # If no content was read, handle accordingly
-        if not file_contents:
-            if self.config.optional:
-                self.logger.info(f"No files were read; storing empty content for artifact '{self.config.artifact}'")
-                final_content = {} if merge_mode == "dict" else ""
-            else:
-                raise FileNotFoundError(f"None of the specified files were found: {rendered_paths}")
-        elif len(file_contents) == 1:
-            # Single file behavior: maintain original behavior
             if merge_mode == "dict":
-                final_content = {file_contents[0][0]: file_contents[0][1]}
-            else:
-                final_content = file_contents[0][1]
-        else:
-            # Multiple files handling
-            if merge_mode == "dict":
-                final_content = {filename: content for filename, content in file_contents}
-            else:
-                # Concatenate with newlines between each file's content, including a header with the file name
-                content_list = []
-                for identifier, content in file_contents:
-                    header = os.path.basename(identifier)
-                    content_list.append(f"{header}:\n{content}")
-                final_content = "\n".join(content_list)
+                key = os.path.basename(rendered_path)
+                aggregated_result[key] = content
+            elif merge_mode == "concat":
+                # For multiple files, include a header with the filename
+                if is_single:
+                    aggregated_result_list.append(content)
+                else:
+                    header = f"File: {os.path.basename(rendered_path)}"
+                    aggregated_result_list.append(f"{header}\n{content}")
 
-        # Store the final result into the context under the specified artifact key
+        # Finalize artifact based on merge_mode
+        if merge_mode == "dict":
+            final_content: Any = aggregated_result
+        elif merge_mode == "concat":
+            if is_single:
+                final_content = aggregated_result_list[0] if aggregated_result_list else ""
+            else:
+                final_content = "\n\n".join(aggregated_result_list)
+
+        # Store the result in context under the specified artifact key
         context[self.config.artifact] = final_content
-        self.logger.info(f"Stored file content under artifact key '{self.config.artifact}' in context.")
+        self.logger.info(f"Stored file content under context key '{self.config.artifact}'")
