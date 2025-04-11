@@ -7,7 +7,7 @@
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }

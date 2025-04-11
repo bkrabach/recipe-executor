@@ -5,31 +5,31 @@
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json"
         }
       ],
       "max_concurrency": 0,

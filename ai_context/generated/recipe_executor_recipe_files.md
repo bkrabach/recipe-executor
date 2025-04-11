@@ -1,9 +1,25 @@
+=== File: recipes/recipe_executor/ai_context/DEV_GUIDE_FOR_PYTHON.md ===
+# Dev Guide for Python
+
+When contributing to the Python codebase, please follow these guidelines to ensure consistency and maintainability.
+
+- Place import statements at the top of the file.
+- All optional parameters should use `Optional` from the `typing` module.
+- Set types for all variables, including `self` variables in classes.
+- Use `List`, `Dict`, and other type hints from the `typing` module for type annotations, include the type of the list or dictionary.
+- Initialize any variables that will be used outside of a block prior to the block, including `if`, `for`, `while`, `try`, etc.
+- Assume that all dependencies mentioned in the component spec or docs are installed, do not write guards for them.
+- Do not create main functions for components that do not have a main function listed in the spec.
+- Use full names for variables, classes, and functions. For example, use `get_workspace` instead of `gw`.
+- For `__init__.py` files, use `__all__` to define the public API of the module.
+
+
 === File: recipes/recipe_executor/components/context/context_create.json ===
 {
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "context",
         "component_path": "/",
@@ -127,7 +143,7 @@ The `clone()` method creates a deep copy of the Context, including all artifacts
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -212,17 +228,17 @@ The Context component is the shared state container for the Recipe Executor syst
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_docs.md",
       "artifact": "registry_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "executor",
         "component_path": "/",
@@ -301,7 +317,7 @@ In each case, the Executor will parse the input (if needed) and sequentially exe
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -426,7 +442,7 @@ The Executor component is the central orchestration mechanism of the Recipe Exec
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "azure_openai",
         "component_path": "/llm_utils",
@@ -520,7 +536,7 @@ AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -622,11 +638,11 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_create.json"
         }
       ],
       "max_concurrency": 0,
@@ -644,11 +660,11 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_edit.json"
         }
       ],
       "max_concurrency": 0,
@@ -663,12 +679,12 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
       "artifact": "models_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_docs.md",
       "artifact": "azure_openai_docs"
     },
     {
@@ -678,7 +694,7 @@ None
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "llm",
         "component_path": "/llm_utils",
@@ -833,7 +849,7 @@ def execute(self, context: ContextProtocol) -> None:
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm/llm_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm/llm_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -961,7 +977,7 @@ gemini_model = get_model("gemini:gemini-pro")
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "logger",
         "component_path": "/",
@@ -1102,7 +1118,7 @@ class ReadFilesStep(BaseStep):
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -1175,22 +1191,22 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
       "artifact": "executor_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
       "artifact": "logger_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "main",
         "component_path": "/",
@@ -1288,7 +1304,7 @@ The stack trace for exceptions is output to stderr (via `traceback.format_exc()`
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -1378,7 +1394,7 @@ The Main component serves as the command-line entry point for the Recipe Executo
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "models",
         "component_path": "/",
@@ -1567,7 +1583,7 @@ valid_file = FileSpec(path="file.txt", content="File content")
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -1632,7 +1648,7 @@ None
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "protocols",
         "component_path": "/",
@@ -1698,7 +1714,7 @@ All developers and AI recipes should reference **this protocols documentation** 
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -1774,17 +1790,17 @@ The Protocols component defines the shared interface contracts for core parts of
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
       "artifact": "models_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "base",
         "component_path": "/steps",
@@ -1872,7 +1888,7 @@ In summary, `BaseStep` and `StepConfig` provide a minimal framework to create ne
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -1963,31 +1979,31 @@ The Steps Base component defines the foundational abstract classes and interface
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json"
         }
       ],
       "max_concurrency": 0,
@@ -2005,31 +2021,31 @@ The Steps Base component defines the foundational abstract classes and interface
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_edit.json"
         }
       ],
       "max_concurrency": 0,
@@ -2044,27 +2060,27 @@ The Steps Base component defines the foundational abstract classes and interface
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
       "artifact": "executor_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "execute_recipe",
         "component_path": "/steps",
@@ -2253,7 +2269,7 @@ Sub-recipes can be composed to create more complex workflows:
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -2333,27 +2349,27 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_docs.md",
       "artifact": "llm_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "generate_llm",
         "component_path": "/steps",
@@ -2514,7 +2530,7 @@ This result contains a list of generated files (each as a FileSpec with a path a
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -2591,22 +2607,22 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "parallel",
         "component_path": "/steps",
@@ -2721,7 +2737,7 @@ The ParallelStep is designed to integrate seamlessly with the rest of your recip
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -2805,22 +2821,22 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "read_files",
         "component_path": "/steps",
@@ -3083,7 +3099,7 @@ Then in the recipe you can use that context value:
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -3412,7 +3428,7 @@ Then in the recipe you can use that context value:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "registry",
         "component_path": "/steps",
@@ -3501,7 +3517,7 @@ def execute_step(step: Dict[str, Any], context: Context, logger: logging.Logger)
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -3587,27 +3603,27 @@ STEP_REGISTRY.update({
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
       "artifact": "steps_base_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
       "artifact": "models_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
       "artifact": "utils_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "write_files",
         "component_path": "/steps",
@@ -3785,7 +3801,7 @@ FileSpec(
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -3862,17 +3878,17 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
       "artifact": "protocols_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "utils",
         "component_path": "/",
@@ -3968,7 +3984,7 @@ template = "{% for item in items %}Item: {{item}}{% endfor %}"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_create.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_create.json",
       "context_overrides": {
         "existing_code": "{{existing_code}}"
       }
@@ -4045,31 +4061,31 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_create.json"
         }
       ],
       "max_concurrency": 0,
@@ -4077,11 +4093,11 @@ None
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/create.json"
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/create.json"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/create.json"
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/create.json"
     }
   ]
 }
@@ -4095,31 +4111,31 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_edit.json"
         }
       ],
       "max_concurrency": 0,
@@ -4127,11 +4143,11 @@ None
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/create.json"
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/create.json"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/create.json"
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/create.json"
     }
   ]
 }
@@ -4145,67 +4161,67 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_create.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json"
         }
       ],
       "max_concurrency": 0,
@@ -4223,67 +4239,67 @@ None
       "substeps": [
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/models/models_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/utils/utils_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/main/main_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/protocols/protocols_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/llm/llm_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/llm_utils/azure_openai/azure_openai_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/registry/registry_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/base/base_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/execute_recipe/execute_recipe_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/generate_llm/generate_llm_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/parallel/parallel_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/read_files/read_files_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_edit.json"
         },
         {
           "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/steps/write_files/write_files_edit.json"
+          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_edit.json"
         }
       ],
       "max_concurrency": 0,
@@ -4298,18 +4314,18 @@ None
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
       "artifact": "spec"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
       "artifact": "usage_docs",
       "optional": true
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/codebase_generator/generate_code.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
       "context_overrides": {
         "model": "{{model|default:'openai:o3-mini'}}",
         "output_root": "{{output_root|default:'output'}}",
@@ -4320,6 +4336,35 @@ None
         "existing_code": "{{existing_code}}",
         "additional_content": "{{additional_content}}"
       }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/utils/generate_code.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+      "artifact": "implementation_philosophy"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/ai_context/DEV_GUIDE_FOR_PYTHON.md",
+      "artifact": "dev_guide",
+      "optional": true
+    },
+    {
+      "type": "generate",
+      "prompt": "You are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n{{spec}}\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}Ensure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\nGenerate the appropriate file(s): {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, etc.\n\n",
+      "model": "{{model|default:'openai:o3-mini'}}",
+      "artifact": "generated_code"
+    },
+    {
+      "type": "write_files",
+      "artifact": "generated_code",
+      "root": "{{output_root|default:'output'}}"
     }
   ]
 }

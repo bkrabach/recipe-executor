@@ -11,10 +11,10 @@ ai-context-files:
 .PHONY: recipe-executor-create
 recipe-executor-create:
 	@echo "Generating recipe executor code from scratch from recipe..."
-	@python recipe_executor/main.py recipes/recipe_executor/create.json
+	@recipe-executor recipes/recipe_executor/create.json
 
 # Edit/revise the existing recipe executor code using the recipe executor itself
 .PHONY: recipe-executor-edit
 recipe-executor-edit:
 	@echo "Revising the existing recipe executor code from recipe..."
-	@python recipe_executor/main.py recipes/recipe_executor/edit.json
+	@recipe-executor recipes/recipe_executor/edit.json

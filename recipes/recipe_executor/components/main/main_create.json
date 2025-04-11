@@ -2,22 +2,22 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/context/context_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/executor/executor_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
       "artifact": "executor_docs"
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes'}}/recipe_executor/components/logger/logger_docs.md",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
       "artifact": "logger_docs"
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "main",
         "component_path": "/",

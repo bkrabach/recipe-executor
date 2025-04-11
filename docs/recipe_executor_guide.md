@@ -54,6 +54,7 @@ recipe_executor/
 ├── logger.py          # Logging system
 ├── main.py            # CLI entry point
 ├── models.py          # Data models for steps and results
+├── protocols.py       # Protocols for interface definitions
 ├── steps/             # Step implementations
 │   ├── base.py        # Base class for all steps
 │   ├── execute_recipe.py  # Step for running sub-recipes

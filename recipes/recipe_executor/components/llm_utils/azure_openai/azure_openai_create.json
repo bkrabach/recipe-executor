@@ -12,7 +12,7 @@
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes'}}/recipe_executor/utils/build_component.json",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "azure_openai",
         "component_path": "/llm_utils",
