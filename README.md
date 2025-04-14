@@ -92,11 +92,11 @@ Windows:
 4. Activate the virtual environment:
    - **Linux/macOS**:
      ```bash
-     source venv/bin/activate
+     source .venv/bin/activate
      ```
    - **Windows**:
      ```bash
-     .\venv\Scripts\activate
+     .\.venv\Scripts\activate
      ```
 5. Test the installation by running the example recipe:
    ```bash
