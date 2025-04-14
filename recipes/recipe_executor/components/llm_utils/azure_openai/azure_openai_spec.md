@@ -17,7 +17,8 @@ The Azure OpenAI component provides a PydanticAI wrapper for Azure OpenAI models
 - If using Azure Identity:
   - AsyncAzureOpenAI client must be created with a token provider function
   - If using a custom client ID, use `ManagedIdentityCredential` with the specified client ID
-- Create an `openai.AsyncAzureOpenAI` client with the provided token provider or API key
+- Provide the function `get_azure_openai_model` to create the OpenAIModel instance
+- Create the async client using `openai.AsyncAzureOpenAI` with the provided token provider or API key
 - Create a `pydantic_ai.providers.openai.OpenAIProvider` with the Azure OpenAI client
 - Return a `pydantic_ai.models.openai.OpenAIModel` with the model name and provider
 
@@ -70,7 +71,7 @@ None
 - **AZURE_OPENAI_API_KEY** - (Required for API key auth) API key for Azure OpenAI authentication
 - **AZURE_OPENAI_ENDPOINT** - (Required) Endpoint URL for Azure OpenAI service
 - **AZURE_OPENAI_DEPLOYMENT_NAME** - (Required) Deployment name in Azure OpenAI
-- **AZURE_OPENAI_API_VERSION** - (Required) API version to use with Azure OpenAI
+- **AZURE_OPENAI_API_VERSION** - (Required) API version to use with Azure OpenAI, defaults to "2025-03-01-preview"
 - **AZURE_CLIENT_ID** - (Optional) Client ID for managed identity authentication
 
 ## Error Handling

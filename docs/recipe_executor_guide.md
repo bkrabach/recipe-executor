@@ -23,7 +23,7 @@ Recipes are JSON files with a structured format that define a series of steps to
     {
       "type": "generate",
       "prompt": "Generate content based on: {{specs}}",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generation_result"
     },
     {
@@ -122,7 +122,7 @@ Example recipe (`hello_world.json`):
     {
       "type": "generate",
       "prompt": "Write a hello world program in Python",
-      "model": "openai:o3-mini",
+      "model": "openai/o3-mini",
       "artifact": "hello_world"
     },
     {
@@ -219,7 +219,7 @@ Configure the model in the `generate` step:
 {
   "type": "generate",
   "prompt": "Generate content about: {{topic}}",
-  "model": "{{provider|default:'openai'}}:{{model_name|default:'o3-mini'}}",
+  "model": "{{provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
   "artifact": "generated_content"
 }
 ```
@@ -239,7 +239,7 @@ Configure the model in the `generate` step:
     {
       "type": "generate",
       "prompt": "Transform this CSV data into JSON: {{raw_data}}",
-      "model": "openai:o3-mini",
+      "model": "openai/o3-mini",
       "artifact": "transformed_data"
     },
     {

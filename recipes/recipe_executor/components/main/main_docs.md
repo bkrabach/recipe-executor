@@ -59,7 +59,7 @@ Error messages and exceptions are written to standard error and also logged:
 sys.stderr.write("Context Error: Invalid context format 'foo'\n")
 
 # Example of logging an execution error (in logs and stderr):
-logger.error("An error occurred during recipe execution: ...", exc_info=True)
+logger.error("An error occurred during recipe execution: ...")
 ```
 
 The stack trace for exceptions is output to stderr (via `traceback.format_exc()`) to aid in debugging issues directly from the console.

@@ -6,7 +6,7 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Core Requirements
 
-- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Gemini (not Vertex))
+- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Ollama, Gemini (not Vertex))
 - Provide model initialization based on a standardized model identifier format
 - Encapsulate LLM API details behind a unified interface
 - Use PydanticAI's async interface for non-blocking LLM calls
@@ -16,10 +16,10 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Implementation Considerations
 
-- Use a clear provider:model_name identifier format
+- Use a clear provider/model_name identifier format
 - Do not need to pass api keys directly to model classes (do need to provide to AzureProvider)
 - Use PydanticAI's provider-specific model classes, passing only the model name
-  - pydantic_ai.models.openai.OpenAIModel (used for Azure OpenAI)
+  - pydantic_ai.models.openai.OpenAIModel (used also for Azure OpenAI and Ollama)
   - pydantic_ai.models.anthropic.AnthropicModel
   - pydantic_ai.models.gemini.GeminiModel
 - Create a PydanticAI Agent with the model and a structured output type
@@ -38,7 +38,7 @@ The LLM component provides a unified interface for interacting with various larg
 ### Internal Components
 
 - **Models** - (Required) Uses FileGenerationResult and FileSpec for structured output validation
-- **Azure OpenAI** - (Required for Azure provider) Uses get_azure_openai_model for Azure OpenAI model initialization
+- **Azure OpenAI** - (Required for Azure provider) Uses `get_azure_openai_model` for Azure OpenAI model initialization, installed by default
 
 ### External Libraries
 
@@ -46,9 +46,10 @@ The LLM component provides a unified interface for interacting with various larg
 
 ### Configuration Dependencies
 
-- **DEFAULT_MODEL** - (Optional) Environment variable specifying the default LLM model in format "provider:model_name"
+- **DEFAULT_MODEL** - (Optional) Environment variable specifying the default LLM model in format "provider/model_name"
 - **OPENAI_API_KEY** - (Required for OpenAI) API key for OpenAI access
 - **ANTHROPIC_API_KEY** - (Required for Anthropic) API key for Anthropic access
+- **OLLAMA_ENDPOINT** - (Required for Ollama) Endpoint for Ollama models
 - **GEMINI_API_KEY** - (Required for Gemini) API key for Google Gemini AI access
 
 ## Error Handling
@@ -76,18 +77,19 @@ Create a PydanticAI model for the LLM provider and model name. This will be used
 def get_model(model_id: str) -> OpenAIModel | AnthropicModel | GeminiModel:
     """
     Initialize an LLM model based on a standardized model_id string.
-    Expected format: 'provider:model_name' or 'provider:model_name:deployment_name'.
+    Expected format: 'provider/model_name' or 'provider/model_name/deployment_name'.
 
     Supported providers:
     - openai
+    - azure (for Azure OpenAI, use 'azure/model_name/deployment_name' or 'azure/model_name')
     - anthropic
+    - ollama
     - gemini
-    - azure (for Azure OpenAI, use 'azure:model_name:deployment_name' or 'azure:model_name')
 
     Args:
-        model_id (str): Model identifier in format 'provider:model_name'
-            or 'provider:model_name:deployment_name'.
-            If None, defaults to 'openai:gpt-4o'.
+        model_id (str): Model identifier in format 'provider/model_name'
+            or 'provider/model_name/deployment_name'.
+            If None, defaults to 'openai/gpt-4o'.
 
     Returns:
         The model instance for the specified provider and model.
@@ -101,14 +103,42 @@ Usage example:
 
 ```python
 # Get an OpenAI model
-openai_model = get_model("openai:o3-mini")
+openai_model = get_model("openai/o3-mini")
 # Uses OpenAIModel('o3-mini')
 
 # Get an Anthropic model
-anthropic_model = get_model("anthropic:claude-3-7-sonnet-latest")
+anthropic_model = get_model("anthropic/claude-3-7-sonnet-latest")
 # Uses AnthropicModel('claude-3-7-sonnet-latest')
 
+# Get an Ollama model
+ollama_model = get_model("ollama/phi4")
+# Uses OllamaModel('phi4')
+
 # Get a Gemini model
-gemini_model = get_model("gemini:gemini-pro")
+gemini_model = get_model("gemini/gemini-pro")
 # Uses GeminiModel('gemini-pro')
+```
+
+#### Ollama
+
+- The Ollama model requires an endpoint to be specified. This can be done by passing the `endpoint` parameter to the `get_model` function.
+- The endpoint should be in the format `http://<host>:<port>`, where `<host>` is the hostname or IP address of the Ollama server and `<port>` is the port number on which the server is running.
+
+Then you can use the `OpenAIModel` class to create an instance of the model and make requests to the Ollama server.
+
+```python
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers import OpenAIProvider
+import dotenv
+import os
+
+# Load environment variables from .env file
+dotenv.load_dotenv()
+OLLAMA_ENDPOINT = os.getenv('OLLAMA_ENDPOINT', 'http://localhost:11434')
+
+# inside the get_model function
+return OpenAIModel(
+    model_name='qwen2.5-coder:7b',
+    provider=OpenAIProvider(base_url=f'{OLLAMA_ENDPOINT}/v1'),
+)
 ```

@@ -18,7 +18,7 @@
     {
       "type": "generate",
       "prompt": "Create a new JSON recipe file for use with recipe executor based on the following content:\n\n- Recipe Idea: {{recipe_idea}}\n- Context Files:\n  <CONTEXT_FILES>{{context_files}}</CONTEXT_FILES>\n  {% if additional_files != '' %}\n- Additional Files:\n  <ADDITIONAL_FILES>{{additional_files}}</ADDITIONAL_FILES>\n  {% endif %}\n\nSave the generated recipe file as `generated_recipe.json` unless a different name is specified in the recipe idea.",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generated_recipe"
     },
     {
@@ -42,7 +42,7 @@
     {
       "type": "generate",
       "prompt": "{% if combined_input != '' %}{{combined_input}}{% else %}A request was made to generate a response based upon some files that were read in, but no files were received, please respond with an `error.md` file that contains a message indicating that no files were read and that 'context.path' must contain a valid list of files.{% endif %}",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "llm_response"
     },
     {
@@ -70,7 +70,7 @@ The next step should load the following files into context as `context_files`:
 
 After that, load any other files that are passed in via the `files` context variable. These files should be considered optional and stored in a variable called `additional_files`.
 
-Use the LLM (default set to use `openai:o3-mini`) to generate the content for a JSON recipe file:
+Use the LLM (default set to use `openai/o3-mini`) to generate the content for a JSON recipe file:
 
 ```markdown
 Create a new JSON recipe file for use with recipe executor based on the following content:
@@ -116,7 +116,7 @@ Create a new recipe file based on the following content:
 Save the generated recipe file as {{target_file|default:'generated_recipe.json'}}.
 ```
 
-Default model for this recipe should be: `openai:o3-mini`
+Default model for this recipe should be: `openai/o3-mini`
 
 The final step should be a `write_files` step that saves the generated recipe file to the specified target file. The `root` should be set to: {{output_root|default:'output'}}
 

@@ -127,7 +127,7 @@ recipe = Recipe(
             type="generate",
             config={
                 "prompt": "Generate code for: {{spec}}",
-                "model": "{{model|default:'openai:o3-mini'}}",
+                "model": "{{model|default:'openai/o3-mini'}}",
                 "artifact": "code_result"
             }
         ),

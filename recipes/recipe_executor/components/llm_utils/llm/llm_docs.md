@@ -17,8 +17,8 @@ async def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[lo
 
     Args:
         prompt (str): The prompt string to be sent to the LLM.
-        model (Optional[str]): The model identifier in the format 'provider:model_name' (or 'provider:model_name:deployment_name').
-        If None, defaults to 'openai:gpt-4o'.
+        model (Optional[str]): The model identifier in the format 'provider/model_name' (or 'provider/model_name/deployment_name').
+        If None, defaults to 'openai/gpt-4o'.
         logger (Optional[logging.Logger]): Logger instance, defaults to "RecipeExecutor"
 
     Returns:
@@ -38,7 +38,7 @@ result = aync call_llm("Generate a Python utility module for handling dates.")
 # Call with specific model
 result = async call_llm(
     prompt="Create a React component for a user profile page.",
-    model="openai:o3-mini"
+    model="openai/o3-mini"
 )
 ```
 
@@ -48,8 +48,8 @@ def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResul
     Initialize an LLM agent with the specified model using structured output.
 
     Args:
-        model_id (Optional[str]): Model identifier in format 'provider:model_name'.
-        If None, defaults to 'openai:gpt-4o'.
+        model_id (Optional[str]): Model identifier in format 'provider/model_name'.
+        If None, defaults to 'openai/gpt-4o'.
 
     Returns:
         Agent[None, FileGenerationResult]: A configured Agent ready to process LLM requests and return structured results with files and commentary.
@@ -59,11 +59,11 @@ def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResul
 Usage example:
 
 ```python
-# Get default agent (openai:gpt-4o)
+# Get default agent (openai/gpt-4o)
 default_agent = get_agent()
 
 # Get agent with specific model
-custom_agent = get_agent(model_id="anthropic:claude-3-7-sonnet-latest")
+custom_agent = get_agent(model_id="anthropic/claude-3-7-sonnet-latest")
 results = custom_agent.run_async("Generate a Python utility module for handling dates.")
 # Access FileGenerationResult
 file_generation_result = results.data
@@ -76,19 +76,20 @@ The component uses a standardized model identifier format:
 
 ```
 All models:
-provider:model_name
+provider/model_name
 
 Additional option for Azure OpenAI (otherwise assume deployment_name is the same as model_name):
-azure:model_name:deployment_name
+azure/model_name/deployment_name
 ```
 
 ### Supported providers:
 
 - **openai**: OpenAI models (e.g., `gpt-4o`, `o3-mini`)
+- **azure**: Azure OpenAI models (e.g., `gpt-4o`, `o3-mini`)
+- **azure**: Azure OpenAI models with custom deployment name (e.g., `gpt-4o/my_deployment_name`)
 - **anthropic**: Anthropic models (e.g., `claude-3-7-sonnet-latest`)
+- **ollama**: Ollama models (e.g., `phi4`, `llama3.2`, `qwen2.5-coder`)
 - **gemini**: Gemini models (e.g., `gemini-pro`)
-- **azure**: Azure OpenAI models (e.g., `azure:gpt-4o`, `azure:o3-mini`)
-- **azure**: Azure OpenAI models with custom deployment name (e.g., `azure:gpt-4o:my_deployment_name`)
 
 ## Error Handling
 

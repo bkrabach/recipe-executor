@@ -13,7 +13,7 @@ class GenerateLLMConfig(StepConfig):
 
     Fields:
         prompt: The prompt to send to the LLM (templated beforehand).
-        model: The model identifier to use (provider:model_name format).
+        model: The model identifier to use (provider/model_name format).
         artifact: The name under which to store the LLM response in context.
     """
 

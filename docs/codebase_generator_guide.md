@@ -51,7 +51,7 @@ The core recipe for generating code is defined in `recipes/codebase_generator/ge
     {
       "type": "generate",
       "prompt": "You are an expert developer...",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generated_code"
     },
     {
@@ -104,7 +104,7 @@ The main component building recipe, found in `recipes/recipe_executor/utils/buil
       "type": "execute_recipe",
       "recipe_path": "recipes/codebase_generator/generate_code.json",
       "context_overrides": {
-        "model": "{{model|default:'openai:o3-mini'}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
         "output_root": "{{output_root|default:'output'}}",
         "output_path": "recipe_executor{{component_path}}",
         "language": "{{language|default:'python'}}",
@@ -298,7 +298,7 @@ List any caveats, limitations, or best practices.
       "context_overrides": {
         "component_id": "component_a",
         "component_path": "/components",
-        "model": "openai:o3-mini"
+        "model": "openai/o3-mini"
       }
     }
   ]

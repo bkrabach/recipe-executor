@@ -1,124 +1,136 @@
-import os
 import logging
+import os
 from typing import Optional
 
-from azure.identity import DefaultAzureCredential
-# Depending on your Azure Identity version, you can also import get_bearer_token_provider
-# from azure.identity import get_bearer_token_provider
-
+# Import the Azure OpenAI client from the openai library
 try:
-    # The AsyncAzureOpenAI client is provided by the OpenAI Python library when using Azure OpenAI endpoints
     from openai import AsyncAzureOpenAI
-except ImportError as e:
-    raise ImportError("openai package must be installed to use the Azure OpenAI component")
+except ImportError:
+    raise ImportError("The openai package is required. Please install it via pip install openai")
 
-from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.providers.openai import OpenAIProvider
+# Import azure-identity components
+try:
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential, get_bearer_token_provider
+except ImportError:
+    raise ImportError("The azure-identity package is required. Please install it via pip install azure-identity")
+
+# Import the PydanticAI models and providers
+try:
+    from pydantic_ai.models.openai import OpenAIModel
+    from pydantic_ai.providers.openai import OpenAIProvider
+except ImportError:
+    raise ImportError("The pydantic-ai package is required. Please install it via pip install pydantic-ai")
 
 
-def get_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = None) -> OpenAIModel:
+def get_azure_openai_model(
+    model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = None
+) -> OpenAIModel:
     """
-    Create and return a PydanticAI OpenAIModel instance configured for Azure OpenAI.
+    Create a PydanticAI OpenAIModel instance configured for Azure OpenAI.
 
-    This function reads configuration parameters from environment variables to initialize the Azure OpenAI client.
-    Depending on the environment variables, authentication is configured either via an API key or via Azure Managed Identity.
+    This function loads configuration from environment variables and creates an
+    Azure OpenAI client using either an API key or managed identity authentication.
 
     Environment Variables:
-        AZURE_OPENAI_ENDPOINT: The endpoint URL for Azure OpenAI (required).
-        AZURE_OPENAI_API_VERSION: The API version for Azure OpenAI (optional, defaults to '2024-07-01-preview').
-        AZURE_OPENAI_DEPLOYMENT_NAME: The deployment name for Azure OpenAI (optional; if not set, defaults to the provided model_name or deployment_name parameter).
-        AZURE_USE_MANAGED_IDENTITY: If set to 'true' (case-insensitive) or '1', use Azure Identity based authentication.
-        AZURE_MANAGED_IDENTITY_CLIENT_ID: (Optional) Managed Identity client ID to use with DefaultAzureCredential.
-        AZURE_OPENAI_API_KEY: Required if not using managed identity.
+        AZURE_OPENAI_ENDPOINT (str): The endpoint URL for Azure OpenAI.
+        AZURE_OPENAI_API_VERSION (str): The API version to use (default: "2025-03-01-preview").
+        AZURE_OPENAI_DEPLOYMENT_NAME (str): Default deployment name (optional, defaults to model_name).
+
+        For API key authentication:
+            AZURE_OPENAI_API_KEY (str): Your Azure OpenAI API key.
+
+        For managed identity authentication:
+            AZURE_USE_MANAGED_IDENTITY (str): Set to "true" to use managed identity.
+            AZURE_MANAGED_IDENTITY_CLIENT_ID (str): (Optional) Client ID for a user-assigned managed identity.
 
     Args:
-        model_name (str): The name of the model (e.g. 'gpt-4o').
-        deployment_name (Optional[str]): The Azure deployment name to use; if not provided, fallback to AZURE_OPENAI_DEPLOYMENT_NAME or model_name.
-        logger (Optional[logging.Logger]): Logger to use; defaults to 'RecipeExecutor'.
+        model_name (str): The underlying model name.
+        deployment_name (Optional[str]): The deployment name to use. If not provided, the environment
+           variable AZURE_OPENAI_DEPLOYMENT_NAME is used. Defaults to model_name if not set.
+        logger (Optional[logging.Logger]): Logger instance; if not provided, a default logger named "RecipeExecutor" is used.
 
     Returns:
-        OpenAIModel: An instance of OpenAIModel configured for Azure OpenAI.
+        OpenAIModel: A configured instance of a PydanticAI OpenAIModel using Azure OpenAI.
 
     Raises:
-        ValueError: If required environment variables are missing.
+        EnvironmentError: If required environment variables are missing.
+        ImportError: If required packages are not installed.
     """
     if logger is None:
         logger = logging.getLogger("RecipeExecutor")
 
-    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
-    if not endpoint:
-        raise ValueError("Missing required environment variable: AZURE_OPENAI_ENDPOINT")
+    # Load essential environment variables
+    azure_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    if not azure_endpoint:
+        raise EnvironmentError("AZURE_OPENAI_ENDPOINT environment variable not set")
 
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-07-01-preview")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-03-01-preview")
 
-    # Determine deployment name
-    env_deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME")
-    final_deployment = deployment_name or env_deployment or model_name
+    # Determine the deployment name to use
+    if deployment_name is None:
+        deployment_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", model_name)
 
-    use_managed_id = os.environ.get("AZURE_USE_MANAGED_IDENTITY", "false").lower() in ["true", "1"]
-    
-    if use_managed_id:
-        # Use Azure Managed Identity credentials
+    # Logging loaded configuration (masking the api key if present)
+    logger.debug(f"Azure OpenAI Endpoint: {azure_endpoint}")
+    logger.debug(f"Azure OpenAI API Version: {api_version}")
+    logger.debug(f"Azure OpenAI Deployment Name: {deployment_name}")
+
+    # Check if managed identity is to be used
+    use_managed = os.environ.get("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true"
+    if use_managed:
+        # Use managed identity authentication
         client_id = os.environ.get("AZURE_MANAGED_IDENTITY_CLIENT_ID")
         if client_id:
-            credential = DefaultAzureCredential(managed_identity_client_id=client_id)
+            credential = ManagedIdentityCredential(client_id=client_id)
+            auth_method = "Managed Identity (Client ID)"
         else:
             credential = DefaultAzureCredential()
-        
-        # get_bearer_token_provider is sometimes used if needed. However, many Azure SDKs accept a credential object directly.
-        # For our purpose, AsyncAzureOpenAI supports an azure_ad_token_provider parameter.
-        # Here we assume that passing the credential directly wrapped via a lambda is acceptable.
-        scope = "https://cognitiveservices.azure.com/.default"
+            auth_method = "Default Azure Credential"
 
-        # Define a simple token provider function which gets a token from the credential
-        async def azure_ad_token_provider():
-            token = credential.get_token(scope)
-            return token.token
+        # Obtain a token provider for the Azure OpenAI scope
+        # The scope for Azure Cognitive Services is "https://cognitiveservices.azure.com/.default"
+        token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
 
-        logger.info(f"Initializing Azure OpenAI client using Azure Identity (Managed Identity).")
-
+        # Initialize the AsyncAzureOpenAI client with token provider
         try:
             azure_client = AsyncAzureOpenAI(
-                azure_ad_token_provider=azure_ad_token_provider,
-                azure_endpoint=endpoint,
+                azure_endpoint=azure_endpoint,
                 api_version=api_version,
-                azure_deployment=final_deployment,
+                azure_deployment=deployment_name,
+                azure_ad_token_provider=token_provider,
             )
         except Exception as e:
-            logger.error(f"Failed to initialize AsyncAzureOpenAI client with Managed Identity: {e}")
+            logger.error(f"Error initializing AsyncAzureOpenAI client with managed identity: {e}")
             raise
     else:
         # Use API key authentication
         api_key = os.environ.get("AZURE_OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("Missing required environment variable: AZURE_OPENAI_API_KEY for API key authentication")
-        logger.info(f"Initializing Azure OpenAI client using API key (first and last visible: {api_key[0]}***{api_key[-1]}).")
+            raise EnvironmentError("AZURE_OPENAI_API_KEY must be set when not using managed identity")
+        auth_method = "API Key"
+        # Mask API key for logging (show only first and last character)
+        if len(api_key) > 2:
+            masked_api_key = api_key[0] + "*" * (len(api_key) - 2) + api_key[-1]
+        else:
+            masked_api_key = api_key
+        logger.debug(f"Using API Key: {masked_api_key}")
+
         try:
             azure_client = AsyncAzureOpenAI(
                 api_key=api_key,
-                azure_endpoint=endpoint,
+                azure_endpoint=azure_endpoint,
                 api_version=api_version,
-                azure_deployment=final_deployment,
+                azure_deployment=deployment_name,
             )
         except Exception as e:
-            logger.error(f"Failed to initialize AsyncAzureOpenAI client with API key: {e}")
+            logger.error(f"Error initializing AsyncAzureOpenAI client with API key: {e}")
             raise
 
-    # Use the Azure client to create the OpenAIProvider
+    logger.info(f"Creating Azure OpenAI model '{model_name}' using auth method: {auth_method}")
+
+    # Create the OpenAIProvider wrapping the azure_client
     provider = OpenAIProvider(openai_client=azure_client)
 
-    # Create the OpenAIModel with the provided model_name
-    model = OpenAIModel(model_name=model_name, provider=provider)
-    logger.info(f"Created Azure OpenAI model instance: model_name={model_name}, deployment={final_deployment}, auth_mode={'Managed Identity' if use_managed_id else 'API Key'}.")
-    
+    # Create an instance of the PydanticAI OpenAIModel
+    model = OpenAIModel(model_name, provider=provider)
     return model
-
-
-if __name__ == "__main__":
-    # For testing purpose
-    logging.basicConfig(level=logging.INFO)
-    try:
-        model = get_openai_model("gpt-4o")
-        print("Azure OpenAI model created successfully.")
-    except Exception as e:
-        print(f"Error: {e}")

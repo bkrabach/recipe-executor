@@ -24,7 +24,7 @@ Create a new recipe file based on the following content:
 Save the generated recipe file as {{target_file|default:'generated_recipe.json'}}.
 ```
 
-Default model for this recipe should be: `openai:o3-mini`
+Default model for this recipe should be: `openai/o3-mini`
 
 The final step should be a `write_files` step that saves the generated recipe file to the specified target file. The `root` should be set to: {{output_root|default:'output'}}
 

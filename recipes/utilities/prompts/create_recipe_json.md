@@ -13,7 +13,7 @@ The next step should load the following files into context as `context_files`:
 
 After that, load any other files that are passed in via the `files` context variable. These files should be considered optional and stored in a variable called `additional_files`.
 
-Use the LLM (default set to use `openai:o3-mini`) to generate the content for a JSON recipe file:
+Use the LLM (default set to use `openai/o3-mini`) to generate the content for a JSON recipe file:
 
 ```markdown
 Create a new JSON recipe file for use with recipe executor based on the following content:

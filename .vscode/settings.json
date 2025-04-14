@@ -65,6 +65,8 @@
     "fastmcp",
     "generatecode",
     "levelname",
+    "levelno",
+    "ollama",
     "PYDANTIC",
     "setrecursionlimit",
     "stype",

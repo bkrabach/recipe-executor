@@ -3,12 +3,13 @@
 
 When contributing to the Python codebase, please follow these guidelines to ensure consistency and maintainability.
 
-- Place import statements at the top of the file.
-- All optional parameters should use `Optional` from the `typing` module.
+- Place import statements at the top of the file, however, where appropriate, perform imports inside functions to avoid circular dependencies.
+- All optional parameters should be typed as `Optional[Type]`.
 - Set types for all variables, including `self` variables in classes.
 - Use `List`, `Dict`, and other type hints from the `typing` module for type annotations, include the type of the list or dictionary.
-- Initialize any variables that will be used outside of a block prior to the block, including `if`, `for`, `while`, `try`, etc.
+- Initialize any variables that will be used outside of a block prior to the block, including `if`, `for`, `while`, `try`, etc. to avoid issues with variables that are possibly unbound on some code paths.
 - Assume that all dependencies mentioned in the component spec or docs are installed, do not write guards for them.
+- If a variable could be `None`, verify that it is not `None` before using it.
 - Do not create main functions for components that do not have a main function listed in the spec.
 - Use full names for variables, classes, and functions. For example, use `get_workspace` instead of `gw`.
 - For `__init__.py` files, use `__all__` to define the public API of the module.
@@ -176,7 +177,7 @@ The Context component is the shared state container for the Recipe Executor syst
 - Use a Python dictionary internally to store artifacts. The keys are strings and values can be of any type (no restriction on artifact data types).
 - Store configuration in a separate dictionary (`config` attribute) to distinguish it from runtime artifacts. Configuration might be populated at context creation and typically remains constant, but it's not enforced as immutable by the class.
 - On initialization (`__init__`), deep copy any provided artifacts or config dictionaries. This prevents unintentional side effects if the caller modifies the dictionaries after passing them in.
-- Implement the magic methods `__getitem__`, `__setitem__`, `__contains__`, `__iter__`, and `__len__` to mimic standard dict behavior for artifacts. Also provide a `keys()` method for convenience.
+- Implement the magic methods `__getitem__`, `__setitem__`, `__delitem__`, `__contains__`, `__iter__`, and `__len__` to mimic standard dict behavior for artifacts. Also provide a `keys()` method for convenience.
 - The `get` method should allow a default value, similar to `dict.get`, to avoid raising exceptions on missing keys.
 - When iterating (`__iter__` or using `keys()`), return a static list or iterator that won’t be affected by concurrent modifications (for example, by copying the key list).
 - The `clone()` method should deep copy both artifacts and configuration to produce a completely independent Context. This is important for features like running sub-recipes in parallel or reusing a context as a template.
@@ -363,9 +364,9 @@ The Executor component is the central orchestration mechanism of the Recipe Exec
 - **Step List Validation**: Confirm that the `"steps"` key exists and is a list. If not, raise a `ValueError` (with a message that `"steps"` list is required).
 - **Step Execution**: Retrieve step implementations via `STEP_REGISTRY` (a global registry mapping step type names to their classes). This registry is populated by the Steps subsystem at import time. Using the registry avoids import dependencies on individual step modules inside Executor.
 - **Context Interface**: Use the `ContextProtocol` interface for the `context` parameter. The Executor should not depend on the concrete `Context` class methods beyond what the protocol guarantees (e.g., being able to get and set values). This allows future flexibility (e.g., a different context implementation) and breaks direct coupling.
-- **Protocols Compliance**: Document that Executor implements the `ExecutorProtocol`. The `execute` method signature should match exactly what `ExecutorProtocol` defines.
+- **Protocols Compliance**: Document that Executor implements the `ExecutorProtocol`. The async `execute` method signature should match exactly what `ExecutorProtocol` defines.
 - **Logging**: If a `logger` is provided to `execute()`, use it. Otherwise, create a logger specific to the Executor (`__name__` logger). Ensure that if the logger has no handlers (likely the case if not configured globally), attach a default `StreamHandler` so that messages are visible. Set an appropriate log level (e.g., INFO) for detailed execution traces.
-- **Sequential Execution**: Execute steps in a `for` loop. The context object is mutated by each step; steps later in the list see the effects of earlier steps.
+- **Sequential Execution**: Execute each defined step in the order they appear in the recipe. The context object is passed to each step's `execute` method, allowing steps to read from and write to the context. This allows for dynamic data flow between steps.
 - **Error Propagation**: Wrap exceptions from steps in a `ValueError` with a message indicating the step index and type that failed, then raise it. This makes it easier for the Main component (or any caller) to identify where the failure occurred. Use `from e` to preserve the original traceback for debugging.
 - **No Post-Processing**: After all steps are executed, simply return (implicitly `None`). The context will contain all final artifacts for the recipe, and the caller can decide what to do next. The Executor itself does not produce a separate result object.
 - **Resource Management**: The Executor does not allocate significant resources that need cleanup. File handles are closed after reading, and any heavy lifting is done inside steps. Thus, no special cleanup is required beyond letting Python garbage collect as usual.
@@ -466,7 +467,7 @@ import recipe_executor.llm_utils.azure_openai
 ## Basic Usage
 
 ```python
-def get_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> pydantic_ia.models.openai.OpenAIModel:
+def get_azure_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> pydantic_ia.models.openai.OpenAIModel:
     """
     Create a PydanticAI OpenAIModel instance, configured from environment variables for Azure OpenAI.
 
@@ -487,10 +488,10 @@ Usage example:
 
 ```python
 # Get an OpenAI model using Azure OpenAI
-openai_model = azure_openai.get_openai_model("o3-mini")
+openai_model = azure_openai.get_azure_openai_model("o3-mini")
 
 # Get an OpenAI model using Azure OpenAI with a specific deployment name
-openai_model = azure_openai.get_openai_model("o3-mini", "my_deployment_name")
+openai_model = azure_openai.get_azure_openai_model("o3-mini", "my_deployment_name")
 ```
 
 ## Environment Variables
@@ -565,7 +566,8 @@ The Azure OpenAI component provides a PydanticAI wrapper for Azure OpenAI models
 - If using Azure Identity:
   - AsyncAzureOpenAI client must be created with a token provider function
   - If using a custom client ID, use `ManagedIdentityCredential` with the specified client ID
-- Create an `openai.AsyncAzureOpenAI` client with the provided token provider or API key
+- Provide the function `get_azure_openai_model` to create the OpenAIModel instance
+- Create the async client using `openai.AsyncAzureOpenAI` with the provided token provider or API key
 - Create a `pydantic_ai.providers.openai.OpenAIProvider` with the Azure OpenAI client
 - Return a `pydantic_ai.models.openai.OpenAIModel` with the model name and provider
 
@@ -618,7 +620,7 @@ None
 - **AZURE_OPENAI_API_KEY** - (Required for API key auth) API key for Azure OpenAI authentication
 - **AZURE_OPENAI_ENDPOINT** - (Required) Endpoint URL for Azure OpenAI service
 - **AZURE_OPENAI_DEPLOYMENT_NAME** - (Required) Deployment name in Azure OpenAI
-- **AZURE_OPENAI_API_VERSION** - (Required) API version to use with Azure OpenAI
+- **AZURE_OPENAI_API_VERSION** - (Required) API version to use with Azure OpenAI, defaults to "2025-03-01-preview"
 - **AZURE_CLIENT_ID** - (Optional) Client ID for managed identity authentication
 
 ## Error Handling
@@ -720,14 +722,14 @@ from recipe_executor.llm_utils.llm import call_llm
 The LLM component provides one main function:
 
 ```python
-def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> FileGenerationResult:
+async def call_llm(prompt: str, model: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> FileGenerationResult:
     """
     Call the LLM with the given prompt and return a structured FileGenerationResult.
 
     Args:
         prompt (str): The prompt string to be sent to the LLM.
-        model (Optional[str]): The model identifier in the format 'provider:model_name' (or 'provider:model_name:deployment_name').
-        If None, defaults to 'openai:gpt-4o'.
+        model (Optional[str]): The model identifier in the format 'provider/model_name' (or 'provider/model_name/deployment_name').
+        If None, defaults to 'openai/gpt-4o'.
         logger (Optional[logging.Logger]): Logger instance, defaults to "RecipeExecutor"
 
     Returns:
@@ -742,12 +744,12 @@ Usage example:
 
 ```python
 # Call LLM with default model
-result = call_llm("Generate a Python utility module for handling dates.")
+result = aync call_llm("Generate a Python utility module for handling dates.")
 
 # Call with specific model
-result = call_llm(
+result = async call_llm(
     prompt="Create a React component for a user profile page.",
-    model="openai:o3-mini"
+    model="openai/o3-mini"
 )
 ```
 
@@ -757,8 +759,8 @@ def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResul
     Initialize an LLM agent with the specified model using structured output.
 
     Args:
-        model_id (Optional[str]): Model identifier in format 'provider:model_name'.
-        If None, defaults to 'openai:gpt-4o'.
+        model_id (Optional[str]): Model identifier in format 'provider/model_name'.
+        If None, defaults to 'openai/gpt-4o'.
 
     Returns:
         Agent[None, FileGenerationResult]: A configured Agent ready to process LLM requests and return structured results with files and commentary.
@@ -768,11 +770,11 @@ def get_agent(model_id: Optional[str] = None) -> Agent[None, FileGenerationResul
 Usage example:
 
 ```python
-# Get default agent (openai:gpt-4o)
+# Get default agent (openai/gpt-4o)
 default_agent = get_agent()
 
 # Get agent with specific model
-custom_agent = get_agent(model_id="anthropic:claude-3-7-sonnet-latest")
+custom_agent = get_agent(model_id="anthropic/claude-3-7-sonnet-latest")
 results = custom_agent.run_async("Generate a Python utility module for handling dates.")
 # Access FileGenerationResult
 file_generation_result = results.data
@@ -785,19 +787,20 @@ The component uses a standardized model identifier format:
 
 ```
 All models:
-provider:model_name
+provider/model_name
 
 Additional option for Azure OpenAI (otherwise assume deployment_name is the same as model_name):
-azure:model_name:deployment_name
+azure/model_name/deployment_name
 ```
 
 ### Supported providers:
 
 - **openai**: OpenAI models (e.g., `gpt-4o`, `o3-mini`)
+- **azure**: Azure OpenAI models (e.g., `gpt-4o`, `o3-mini`)
+- **azure**: Azure OpenAI models with custom deployment name (e.g., `gpt-4o/my_deployment_name`)
 - **anthropic**: Anthropic models (e.g., `claude-3-7-sonnet-latest`)
+- **ollama**: Ollama models (e.g., `phi4`, `llama3.2`, `qwen2.5-coder`)
 - **gemini**: Gemini models (e.g., `gemini-pro`)
-- **azure**: Azure OpenAI models (e.g., `azure:gpt-4o`, `azure:o3-mini`)
-- **azure**: Azure OpenAI models with custom deployment name (e.g., `azure:gpt-4o:my_deployment_name`)
 
 ## Error Handling
 
@@ -805,7 +808,7 @@ Example of error handling:
 
 ```python
 try:
-    result = call_llm(prompt, model_id)
+    result = async call_llm(prompt, model_id)
     # Process result
 except ValueError as e:
     # Handle invalid model ID or format
@@ -821,11 +824,11 @@ The LLM component is primarily used by the GenerateWithLLMStep:
 
 ```python
 # Example from GenerateWithLLMStep.execute()
-def execute(self, context: ContextProtocol) -> None:
+async def execute(self, context: ContextProtocol) -> None:
     rendered_prompt = render_template(self.config.prompt, context)
     rendered_model = render_template(self.config.model, context)
 
-    response = call_llm(rendered_prompt, rendered_model)
+    response = async call_llm(rendered_prompt, rendered_model)
 
     artifact_key = render_template(self.config.artifact, context)
     context[artifact_key] = response
@@ -867,23 +870,26 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Core Requirements
 
-- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Gemini (not Vertex))
+- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Ollama, Gemini (not Vertex))
 - Provide model initialization based on a standardized model identifier format
 - Encapsulate LLM API details behind a unified interface
+- Use PydanticAI's async interface for non-blocking LLM calls
 - Use PydanticAI for consistent handling and validation of LLM responses
 - Implement basic error handling
 - Support structured output format for file generation
 
 ## Implementation Considerations
 
-- Use a clear provider:model_name identifier format
+- Use a clear provider/model_name identifier format
 - Do not need to pass api keys directly to model classes (do need to provide to AzureProvider)
 - Use PydanticAI's provider-specific model classes, passing only the model name
-  - pydantic_ai.models.openai.OpenAIModel (used for Azure OpenAI)
+  - pydantic_ai.models.openai.OpenAIModel (used also for Azure OpenAI and Ollama)
   - pydantic_ai.models.anthropic.AnthropicModel
   - pydantic_ai.models.gemini.GeminiModel
 - Create a PydanticAI Agent with the model and a structured output type
-- Use the `run_sync` method of the Agent to make requests
+- Implement fully asynchronous execution:
+  - Make `call_llm` an async function (`async def call_llm`)
+  - Use `await agent.run(prompt)` method of the Agent to make requests
 - CRITICAL: make sure to return the result.data in the call_llm method
 
 ## Logging
@@ -896,7 +902,7 @@ The LLM component provides a unified interface for interacting with various larg
 ### Internal Components
 
 - **Models** - (Required) Uses FileGenerationResult and FileSpec for structured output validation
-- **Azure OpenAI** - (Required for Azure provider) Uses get_azure_openai_model for Azure OpenAI model initialization
+- **Azure OpenAI** - (Required for Azure provider) Uses `get_azure_openai_model` for Azure OpenAI model initialization, installed by default
 
 ### External Libraries
 
@@ -904,9 +910,10 @@ The LLM component provides a unified interface for interacting with various larg
 
 ### Configuration Dependencies
 
-- **DEFAULT_MODEL** - (Optional) Environment variable specifying the default LLM model in format "provider:model_name"
+- **DEFAULT_MODEL** - (Optional) Environment variable specifying the default LLM model in format "provider/model_name"
 - **OPENAI_API_KEY** - (Required for OpenAI) API key for OpenAI access
 - **ANTHROPIC_API_KEY** - (Required for Anthropic) API key for Anthropic access
+- **OLLAMA_ENDPOINT** - (Required for Ollama) Endpoint for Ollama models
 - **GEMINI_API_KEY** - (Required for Gemini) API key for Google Gemini AI access
 
 ## Error Handling
@@ -934,18 +941,19 @@ Create a PydanticAI model for the LLM provider and model name. This will be used
 def get_model(model_id: str) -> OpenAIModel | AnthropicModel | GeminiModel:
     """
     Initialize an LLM model based on a standardized model_id string.
-    Expected format: 'provider:model_name' or 'provider:model_name:deployment_name'.
+    Expected format: 'provider/model_name' or 'provider/model_name/deployment_name'.
 
     Supported providers:
     - openai
+    - azure (for Azure OpenAI, use 'azure/model_name/deployment_name' or 'azure/model_name')
     - anthropic
+    - ollama
     - gemini
-    - azure (for Azure OpenAI, use 'azure:model_name:deployment_name' or 'azure:model_name')
 
     Args:
-        model_id (str): Model identifier in format 'provider:model_name'
-            or 'provider:model_name:deployment_name'.
-            If None, defaults to 'openai:gpt-4o'.
+        model_id (str): Model identifier in format 'provider/model_name'
+            or 'provider/model_name/deployment_name'.
+            If None, defaults to 'openai/gpt-4o'.
 
     Returns:
         The model instance for the specified provider and model.
@@ -959,16 +967,44 @@ Usage example:
 
 ```python
 # Get an OpenAI model
-openai_model = get_model("openai:o3-mini")
+openai_model = get_model("openai/o3-mini")
 # Uses OpenAIModel('o3-mini')
 
 # Get an Anthropic model
-anthropic_model = get_model("anthropic:claude-3-7-sonnet-latest")
+anthropic_model = get_model("anthropic/claude-3-7-sonnet-latest")
 # Uses AnthropicModel('claude-3-7-sonnet-latest')
 
+# Get an Ollama model
+ollama_model = get_model("ollama/phi4")
+# Uses OllamaModel('phi4')
+
 # Get a Gemini model
-gemini_model = get_model("gemini:gemini-pro")
+gemini_model = get_model("gemini/gemini-pro")
 # Uses GeminiModel('gemini-pro')
+```
+
+#### Ollama
+
+- The Ollama model requires an endpoint to be specified. This can be done by passing the `endpoint` parameter to the `get_model` function.
+- The endpoint should be in the format `http://<host>:<port>`, where `<host>` is the hostname or IP address of the Ollama server and `<port>` is the port number on which the server is running.
+
+Then you can use the `OpenAIModel` class to create an instance of the model and make requests to the Ollama server.
+
+```python
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers import OpenAIProvider
+import dotenv
+import os
+
+# Load environment variables from .env file
+dotenv.load_dotenv()
+OLLAMA_ENDPOINT = os.getenv('OLLAMA_ENDPOINT', 'http://localhost:11434')
+
+# inside the get_model function
+return OpenAIModel(
+    model_name='qwen2.5-coder:7b',
+    provider=OpenAIProvider(base_url=f'{OLLAMA_ENDPOINT}/v1'),
+)
 ```
 
 
@@ -1085,6 +1121,7 @@ The logger is typically initialized in the main component and passed to the exec
 ```python
 from recipe_executor.logger import init_logger
 from recipe_executor.executor import Executor
+from typing import Optional
 
 logger = init_logger(log_dir="logs")
 executor = Executor()
@@ -1280,7 +1317,7 @@ Error messages and exceptions are written to standard error and also logged:
 sys.stderr.write("Context Error: Invalid context format 'foo'\n")
 
 # Example of logging an execution error (in logs and stderr):
-logger.error("An error occurred during recipe execution: ...", exc_info=True)
+logger.error("An error occurred during recipe execution: ...")
 ```
 
 The stack trace for exceptions is output to stderr (via `traceback.format_exc()`) to aid in debugging issues directly from the console.
@@ -1326,7 +1363,7 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Load environment variables from a `.env` file at startup (using python-dotenv).
 - Parse context values supplied via command-line arguments (`--context key=value`) into an initial Context state.
 - Initialize a logging system and direct log output to a specified directory.
-- Create the Context and Executor instances and orchestrate the recipe execution by calling `Executor.execute` with the provided context.
+- Create the Context and Executor instances and orchestrate the recipe execution by running an asyncio event loop to call `await Executor.execute` with the provided context.
 - Handle successful completion by reporting execution time, and handle errors by logging and exiting with a non-zero status.
 
 ## Implementation Considerations
@@ -1334,7 +1371,11 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Use Python's built-in `argparse` for argument parsing.
 - Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of strings.
 - Use the `ContextProtocol` interface (via the concrete `Context` implementation) to store context data. The Main component should not depend on the internal details of Context beyond the interface.
-- Use the `ExecutorProtocol` interface (via the concrete `Executor` class) to run recipes. This decouples Main from the Executor's implementation except for the known `execute` method contract.
+- Use the `ExecutorProtocol` interface (via the concrete `Executor` class) to run recipes. This decouples Main from the Executor's implementation except for the known async `execute` method contract.
+- Implement asynchronous execution:
+  - Define an async `main_async` function that performs the core execution logic
+  - In the `main` entry point, run this async function using `asyncio.run(main_async())`
+  - This enables proper async/await usage throughout the execution pipeline
 - Prevent import cycles by importing the Executor and Context through the package (ensuring the Protocols component is used for type references, but in implementation Main will instantiate the concrete classes).
 - Keep the main logic linear and straightforward: parse inputs, setup context and logger, run executor, handle errors. Avoid additional complexity or long-running logic in Main; delegate to Executor and other components.
 - Ensure that any exception raised during execution is caught and results in a clean error message to `stderr` and an appropriate exit code (`1` for failure).
@@ -1354,6 +1395,7 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 - **python-dotenv** - (Required) Loads environment variables from a file at startup.
 - **argparse** - (Required) Parses command-line arguments.
+- **asyncio** - (Required) Manages the event loop for asynchronous execution.
 - **logging** - (Required) The Python standard logging library is used indirectly via the Logger component and for any ad-hoc logging in Main.
 - **sys** and **time** - (Required) Used for exiting with status codes and measuring execution time.
 - **typing** - (Optional) Used for type annotations (e.g., `Dict[str, str]` for context parsing).
@@ -1386,6 +1428,8 @@ The Main component serves as the command-line entry point for the Recipe Executo
 - Support additional command-line arguments for features like selecting a specific execution model or verbosity level for logging.
 - Possibly allow Main to accept recipes in other formats or from other sources (e.g., via URL or stdin) in the future, with minimal changes.
 - Integration with a higher-level CLI framework or packaging (for instance, making `recipe-executor` an installable CLI command, which is already partially done via the `pyproject.toml` script entry).
+- Support for concurrent recipe execution with progress tracking
+- Advanced asyncio features like custom event loop policies or timeouts for the entire execution
 - Additional error codes for different failure modes (though currently all failures are generalized to exit code 1 for simplicity).
 
 
@@ -1535,7 +1579,7 @@ recipe = Recipe(
             type="generate",
             config={
                 "prompt": "Generate code for: {{spec}}",
-                "model": "{{model|default:'openai:o3-mini'}}",
+                "model": "{{model|default:'openai/o3-mini'}}",
                 "artifact": "code_result"
             }
         ),
@@ -1676,7 +1720,7 @@ Specifies the interface for an executable step. It declares a single method `exe
 
 ### `ExecutorProtocol`
 
-Describes the interface for recipe executors. It currently defines one primary method: `execute(recipe, context, logger=None) -> None`. An `ExecutorProtocol` implementor (like the concrete `Executor` class) must be able to take a recipe (in various forms) and a context (any `ContextProtocol` implementation) and execute the recipe's steps sequentially. The optional logger parameter allows injection of a logging facility.
+Describes the interface for recipe executors. It currently defines one primary method: `async execute(recipe, context, logger=None) -> None`. An `ExecutorProtocol` implementor (like the concrete `Executor` class) must be able to take a recipe (in various forms) and a context (any `ContextProtocol` implementation) and execute the recipe's steps sequentially. The optional (use typing.Optional) logger parameter allows injection of a logging facility.
 
 ## How to Use These Protocols
 
@@ -1733,8 +1777,9 @@ The Protocols component defines the shared interface contracts for core parts of
 ## Core Requirements
 
 - Define a `ContextProtocol` that captures the required behaviors of the Context (dictionary-like access, retrieval, iteration, cloning).
-- Define a `StepProtocol` that captures the execution interface for any step (the `execute(context)` method signature).
-- Define an `ExecutorProtocol` that captures the interface of the executor (the `execute(recipe, context, logger)` method signature).
+- Define a `StepProtocol` that captures the execution interface for any step (the async `execute(context)` method signature).
+- Define an `ExecutorProtocol` that captures the interface of the executor (the async `execute(recipe, context, logger)` method signature).
+- Support asynchronous execution throughout the system to enable non-blocking I/O operations.
 - Ensure these protocols are the single source of truth for their respective contracts, referenced throughout the codebase for type annotations and documentation.
 - Eliminate direct references to concrete classes (e.g., `Context` or `Executor`) in other components’ interfaces by using these protocol definitions, thereby avoiding circular dependencies.
 - Follow the project's minimalist design philosophy: interfaces should be concise, containing only what is necessary for inter-component communication.
@@ -1744,8 +1789,8 @@ The Protocols component defines the shared interface contracts for core parts of
 - Use Python's `typing.Protocol` to define interfaces in a structural subtyping manner. This allows classes to implement the protocols without explicit inheritance, maintaining loose coupling.
 - Mark protocol interfaces with `@runtime_checkable` to allow runtime enforcement (e.g., in tests) if needed, without impacting normal execution.
 - The `ContextProtocol` should include all methods that other components (steps, executor) rely on. This includes standard mapping methods (`__getitem__`, `__setitem__`, etc.), as well as `get`, `clone`, and any other utility needed for context usage (like `keys`, `as_dict`).
-- The `StepProtocol` interface is minimal by design (just the `execute` method with a `ContextProtocol` parameter), since step initialization and configuration are handled separately. This focuses the contract on execution behavior only.
-- The `ExecutorProtocol` should accept a recipe in various forms (string path, JSON string, or dict) and a context implementing `ContextProtocol`. It returns `None` and is expected to raise exceptions on errors (as documented in Executor component). Logging is passed optionally.
+- The `StepProtocol` interface is minimal by design (just the async `execute` method with a `ContextProtocol` parameter), since step initialization and configuration are handled separately. This focuses the contract on execution behavior only.
+- The `ExecutorProtocol` should define an async `execute` method that accepts a recipe in various forms (string path, JSON string, or dict) and a context implementing `ContextProtocol`. It returns `None` and is expected to raise exceptions on errors (as documented in Executor component). Logging is passed optionally.
 - No actual business logic or data storage should exist in `protocols.py`; it strictly contains interface definitions with `...` (ellipsis) as method bodies. This keeps it aligned with the "contracts only" role of the component.
 - Ensure naming and signatures exactly match those used in concrete classes to avoid confusion. For example, `ContextProtocol.clone()` returns a `ContextProtocol` to allow flexibility in context implementations.
 - Keep the protocols in a single file (`protocols.py`) at the root of the package (no sub-package), consistent with single-file component convention. This file becomes a lightweight dependency for any module that needs the interfaces.
@@ -1799,13 +1844,18 @@ The Protocols component defines the shared interface contracts for core parts of
       "artifact": "models_docs"
     },
     {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
+      "artifact": "protocols_docs"
+    },
+    {
       "type": "execute_recipe",
       "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
       "context_overrides": {
         "component_id": "base",
         "component_path": "/steps",
         "existing_code": "{{existing_code}}",
-        "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>"
+        "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
       }
     }
   ]
@@ -1845,7 +1895,7 @@ To illustrate how `BaseStep` is used, let's say you want to create a new step ty
        def __init__(self, config: dict, logger=None):
            super().__init__(EchoConfig(**config), logger)
 
-       def execute(self, context: ContextProtocol) -> None:
+       async def execute(self, context: ContextProtocol) -> None:
            # Simply log the message
            self.logger.info(f"Echo: {self.config.message}")
    ```
@@ -1902,38 +1952,37 @@ In summary, `BaseStep` and `StepConfig` provide a minimal framework to create ne
 
 ## Purpose
 
-The Steps Base component defines the foundational abstract classes and interfaces for all step implementations in the Recipe Executor system. It establishes a common structure and contract for steps, ensuring consistent behavior and seamless integration with the executor and context.
+The Steps Base component defines the foundational classes and interfaces for all step implementations in the Recipe Executor system. It establishes a common structure and contract for steps, ensuring consistent behavior and seamless integration with the executor and context.
 
 ## Core Requirements
 
-- Provide an abstract base class (`BaseStep`) that all concrete step classes will inherit from.
+- Provide a base class (`BaseStep`) that all step classes will inherit from.
 - Provide a base configuration model class (`StepConfig`) using Pydantic for validation of step-specific configuration.
-- Enforce a consistent interface for step execution (each step must implement an `execute(context)` method).
+- Enforce a consistent interface for step execution (each step must implement an async `execute(context)` method).
 - Utilize generics to allow `BaseStep` to be typed with a specific `StepConfig` subclass for that step, enabling type-safe access to configuration attributes within step implementations.
 - Integrate logging into steps, so each step has an optional logger to record its actions.
-- Keep the base step abstract and minimal—only define structure and common functionality, deferring actual execution logic to subclasses.
+- Keep the base step minimal—only define structure and common functionality, deferring actual execution logic to subclasses.
 
 ## Implementation Considerations
 
 - **StepConfig (Pydantic Model)**: Define a `StepConfig` class as a subclass of `BaseModel`. This serves as a base for all configurations. By default, it has no predefined fields (each step will define its own fields by extending this model). Using Pydantic ensures that step configurations are validated and parsed (e.g., types are enforced, missing fields are caught) when constructing the step.
-- **Generic ConfigType**: Use a `TypeVar` and generic class definition (`BaseStep[ConfigType]`) so that each concrete step class can specify what config type it expects. For instance, a `PrintStep` could be `BaseStep[PrintConfig]`. This allows the step implementation to access `self.config` with the correct type.
+- **Generic ConfigType**: Use a `TypeVar` and generic class definition (`BaseStep[ConfigType]`) so that each step class can specify what config type it expects. For instance, a `PrintStep` could be `BaseStep[PrintConfig]`. This allows the step implementation to access `self.config` with the correct type.
 - **BaseStep Class**:
-  - Inherit from `ABC` to indicate it's abstract and cannot be instantiated on its own.
   - Inherit from `Generic[ConfigType]` to support the generic config typing.
   - Provide an `__init__` that stores the `config` (of type ConfigType) and sets up a logger. The logger default can be a module or application logger (e.g., named "RecipeExecutor") if none is provided. This logger is used by steps to log their internal operations.
   - The `__init__` should log a debug message indicating the class name and config with which the step was initialized. This is useful for tracing execution in logs.
-  - Declare an abstract `execute(context: ContextProtocol) -> None` method. This is the core contract: every concrete step must implement this method. The use of `ContextProtocol` in the signature ensures that steps are written against the interface of context, not a specific implementation, aligning with decoupling philosophy.
-  - The abstractmethod should not provide any implementation (aside from possibly a placeholder raise of NotImplementedError, which is a safeguard).
-- **ContextProtocol Usage**: By typing the `context` parameter of `execute` as `ContextProtocol`, BaseStep makes it clear that steps should not assume a specific Context class. They just need an object that fulfills the context interface (get/set/etc.). The actual context passed at runtime will be the concrete Context, which is fine because it implements that protocol.
+  - Declare a `async execute(context: ContextProtocol) -> None` method. This is the core contract: every step must implement this method as an async method. The use of `ContextProtocol` in the signature ensures that steps are written against the interface of context, not a specific implementation, aligning with decoupling philosophy.
+  - `BaseStep` should not provide any implementation (aside from possibly a placeholder raise of NotImplementedError, which is a safeguard).
+- **ContextProtocol Usage**: By typing the `context` parameter of `execute` as `ContextProtocol`, BaseStep makes it clear that steps should not assume a specific Context class. They just need an object that fulfills the context interface (get/set/etc.). The actual context passed at runtime will be the standard `Context` class, but this allows for flexibility in testing or future changes.
 - **Logging in Steps**: Steps can use `self.logger` to log debug or info messages. By default, if the step author does nothing, a logger is available. This logger is typically passed in by the Executor (it passes its own logger to step constructors). If the Executor passes a logger, all step logs become part of the executor's logging output, keeping everything unified.
-- **No Execution Logic in BaseStep**: BaseStep should not implement any actual step logic in `execute`—that remains abstract. It may, however, include common utility methods for steps in the future, though currently it does not (keeping things simple).
+- **No Execution Logic in BaseStep**: BaseStep should not implement any actual step logic in `execute`. It may, however, include common utility methods for steps in the future, though currently it does not (keeping things simple).
 - **Step Interface Protocol**: The `BaseStep` (and by extension all steps) fulfill the `StepProtocol` as defined in the Protocols component. That protocol essentially mirrors the requirement of the `execute(context)` method. This means that any code expecting a `StepProtocol` can accept a `BaseStep` instance (or subclass).
 
 ## Logging
 
 - Debug: BaseStep’s `__init__` logs a message when a step is initialized (including the provided configuration).
-- Info: BaseStep itself does not log at info level, but concrete steps may log info messages (e.g., to note high-level actions).
-- Error: BaseStep does not handle errors; exceptions in `execute` bubble up to the Executor. Concrete steps should use the logger to record errors and let exceptions propagate unless they can handle them meaningfully.
+- Info: BaseStep itself does not log at info level, but actual steps may log info messages (e.g., to note high-level actions).
+- Error: BaseStep does not handle errors; exceptions in `execute` bubble up to the Executor. Actual steps should use the logger to record errors and let exceptions propagate unless they can handle them meaningfully.
 
 ## Component Dependencies
 
@@ -1946,7 +1995,7 @@ The Steps Base component defines the foundational abstract classes and interface
 
 - **pydantic** - (Required) The Pydantic library is used for defining step configuration classes and performing validation when instantiating them.
 - **logging** - (Required) Uses Python's logging module to handle the logger for steps.
-- **abc** (Python standard library) - (Required) Used to define `BaseStep` as an abstract base class with the `@abstractmethod` decorator.
+- **asyncio** - (Required) Used for asynchronous execution and coroutine handling.
 - **typing** - (Required) Uses `TypeVar` and `Generic` for typing the BaseStep with its config model.
 
 ### Configuration Dependencies
@@ -1955,8 +2004,7 @@ The Steps Base component defines the foundational abstract classes and interface
 
 ## Error Handling
 
-- BaseStep does not implement run-time error handling. It defines the interface and common setup. Any exceptions that occur within a concrete step's `execute` method will propagate up unless handled inside that step.
-- If a concrete step fails to implement `execute`, Python's ABC mechanism will prevent instantiation of that step class (TypeError on instantiation for not implementing abstract methods).
+- BaseStep does not implement run-time error handling. It defines the interface and common setup. Any exceptions that occur within an actual step's `execute` method will propagate up unless handled inside that step.
 - In the unlikely case that `BaseStep.execute` is called (e.g., via `super()` call from a subclass that doesn't override it), it will raise `NotImplementedError`, clearly indicating that the subclass should implement it. This is a safeguard and developmental aid.
 
 ## Output Files
@@ -1966,8 +2014,7 @@ The Steps Base component defines the foundational abstract classes and interface
 ## Future Considerations
 
 - **Additional Base Functionality**: If many steps end up needing common helper functions (for example, to emit standardized log messages or handle common error patterns), such helpers could be added to BaseStep.
-- **Async Steps**: In the future, if we introduce asynchronous step execution, we might consider an async version of BaseStep or modifications to allow `execute` to be a coroutine. This would be a significant change requiring careful design.
-- **Step Lifecycle Hooks**: Potentially provide hooks like `setup()` or `teardown()` in BaseStep that steps can override for pre- and post-execution logic. Currently, this is not needed.
+- **Step Lifecycle Hooks**: Potentially provide hooks like `async setup()` or `async teardown()` in BaseStep that steps can override for pre- and post-execution logic. Currently, this is not needed.
 - **Integration with Executor**: Ensure that any changes here remain compatible with how the Executor instantiates and uses steps. For instance, if we changed the `execute` signature or added new responsibilities to BaseStep, we must update the Protocols and Executor accordingly.
 
 
@@ -2302,6 +2349,10 @@ The ExecuteRecipeStep component enables recipes to execute other recipes as sub-
 - Keep the implementation simple and focused on a single responsibility
 - Log detailed information about sub-recipe execution
 
+## Implementation Hints
+
+- Import the `Executor` within the `execute` method to avoid circular dependencies
+
 ## Logging
 
 - Debug: None
@@ -2401,7 +2452,7 @@ class GenerateLLMConfig(StepConfig):
 
     Fields:
         prompt: The prompt to send to the LLM (templated beforehand).
-        model: The model identifier to use (provider:model_name format).
+        model: The model identifier to use (provider/model_name format).
         artifact: The name under which to store the LLM response in context.
     """
 
@@ -2431,7 +2482,7 @@ The GenerateWithLLMStep can be used in recipes like this:
     {
       "type": "generate",
       "prompt": "Generate Python code for a utility that: {{requirements}}",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generation_result"
     }
   ]
@@ -2453,7 +2504,7 @@ The prompt can include template variables from the context:
     {
       "type": "generate",
       "prompt": "You are an expert Python developer. Based on the following specification, generate code for a component:\n\n{{spec}}",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "codegen_result"
     }
   ]
@@ -2470,7 +2521,7 @@ The model identifier can also use template variables:
     {
       "type": "generate",
       "prompt": "Generate code based on: {{spec}}",
-      "model": "{{model_provider|default:'openai'}}:{{model_name|default:'o3-mini'}}",
+      "model": "{{model_provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
       "artifact": "codegen_result"
     }
   ]
@@ -2487,7 +2538,7 @@ The artifact key can be templated to create dynamic storage locations:
     {
       "type": "generate",
       "prompt": "Generate code for: {{component_name}}",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "{{component_name}}_result"
     }
   ]
@@ -2515,7 +2566,7 @@ This result contains a list of generated files (each as a FileSpec with a path a
 
 - The artifact key can be dynamic using template variables
 - The prompt is rendered using the current context (ContextProtocol) before sending to the LLM
-- The model identifier follows the format `"provider:model_name"`
+- The model identifier follows the format `"provider/model_name"`
 - The LLM response is returned as a FileGenerationResult object (with `files` and `commentary` fields)
 - LLM calls may incur costs with the respective provider
 
@@ -2759,15 +2810,20 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 - Clone the current execution context for each sub-step to ensure isolation
 - Execute sub-steps concurrently with a configurable maximum concurrency limit
 - Support an optional delay between launching each sub-step
-- Wait for all sub-steps to complete before proceeding
+- Wait for all sub-steps to complete before proceeding, with appropriate timeout handling
 - Implement fail-fast behavior: if any sub-step fails, stop launching new ones and report the error
+- Prevent nested thread pool creation that could lead to deadlocks or resource exhaustion
+- Provide reliable completion of all tasks regardless of recipe structure or nesting
 
 ## Implementation Considerations
 
-- Use a ThreadPoolExecutor to manage parallel execution of sub-steps
+- Use asyncio for concurrency control and task management
+- Implement an async execution model to allow for non-blocking I/O operations
+- When executing substeps, properly await async operations and run sync operations directly
+- Add configurable timeouts to prevent indefinite waiting for task completion
 - Use `Context.clone()` to create independent context copies for each sub-step
-- Implement a configurable launch delay (using `time.sleep`) for staggered start times
-- Monitor exceptions from each thread and implement fail-fast behavior
+- Implement a configurable launch delay (using `asyncio.sleep`) for staggered start times
+- Monitor exceptions and implement fail-fast behavior
 - Provide clear logging for sub-step lifecycle events and execution summary
 - Manage resources efficiently to prevent memory or thread leaks
 
@@ -2813,7 +2869,9 @@ None
 - Support arbitrary step types beyond just execute_recipe
 - Aggregate results from sub-steps back into the parent context
 - Dynamic concurrency control based on system load
-- Timeout and isolation options for sub-steps
+- Configurable per-step timeouts with proper cancellation
+- Task prioritization within the global executor
+- Monitoring and reporting for resource usage across the task queue
 
 
 === File: recipes/recipe_executor/components/steps/read_files/read_files_create.json ===
@@ -3489,14 +3547,14 @@ import logging
 from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
-def execute_step(step: Dict[str, Any], context: Context, logger: logging.Logger) -> None:
+async def execute_step(step: Dict[str, Any], context: Context, logger: logging.Logger) -> None:
     step_type = step["type"]
     if step_type not in STEP_REGISTRY:
         raise ValueError(f"Unknown step type '{step_type}'")
 
     step_class = STEP_REGISTRY[step_type]
     step_instance = step_class(step, logger)
-    step_instance.execute(context)
+    await step_instance.execute(context)
 ```
 
 ## Important Notes
@@ -4327,7 +4385,7 @@ None
       "type": "execute_recipe",
       "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
       "context_overrides": {
-        "model": "{{model|default:'openai:o3-mini'}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
         "output_root": "{{output_root|default:'output'}}",
         "output_path": "recipe_executor{{component_path}}",
         "language": "{{language|default:'python'}}",
@@ -4358,7 +4416,7 @@ None
     {
       "type": "generate",
       "prompt": "You are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n{{spec}}\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}Ensure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\nGenerate the appropriate file(s): {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, etc.\n\n",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generated_code"
     },
     {

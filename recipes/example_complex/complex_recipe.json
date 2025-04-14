@@ -13,7 +13,7 @@
     {
       "type": "generate",
       "prompt": "Using the following main specification:\n\n{main_spec}\n\nand the auxiliary details:\n\n{aux_spec}\n\nGenerate a comprehensive Python module that contains a main function printing 'Hello from Main!' and an auxiliary function returning a greeting. Return a JSON object with keys 'files' (a list of file objects with 'path' and 'content') and 'commentary'.",
-      "model": "{{model|default:'openai:o3-mini'}}",
+      "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generated_module"
     },
     {

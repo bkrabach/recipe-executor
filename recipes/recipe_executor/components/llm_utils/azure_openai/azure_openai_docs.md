@@ -9,7 +9,7 @@ import recipe_executor.llm_utils.azure_openai
 ## Basic Usage
 
 ```python
-def get_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> pydantic_ia.models.openai.OpenAIModel:
+def get_azure_openai_model(model_name: str, deployment_name: Optional[str] = None, logger: Optional[logging.Logger] = "RecipeExecutor") -> pydantic_ia.models.openai.OpenAIModel:
     """
     Create a PydanticAI OpenAIModel instance, configured from environment variables for Azure OpenAI.
 
@@ -30,10 +30,10 @@ Usage example:
 
 ```python
 # Get an OpenAI model using Azure OpenAI
-openai_model = azure_openai.get_openai_model("o3-mini")
+openai_model = azure_openai.get_azure_openai_model("o3-mini")
 
 # Get an OpenAI model using Azure OpenAI with a specific deployment name
-openai_model = azure_openai.get_openai_model("o3-mini", "my_deployment_name")
+openai_model = azure_openai.get_azure_openai_model("o3-mini", "my_deployment_name")
 ```
 
 ## Environment Variables
