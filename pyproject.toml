@@ -8,7 +8,8 @@ requires-python = ">=3.11"
 dependencies = [
     "azure-identity>=1.21.0",
     "dotenv>=0.9.9",
-    "pydantic-ai>=0.0.55",
+    "jsonschema>=4.23.0",
+    "pydantic-ai-slim[anthropic,openai]>=0.1.1",
     "pydantic-settings>=2.8.1",
     "python-dotenv>=1.1.0",
     "python-liquid>=2.0.1",
@@ -16,6 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "debugpy>=1.8.14",
     "pyright>=1.1.389",
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",

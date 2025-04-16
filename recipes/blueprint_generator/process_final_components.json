@@ -1,0 +1,50 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{output_dir}}/components/components_manifest.json",
+        "artifact": "components_manifest"
+      }
+    },
+    {
+      "type": "loop",
+      "config": {
+        "items": "{{components_manifest}}",
+        "item_key": "component",
+        "process_recipe": "process_component.json",
+        "result_key": "processed_components"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Analyze all processed components to determine which need human review:\n\n{{processed_components}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "component_status"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "component_status",
+        "root": "{{output_dir}}/evaluation"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "For all components ready for generation, analyze dependencies and determine generation order:\n\n{{component_status}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "generation_order"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "generation_order",
+        "root": "{{output_dir}}/evaluation"
+      }
+    }
+  ]
+}

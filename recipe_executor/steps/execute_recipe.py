@@ -59,7 +59,7 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
         self.logger.info(f"Starting sub-recipe execution: {rendered_recipe_path}")
 
         try:
-            executor = Executor()
+            executor = Executor(self.logger)
             # The executor uses the same context which may be updated by the sub-recipe
             await executor.execute(rendered_recipe_path, context)
         except Exception as exc:

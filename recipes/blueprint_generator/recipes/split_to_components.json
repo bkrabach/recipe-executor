@@ -1,0 +1,51 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{input}}",
+        "artifact": "input_file"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{analysis_source}}",
+        "artifact": "analysis_source"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": [
+          "ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
+          "ai_context/IMPLEMENTATION_PHILOSOPHY.md"
+        ],
+        "artifact": "guidance_files"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{files}}",
+        "artifact": "additional_files",
+        "optional": true
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Review the project analysis and break it down into individual components that contain detailed specifications for each component (split into file per component) that includes all of the details necessary to implement a version of that component based upon the `additional_files` and the philosophies and such outlined in these files I'm sharing with you.\n\n- Breakdown Analysis:\n  <BREAKDOWN_ANALYSIS>\n  {{input_file}}\n  </BREAKDOWN_ANALYSIS>\n\n- Analysis Source:\n  <ANALYSIS_SOURCE>\n  {{analysis_source}}\n  </ANALYSIS_SOURCE>\n\n{% if additional_files != '' %}\n- Additional Content:\n  <ADDITIONAL_CONTENT>\n  {{additional_files}}\n  </ADDITIONAL_CONTENT>\n{% endif %}\n\n- Guidance Philosophies (how to make decisions):\n  <GUIDANCE_PHILOSOPHY>\n  {{guidance_files}}\n  </GUIDANCE_PHILOSOPHY>\n\nThe `additional_files` may include some of component candidate specs that have already been created, in this case you can skip those ones.\n\nIf there are no more components needed for the current break down, return a file named `completed_breakdown_report` with the final list of all of the component candidate specs.\n\nFor components, save one file per component, as `components/<component_id>/<component_id>_candidate_spec.md`.\n",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "artifact": "generated_files"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "generated_files",
+        "root": "{{output_root|default:'output'}}"
+      }
+    }
+  ]
+}

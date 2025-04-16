@@ -2,27 +2,35 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-      "artifact": "models_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
+        "artifact": "logger_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_docs.md",
-      "artifact": "azure_openai_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_docs.md",
+        "artifact": "azure_openai_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "ai_context/PYDANTIC_AI_DOCS.md",
-      "artifact": "pydantic_ai_docs"
+      "config": {
+        "path": "ai_context/PYDANTIC_AI_DOCS.md",
+        "artifact": "pydantic_ai_docs"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "llm",
-        "component_path": "/llm_utils",
-        "existing_code": "{{existing_code}}",
-        "additional_content": "<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<AZURE_OPENAI_DOCUMENTATION>\n{{azure_openai_docs}}\n</AZURE_OPENAI_DOCUMENTATION>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "llm",
+          "component_path": "/llm_utils",
+          "existing_code": "{{existing_code}}",
+          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<AZURE_OPENAI_DOCUMENTATION>\n{{azure_openai_docs}}\n</AZURE_OPENAI_DOCUMENTATION>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
+        }
       }
     }
   ]

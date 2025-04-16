@@ -2,14 +2,18 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/execute_recipe.py",
-      "artifact": "existing_code"
+      "config": {
+        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/execute_recipe.py",
+        "artifact": "existing_code"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json",
-      "context_overrides": {
-        "existing_code": "{{existing_code}}"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json",
+        "context_overrides": {
+          "existing_code": "{{existing_code}}"
+        }
       }
     }
   ]

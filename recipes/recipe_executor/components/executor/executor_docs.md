@@ -11,14 +11,14 @@ _(Import the concrete `Executor` to create an instance, and import `ExecutorProt
 
 ## Basic Usage
 
-The Executor has a single primary method: `execute()`. This method loads and runs a recipe with a given context. Typically, you will create a `Context` (for artifacts) and an `Executor`, then call execute:
+The Executor has a single primary method: `execute()`. This method loads and runs a recipe with a given context. Typically, you will create a `Context` (for artifacts) and an `Executor`, then call `execute` with the recipe you want to run.
 
 ```python
 from recipe_executor import Context
 
 # Create context and executor (with protocol typing for clarity)
 context: ContextProtocol = Context()
-executor: ExecutorProtocol = Executor()
+executor: ExecutorProtocol = Executor(logger)
 
 # Execute a recipe from a JSON file path
 executor.execute("path/to/recipe.json", context)
@@ -27,23 +27,37 @@ executor.execute("path/to/recipe.json", context)
 json_string = '{"steps": [{"type": "read_files", "path": "example.txt", "artifact": "file_content"}]}'
 executor.execute(json_string, context)
 
+# Execute a recipe from a JSON object (dict)
+import json
+recipe_dict = json.loads(json_string)
+executor.execute(recipe_dict, context)
+
+# Execute a recipe from a Path object (if using pathlib)
+from pathlib import Path
+recipe_path = Path("path/to/recipe.json")
+executor.execute(recipe_path, context)
+
 # Execute a recipe from a pre-defined dictionary
 recipe_dict = {
     "steps": [
-        {"type": "write_files", "files": [{"path": "out.txt", "content": "Hello"}]}
+        {
+            "type": "generate_with_llm",
+            "prompt": "Write a poem about the sea",
+            "model": "openai/gpt-4o",
+            "response_key": "poem"
+        }
     ]
 }
 executor.execute(recipe_dict, context)
 ```
 
-In each case, the Executor will parse the input (if needed) and sequentially execute each step in the recipe using the same `context`. After execution, the `context` may contain new artifacts produced by the steps (for example, in the above cases, `context["file_content"]` might hold data read from a file, or data written can be confirmed by reading back from disk).
+In each case, the Executor will parse the input (if needed) and sequentially execute each step in the recipe using the same `context`. After execution, the `context` may contain new artifacts produced by the steps (for example, in the above cases, the `file_content` and `poem` artifacts would be available in the context).
 
 ## Behavior Details
 
 - The context passed into `execute` is mutated in-place by the steps. You should create a fresh Context (or clone an existing one) if you plan to reuse it for multiple recipe executions to avoid cross-contamination of data.
 - If the recipe path is invalid or the JSON is malformed, `execute` will raise an error (ValueError or TypeError). Ensure you handle exceptions when calling `execute` if there's a possibility of bad input.
 - The Executor uses the step registry to find the implementation for each step type. All default steps (like `"read_files"`, `"write_files"`, `"execute_recipe"`, etc.) are registered when you import the `recipe_executor.steps` modules. Custom steps need to be registered in the registry before Executor can use them.
-- Logging: By default, Executor will use the library's logger. To integrate with your own logging, you can pass a `logging.Logger` instance via the `logger` argument to `execute()`. This will suppress the internal setup of a new logger and use yours instead.
 
 ## Important Notes
 

@@ -16,10 +16,10 @@ class WriteFilesConfig(StepConfig):
     Config for WriteFilesStep.
 
     Fields:
-        artifact: Name of the context key holding a FileGenerationResult or List[FileSpec].
+        files: Name of the context key holding a List[FileSpec].
         root: Optional base path to prepend to all output file paths.
     """
-    artifact: str
+    files: str
     root: str = "."
 ```
 
@@ -96,7 +96,7 @@ The root path and individual file paths can include template variables:
   "steps": [
     {
       "type": "write_files",
-      "artifact": "generated_files",
+      "files": "generated_files",
       "root": "output/{{project_name}}"
     }
   ]

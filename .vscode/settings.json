@@ -66,6 +66,7 @@
     "generatecode",
     "levelname",
     "levelno",
+    "msecs",
     "ollama",
     "PYDANTIC",
     "setrecursionlimit",

@@ -1,0 +1,67 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{project_spec_path}}",
+        "artifact": "project_spec"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "analyze_project.json"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{output_dir}}/analysis/analysis_result.json",
+        "artifact": "analysis_result"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Parse this analysis result and output only 'true' if needs_splitting is true, otherwise 'false':\n\n{{analysis_result}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "needs_splitting"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Determine which recipe to run next. If {{needs_splitting.files[0].content|trim}} is 'true', output 'split_project.json'. Otherwise output 'process_single_component.json'.",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "next_recipe"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{next_recipe.files[0].content|trim}}"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "recursive_process.json",
+        "context_overrides": {
+          "depth": "0"
+        }
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "process_final_components.json"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "generate_blueprints.json"
+      }
+    }
+  ]
+}

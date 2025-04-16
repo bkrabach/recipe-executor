@@ -1,4 +1,10 @@
-import logging
+"""
+Utils component for template rendering in recipes.
+
+Provides a stateless function to render Liquid templates against ContextProtocol instances.
+"""
+
+from typing import Any
 
 import liquid
 
@@ -20,28 +26,27 @@ def render_template(text: str, context: ContextProtocol) -> str:
     Raises:
         ValueError: If there is an error during template rendering.
     """
-    logger = logging.getLogger(__name__)
-
-    # Convert all context values to strings to prevent type errors
+    # Ensure context provides dict of values for template (keys as strings; values coerced to str)
+    context_dict: dict[str, Any] = context.dict()
+    str_context: dict[str, Any] = {k: _stringify_value(v) for k, v in context_dict.items()}
     try:
-        context_dict = context.as_dict()
-    except Exception as conv_error:
-        error_message = f"Failed to extract context data: {conv_error}"
-        logger.error(error_message)
-        raise ValueError(error_message) from conv_error
+        template = liquid.Template(text)
+        rendered = template.render(**str_context)
+        return rendered
+    except Exception as exc:
+        raise ValueError(f"Template rendering failed: {exc}\nTemplate: {text}") from exc
 
-    template_context = {key: str(value) for key, value in context_dict.items()}
 
-    # Log the template text and the context keys being used
-    logger.debug("Rendering template: %s", text)
-    logger.debug("Context keys: %s", list(template_context.keys()))
-
-    try:
-        # Create a Liquid template, then render with the provided context
-        tpl = liquid.Template(text)
-        rendered_text = tpl.render(**template_context)
-        return rendered_text
-    except Exception as e:
-        error_message = f"Error rendering template. Template: {text}. Error: {str(e)}"
-        logger.error(error_message)
-        raise ValueError(error_message) from e
+def _stringify_value(value: Any) -> Any:
+    """
+    Recursively convert basic types and containers to strings, leaves mapping/list structure for Liquid.
+    """
+    if isinstance(value, dict):
+        return {k: _stringify_value(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [_stringify_value(v) for v in value]
+    elif isinstance(value, tuple):
+        return tuple(_stringify_value(v) for v in value)
+    elif value is None:
+        return ""
+    return str(value)

@@ -79,10 +79,16 @@ Context supports iteration, yielding each artifact key (internally, it iterates 
 ### Getting All Values
 
 ```python
-snapshot = context.as_dict()
+snapshot = context.dict()
 ```
 
-`as_dict()` returns a deep copy of all artifacts in the context as a regular Python dictionary. This is useful if you need to inspect or serialize the entire state without risk of modifying the Context itself.
+`dict()` returns a deep copy of all artifacts in the context as a regular Python dictionary. This is useful if you need to inspect or serialize the entire state without risk of modifying the Context itself.
+
+```python
+snapshot_json = context.json()
+```
+
+`json()` returns a JSON string representation of the context’s artifacts. This is useful for logging or sending the context over a network.
 
 ### Cloning the Context
 

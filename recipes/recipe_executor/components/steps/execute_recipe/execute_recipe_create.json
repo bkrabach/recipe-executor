@@ -2,32 +2,42 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-      "artifact": "steps_base_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
+        "artifact": "steps_base_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-      "artifact": "context_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
+        "artifact": "context_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
-      "artifact": "executor_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
+        "artifact": "executor_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
-      "artifact": "utils_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
+        "artifact": "utils_docs"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "execute_recipe",
-        "component_path": "/steps",
-        "existing_code": "{{existing_code}}",
-        "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "execute_recipe",
+          "component_path": "/steps",
+          "existing_code": "{{existing_code}}",
+          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"
+        }
       }
     }
   ]

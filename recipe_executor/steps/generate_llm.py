@@ -1,7 +1,10 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
-from recipe_executor.llm_utils.llm import call_llm
+from pydantic import BaseModel
+
+from recipe_executor.llm_utils.llm import LLM
+from recipe_executor.models import FileSpec
 from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
@@ -57,8 +60,17 @@ class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
             # Log debug message about the LLM call details
             self.logger.debug(f"Calling LLM with prompt: {rendered_prompt[:50]}... and model: {rendered_model}")
 
+            class FileGenerationResult(BaseModel):
+                """
+                FileGenerationResult is a structured result from the LLM containing generated files and optional commentary.
+                """
+
+                files: List[FileSpec]
+                commentary: Optional[str] = None
+
             # Call the LLM asynchronously
-            response = await call_llm(prompt=rendered_prompt, model=rendered_model, logger=self.logger)
+            llm = LLM(self.logger, model=rendered_model)
+            response = await llm.generate(prompt=rendered_prompt, output_type=FileGenerationResult)
 
             # Store the generated result in the execution context
             context[artifact_key] = response

@@ -12,7 +12,7 @@ from recipe_executor.steps.parallel import ParallelStep, ParallelConfig
 
 ## Configuration
 
-The ParallelStep is configured via a ParallelConfig object. This configuration defines the list of sub-steps to run concurrently, along with optional settings for controlling concurrency.
+The ParallelStep is configured via a `ParallelConfig` object. This configuration defines the list of sub-steps to run concurrently, along with optional settings for controlling concurrency.
 
 ```python
 class ParallelConfig(StepConfig):

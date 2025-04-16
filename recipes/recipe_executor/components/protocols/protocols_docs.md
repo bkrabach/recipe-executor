@@ -1,20 +1,87 @@
 # Protocols Component Usage
 
-The Protocols component provides **interface definitions** for key parts of the Recipe Executor system. By defining formal contracts (`Protocol` classes) for the Executor, Context, and Step, this component decouples implementations from each other and serves as the single source of truth for how components interact. All components that implement or use these interfaces should refer to the Protocols component to ensure consistency.
+The Protocols component provides **interface definitions** for key parts of the Recipe Executor system. By defining formal contracts (`Protocol` classes) for the `Executor`, `Context`, and `Step`, this component decouples implementations from each other and serves as the single source of truth for how components interact. All components that implement or use these interfaces should refer to the `Protocols` component to ensure consistency.
 
 ## Provided Interfaces
 
 ### `ContextProtocol`
 
-Defines the interface for context-like objects that hold shared state (artifacts and configuration). It includes dictionary-like methods (`__getitem__`, `__setitem__`, etc.), a `get` method for safe retrieval, an `as_dict` for copying all data, and a `clone` method for deep-copying the entire context. Any context implementation (such as the built-in `Context` class) should fulfill this interface.
+The `ContextProtocol` defines the interface for the context object used throughout the Recipe Executor system. It specifies methods for accessing, modifying, and managing context data. This includes standard dictionary-like operations (like `__getitem__`, `__setitem__`, etc.) as well as additional methods like `clone`, `dict`, and `json` for deep copying and serialization. In addition, it provides methods for managing configuration data, such as `get_config` and `set_config`.
+
+```python
+from typing import Protocol, Dict, Any, Iterator
+class ContextProtocol(Protocol):
+    def __getitem__(self, key: str) -> Any:
+        ...
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        ...
+
+    def __delitem__(self, key: str) -> None:
+        ...
+
+    def __contains__(self, key: str) -> bool:
+        ...
+
+    def __iter__(self) -> Iterator[str]:
+        ...
+
+    def __len__(self) -> int:
+        ...
+
+    def get(self, key: str, default: Any = None) -> Any:
+        ...
+
+    def clone(self) -> "ContextProtocol":
+        ...
+
+    def dict(self) -> Dict[str, Any]:
+        ...
+
+    def json(self) -> str:
+        ...
+
+    def keys(self) -> Iterator[str]:
+        ...
+
+    def get_config(self) -> Dict[str, Any]:
+        ...
+
+    def set_config(self, config: Dict[str, Any]) -> None:
+        ...
+```
 
 ### `StepProtocol`
 
-Specifies the interface for an executable step. It declares a single method `execute(context: ContextProtocol) -> None`. All step classes (via the base class or otherwise) are expected to implement this method to perform their task using the provided context. This ensures a consistent entry point for executing any step.
+The `StepProtocol` defines the interface for steps within a recipe. Each step must implement an `execute` method that takes a context (any `ContextProtocol` implementation) and performs its designated action. This allows for a consistent way to execute steps, regardless of their specific implementations.
+
+```python
+from typing import Protocol
+class StepProtocol(Protocol):
+    def __init__(self, logger: logging.Logger) -> None:
+        ...
+
+    def execute(self, context: ContextProtocol) -> None:
+        ...
+```
 
 ### `ExecutorProtocol`
 
-Describes the interface for recipe executors. It currently defines one primary method: `async execute(recipe, context, logger=None) -> None`. An `ExecutorProtocol` implementor (like the concrete `Executor` class) must be able to take a recipe (in various forms) and a context (any `ContextProtocol` implementation) and execute the recipe's steps sequentially. The optional (use typing.Optional) logger parameter allows injection of a logging facility.
+The `ExecutorProtocol` defines the interface for the executor component, which is responsible for executing recipes. It specifies an `execute` method that takes a recipe (which can be a string, path, or a Recipe object) and a context. This allows the executor to run recipes in a consistent manner, regardless of their specific implementations.
+
+```python
+from typing import Protocol, Optional
+class ExecutorProtocol(Protocol):
+    def __init__(self, logger: logging.Logger) -> None:
+        ...
+
+    async def execute(
+        self,
+        recipe: Union[str, Path, Recipe],
+        context: ContextProtocol,
+    ) -> None:
+        ...
+```
 
 ## How to Use These Protocols
 
@@ -31,12 +98,26 @@ executor.execute("path/to/recipe.json", context)
 
 In this example, `Context()` is the concrete implementation provided by the system (which implements `ContextProtocol`), and `Executor()` is the concrete executor implementing `ExecutorProtocol`. By annotating them as `ContextProtocol` and `ExecutorProtocol`, we emphasize that our code relies only on the defined interface, not a specific implementation. This is optional for running the code (the system will work with or without the annotations), but it is useful for clarity and static type checking.
 
+```python
+from recipe_executor.protocols import ContextProtocol, ExecutorProtocol
+
+class MyCustomExecutor(ExecutorProtocol):
+    def __init__(self, logger: logging.Logger) -> None:
+        self.logger = logger
+
+    async def execute(self, recipe: str, context: ContextProtocol) -> None:
+        # Custom implementation
+        pass
+```
+
+In this example, `MyCustomExecutor` implements the `ExecutorProtocol`, ensuring it adheres to the expected interface. This allows it to be used interchangeably with any other executor that also implements `ExecutorProtocol`.
+
 ## Implementation Notes for Developers
 
-- **For Implementers**: When creating a new Context or Executor implementation (or any new Step), ensure it provides all methods defined in the corresponding protocol. You don't need to explicitly subclass the `Protocol`, thanks to Python's structural typing, but documenting that it implements the interface is good practice. The existing classes (`Context`, `Executor`, and all steps via `BaseStep`) already adhere to `ContextProtocol`, `ExecutorProtocol`, and `StepProtocol` respectively.
+- **For Implementers**: When creating a new Context or Executor implementation (or any new Step), ensure it provides all methods defined in the corresponding protocol. It is recommended to inherit from the protocol class to ensure compliance. This way, you can be sure that your implementation will work seamlessly with any code that relies on the protocol.
 
-- **For Consumers**: When writing functions or methods that accept a context or executor, use `ContextProtocol` or `ExecutorProtocol` in the type hints. This way, your code can work with any object that respects the contract, making the system more extensible. For instance, a function could be annotated to accept `context: ContextProtocol` and thus work with the standard `Context` or any future alternative context implementation.
+- **For Consumers**: If you use the protocols as the type hints in your code, you can be sure that your code will work with any implementation of the protocol. This allows for greater flexibility and easier testing, as you can swap out different implementations without changing the code that uses them.
 
 - **Decoupling and Cycle Prevention**: By using these protocols, components like the Executor and steps do not need to import each other's concrete classes. This breaks import cycles (for example, steps can call executor functionality through `ExecutorProtocol` without a direct import of the Executor class). The Protocols component thus centralizes interface knowledge: it owns the definitions of `execute` methods and context operations that others rely on.
 
-All developers and AI recipes should reference **this protocols documentation** and the `protocols.py` definitions when needing to understand or use the interfaces between components. This ensures that the system’s pieces remain loosely coupled and conformant to the agreed contracts.
+All developers and AI recipes should reference **this protocols documentation** when implementing or using components. This ensures that all components are consistent and adhere to the same interface definitions, enables decoupling, and prevents import cycles. It also allows for easier testing and swapping of implementations, as all components can be treated as interchangeable as long as they adhere to the defined protocols.

@@ -8,16 +8,24 @@ from recipe_executor.logger import init_logger
 
 ## Initialization
 
-The Logger component provides a single function to initialize a configured logger:
+The Logger component provides a single function to initialize the logger. This function sets up the logging configuration, including log levels and file handlers.
 
 ```python
-def init_logger(log_dir: str = "logs") -> logging.Logger:
+def init_logger(
+    log_dir: str = "logs",
+    stdio_log_level: str = "INFO"
+) -> logging.Logger:
     """
     Initializes a logger that writes to stdout and to log files (debug/info/error).
     Clears existing logs on each run.
 
     Args:
         log_dir (str): Directory to store log files. Default is "logs".
+        stdio_log_level (str): Log level for stdout. Default is "INFO".
+            Options: "DEBUG", "INFO", "WARN", "ERROR".
+            Note: This is not case-sensitive.
+            If set to "DEBUG", all logs will be printed to stdout.
+            If set to "INFO", only INFO and higher level logs will be printed to stdout.
 
     Returns:
         logging.Logger: Configured logger instance.
@@ -31,10 +39,13 @@ Examples:
 
 ```python
 # Default usage
-logger = init_logger()
-
-# With custom log directory
 logger = init_logger(log_dir="custom/log/path")
+
+# Enable debug logging to stdout
+logger = init_logger(log_dir="custom/log/path", stdio_log_level="DEBUG")
+
+# Example usage
+logger.info("This is an info message")
 ```
 
 ## Log Levels
@@ -69,50 +80,15 @@ The logger creates three log files:
 Example:
 
 ```
-2025-03-30 15:42:38,927 [INFO] Starting Recipe Executor Tool
-2025-03-30 15:42:38,928 [DEBUG] Initializing executor
-2025-03-30 15:42:38,930 [INFO] Executing recipe: recipes/my_recipe.json
-2025-03-30 15:42:38,935 [ERROR] Recipe execution failed: Invalid step type
-```
-
-## Console Output
-
-The logger also writes INFO level and above messages to stdout:
-
-```python
-# This appears in both console and log files
-logger.info("Executing step 1 of 5")
-
-# This appears in log files only
-logger.debug("Step config: {'path': 'input.txt', 'artifact': 'content'}")
-```
-
-## Integration with Other Components
-
-The logger is typically initialized in the main component and passed to the executor:
-
-```python
-from recipe_executor.logger import init_logger
-from recipe_executor.executor import Executor
-from typing import Optional
-
-logger = init_logger(log_dir="logs")
-executor = Executor()
-executor.execute(recipe_path, context, logger=logger)
-```
-
-Steps receive the logger in their constructor:
-
-```python
-class ReadFilesStep(BaseStep):
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None):
-        self.logger = logger or logging.getLogger("RecipeExecutor")
-        # ...
+2025-03-30 15:42:38.927 [INFO] (main.py:25) Starting Recipe Executor Tool
+2025-03-30 15:42:38.928 [DEBUG](executor.py:42) Initializing executor
+2025-03-30 15:42:38.930 [INFO] (executor.py:156) Executing recipe: recipes/my_recipe.json
+2025-03-30 15:42:38.935 [ERROR] (executor.py:256) Recipe execution failed: Invalid step type
 ```
 
 ## Important Notes
 
-1. Logs are cleared (truncated) on each run
-2. Debug logs can get large with detailed information
-3. The log directory is created if it doesn't exist
-4. The logger name "RecipeExecutor" is consistent across the system
+- Logs are cleared (overwritten) on each run
+- Debug logs can get large with detailed information
+- The log directory is created if it doesn't exist
+- The logger is thread-safe and can be used in multi-threaded applications

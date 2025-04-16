@@ -2,27 +2,33 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
-      "artifact": "spec"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
+        "artifact": "spec"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
-      "artifact": "usage_docs",
-      "optional": true
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
+        "artifact": "usage_docs",
+        "optional": true
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
-      "context_overrides": {
-        "model": "{{model|default:'openai/o3-mini'}}",
-        "output_root": "{{output_root|default:'output'}}",
-        "output_path": "recipe_executor{{component_path}}",
-        "language": "{{language|default:'python'}}",
-        "spec": "{{spec}}",
-        "usage_docs": "{{usage_docs}}",
-        "existing_code": "{{existing_code}}",
-        "additional_content": "{{additional_content}}"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
+        "context_overrides": {
+          "model": "{{model|default:'openai/o3-mini'}}",
+          "output_root": "{{output_root|default:'output'}}",
+          "output_path": "recipe_executor{{component_path}}",
+          "language": "{{language|default:'python'}}",
+          "spec": "{{spec}}",
+          "usage_docs": "{{usage_docs}}",
+          "existing_code": "{{existing_code}}",
+          "additional_content": "{{additional_content}}"
+        }
       }
     }
   ]

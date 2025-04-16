@@ -2,11 +2,13 @@
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "logger",
-        "component_path": "/",
-        "existing_code": "{{existing_code}}"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "logger",
+          "component_path": "/",
+          "existing_code": "{{existing_code}}"
+        }
       }
     }
   ]

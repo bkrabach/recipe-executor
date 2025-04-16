@@ -49,6 +49,7 @@ Create the `__init__.py` file in the `steps` directory to ensure it is treated a
 from recipe_executor.steps.registry import STEP_REGISTRY
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.generate_llm import GenerateWithLLMStep
+from recipe_executor.steps.loop import LoopStep
 from recipe_executor.steps.parallel import ParallelStep
 from recipe_executor.steps.read_files import ReadFilesStep
 from recipe_executor.steps.write_files import WriteFilesStep
@@ -57,6 +58,7 @@ from recipe_executor.steps.write_files import WriteFilesStep
 STEP_REGISTRY.update({
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
+    "loop": LoopStep,
     "parallel": ParallelStep,
     "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,

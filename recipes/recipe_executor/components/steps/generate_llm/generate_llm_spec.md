@@ -8,18 +8,21 @@ The GenerateWithLLMStep component enables recipes to generate content using larg
 
 - Process prompt templates using context data
 - Support configurable model selection
+- Support multiple response formats (text, files, JSON)
+- For JSON responses, validate against a provided schema
 - Call LLMs to generate content
-- Store generated results in the context
-- Support dynamic artifact key resolution
+- Store generated results in the context with dynamic key support
 - Include appropriate logging for LLM operations
 
 ## Implementation Considerations
 
-- Use template rendering for dynamic prompt generation
-- Support template rendering in model selection
-- Allow dynamic artifact key through template rendering
-- Keep the implementation simple and focused on a single responsibility
-- Log detailed information about LLM requests
+- Use `render_template` for templating prompts, model identifiers, and response keys
+- If `response_format` is an object (JSON schema):
+  - Validate via `jsonschema.validate` against the provided schema
+  - Pass the JSON schema to the LLM call as the `output_type` parameter
+- If `response_format` is "files":
+  - Ensure the LLM response is a list of file specifications
+  - Pass `List[FileSpec]` to the LLM call as the `output_type` parameter
 
 ## Logging
 
@@ -30,15 +33,16 @@ The GenerateWithLLMStep component enables recipes to generate content using larg
 
 ### Internal Components
 
-- **Protocols** – (Required) Uses ContextProtocol for context data access and StepProtocol for the step interface (decouples from concrete Context and BaseStep classes)
-- **Step Interface** – (Required) Implements the step behavior via StepProtocol
-- **Context** – (Required) Uses a context implementing ContextProtocol to retrieve input values and store generation results
-- **LLM** – (Required) Uses the LLM component (e.g. call_llm function) to interact with language models
-- **Utils** – (Required) Uses render_template for dynamic content resolution in prompts and model identifiers
+- **Protocols**: Uses ContextProtocol for context data access and StepProtocol for the step interface (decouples from concrete Context and BaseStep classes)
+- **Step Interface**: Implements the step behavior via `StepProtocol`
+- **Context**: Uses a context implementing `ContextProtocol` to retrieve input values and store generation responses
+- **Models**: Uses the `FileSpec` model for file generation responses
+- **LLM**: Uses the LLM component (e.g. `call_llm` function) to interact with language models
+- **Utils**: Uses `render_template` for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries
 
-None
+- **jsonschema** – (Installed) For JSON schema validation
 
 ### Configuration Dependencies
 
@@ -53,8 +57,4 @@ None
 
 ## Output Files
 
-- `steps/generate_llm.py`
-
-## Future Considerations
-
-- Additional LLM parameters (e.g. temperature, max tokens, etc.)
+- `steps/generate_with_llm.py`

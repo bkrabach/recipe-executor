@@ -2653,18 +2653,350 @@ None
 - Additional LLM parameters (e.g. temperature, max tokens, etc.)
 
 
-=== File: recipes/recipe_executor/components/steps/parallel/parallel_create.json ===
+=== File: recipes/recipe_executor/components/steps/loop/loop_create.json ===
 {
   "steps": [
     {
       "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
+      "artifact": "protocols_docs"
+    },
+    {
+      "type": "read_files",
       "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-      "artifact": "steps_base_docs"
+      "artifact": "base_docs"
     },
     {
       "type": "read_files",
       "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
       "artifact": "context_docs"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
+      "artifact": "executor_docs"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
+      "artifact": "utils_docs"
+    },
+    {
+      "type": "execute_recipe",
+      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+      "context_overrides": {
+        "component_id": "loop",
+        "component_path": "/steps",
+        "existing_code": "{{existing_code}}",
+        "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>\n"
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/components/steps/loop/loop_docs.md ===
+# LoopStep Component Usage
+
+The **LoopStep** component allows you to iterate over a collection of items and execute specified sub-steps for each item. It is useful for processing lists or arrays of data in a structured manner.
+
+## Importing
+
+Import the LoopStep and its configuration:
+
+```python
+from recipe_executor.steps.loop import LoopStep, LoopStepConfig
+```
+
+## Configuration
+
+The LoopStep is configured via a `LoopStepConfig` object. This configuration defines the collection to iterate over, the key for the current item, the sub-steps to execute, and how to handle results.
+
+```python
+class LoopStepConfig(StepConfig):
+    """
+    Configuration for LoopStep.
+
+    Fields:
+        items: Key in the context containing the collection to iterate over.
+        item_key: Key to use when storing the current item in each iteration's context.
+        substeps: List of sub-step configurations to execute for each item.
+        result_key: Key to store the collection of results in the context.
+        fail_fast: Whether to stop processing on the first error (default: True).
+    """
+
+    items: str
+    item_key: str
+    substeps: List[Dict[str, Any]]
+    result_key: str
+    fail_fast: bool = True
+```
+
+## Step Registration
+
+To enable the use of LoopStep in recipes, register it in the step registry:
+
+```python
+from recipe_executor.steps.registry import STEP_REGISTRY
+from recipe_executor.steps.loop import LoopStep
+
+STEP_REGISTRY["loop"] = LoopStep
+```
+
+## Basic Usage in Recipes
+
+The LoopStep allows you to run multiple steps for each item in a collection. Sub-steps are defined within a dedicated `substeps` array.
+
+### Example Recipe (JSON)
+
+```json
+{
+  "steps": [
+    {
+      "type": "loop",
+      "items": "components",
+      "item_key": "component",
+      "substeps": [
+        {
+          "type": "generate",
+          "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+          "model": "{{model}}",
+          "artifact": "component_questions"
+        },
+        {
+          "type": "write_files",
+          "artifact": "component_questions",
+          "root": "{{output_dir}}/components/{{component.id}}"
+        }
+      ],
+      "result_key": "processed_components"
+    }
+  ]
+}
+```
+
+## How It Works
+
+For each iteration:
+
+1. The LoopStep clones the parent context to create an isolated execution environment
+2. It places the current item in the cloned context using the `item_key`
+3. It executes all specified steps using the cloned context
+4. After execution, it extracts the result from the context (using the same `item_key`)
+5. The result is added to a collection that will be stored in the parent context under `result_key`
+
+## Template Variables
+
+Within each iteration, you can reference:
+
+- The current item using the specified `item_key` (e.g., `{{current_component}}`)
+- Properties of the current item (e.g., `{{current_component.id}}`)
+- The iteration index using `{{__index}}` (for arrays) or key using `{{__key}}` (for objects)
+- Other context values from the parent context
+
+## Common Usage Patterns
+
+### Processing Collection of Objects
+
+```json
+{
+  "type": "loop",
+  "items": "components",
+  "item_key": "component",
+  "substeps": [
+    {
+      "type": "generate",
+      "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+      "model": "{{model}}",
+      "artifact": "component_questions"
+    },
+    {
+      "type": "write_files",
+      "artifact": "component_questions",
+      "root": "output/{{component.id}}"
+    }
+  ],
+  "result_key": "processed_components"
+}
+```
+
+### Processing Files from a Directory
+
+```json
+{
+  "type": "loop",
+  "items": "code_files",
+  "item_key": "file",
+  "substeps": [
+    {
+      "type": "read_files",
+      "path": "{{file.path}}",
+      "artifact": "file_content"
+    },
+    {
+      "type": "generate",
+      "prompt": "Analyze this code file:\n{{file_content}}",
+      "model": "{{model}}",
+      "artifact": "file_analysis"
+    }
+  ],
+  "result_key": "analyzed_files"
+}
+```
+
+### Transforming an Array
+
+```json
+{
+  "type": "loop",
+  "items": "input_data",
+  "item_key": "item",
+  "substeps": [
+    {
+      "type": "generate",
+      "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
+      "model": "{{model}}",
+      "artifact": "transformed_item"
+    }
+  ],
+  "result_key": "transformed_data"
+}
+```
+
+## Error Handling
+
+By default, the LoopStep will stop processing on the first error (`fail_fast: true`). You can change this behavior:
+
+```json
+{
+  "type": "loop",
+  "items": "components",
+  "item_key": "component",
+  "substeps": [...],
+  "result_key": "processed_components",
+  "fail_fast": false
+}
+```
+
+With `fail_fast: false`, the LoopStep will:
+
+- Continue processing remaining items even if some fail
+- Include successful results in the output collection
+- Log errors for failed items
+- Add information about failed items to the `__errors` key in the result collection
+
+## Important Notes
+
+- Each item is processed in isolation with its own context clone
+- Changes to the parent context during iteration are not visible to subsequent iterations
+- The final result is always a collection, even if only one item is processed
+- If the items collection is empty, an empty collection is stored in the result_key
+- If a referenced key doesn't exist in the context, an error is raised
+- Collection elements can be of any type (objects, strings, numbers, etc.)
+- The LoopStep supports both array and object collections
+
+
+=== File: recipes/recipe_executor/components/steps/loop/loop_edit.json ===
+
+
+=== File: recipes/recipe_executor/components/steps/loop/loop_spec.md ===
+# LoopStep Component Specification
+
+## Purpose
+
+The LoopStep component enables recipes to iterate over a collection of items, executing a specified set of steps for each item. It serves as a fundamental building block for batch processing, enabling modular workflows that operate on multiple similar items without requiring separate recipes.
+
+## Core Requirements
+
+- Process each item in a collection using a specified set of steps
+- Isolate processing of each item to prevent cross-contamination
+- Store the results of processing each item in a designated collection
+- Support conditional execution based on item properties
+- Provide consistent error handling across all iterations
+- Maintain processing state to enable resumability
+- Support various collection types (arrays, objects)
+
+## Implementation Considerations
+
+- Clone the context for each item to maintain isolation between iterations
+- Use a unique context key for each processed item to prevent collisions
+- Execute the specified steps for each item using the current executor
+- Collect results into a unified collection once all items are processed
+- Log progress for each iteration to enable monitoring
+- Support proper error propagation while maintaining iteration context
+- Handle empty collections gracefully
+- Leverage asyncio for efficient processing
+- Support structured iteration history for debugging
+
+## Component Dependencies
+
+### Internal Components
+
+- **Protocols** – (Required) Uses ContextProtocol for context management, ExecutorProtocol for parallel execution, and StepProtocol for the step interface
+- **Step Base** – (Required) Adheres to the step execution interface via StepProtocol
+- **Step Registry** – (Required) Uses the step registry to instantiate the `execute_recipe` step for each sub-step
+- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each sub-step
+- **Executor** – (Required) Uses an Executor implementing ExecutorProtocol to run each sub-recipe in a separate thread
+- **Utils** – (Optional) Uses template rendering for sub-step configurationsn
+
+### External Libraries
+
+- **asyncio** - (Required) Uses asyncio for asynchronous processing
+
+### Configuration Dependencies
+
+None
+
+## Output Files
+
+- `steps/loop.py` - (LoopStep implementation)
+
+## Logging
+
+- Debug: Log the start/end of each item processing with its index/key, log steps execution within the loop
+- Info: Log high-level information about how many items are being processed and the result collection
+- Error: Log detailed error information including which item caused the error and at what stage
+
+## Error Handling
+
+- Validate the items collection exists and is iterable before starting
+- Validate that steps are properly specified
+- Handle both empty collections and single items gracefully
+- Provide clear error messages when an item fails processing
+- Include the item key/index in error messages for easier debugging
+- Allow configuration of whether to fail fast or continue on errors
+
+## Future Considerations
+
+- Parallel processing of items with configurable concurrency
+- Enhanced filtering capabilities to process only certain items
+- Progress tracking for long-running loops
+- Checkpointing and resumability for very large collections
+- Support for early termination based on conditions
+
+
+=== File: recipes/recipe_executor/components/steps/parallel/parallel_create.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
+      "artifact": "protocols_docs"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
+      "artifact": "base_docs"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
+      "artifact": "context_docs"
+    },
+    {
+      "type": "read_files",
+      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
+      "artifact": "executor_docs"
     },
     {
       "type": "read_files",
@@ -2678,7 +3010,7 @@ None
         "component_id": "parallel",
         "component_path": "/steps",
         "existing_code": "{{existing_code}}",
-        "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"
+        "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>\n"
       }
     }
   ]
@@ -2700,7 +3032,7 @@ from recipe_executor.steps.parallel import ParallelStep, ParallelConfig
 
 ## Configuration
 
-The ParallelStep is configured via a ParallelConfig object. This configuration defines the list of sub-steps to run concurrently, along with optional settings for controlling concurrency.
+The ParallelStep is configured via a `ParallelConfig` object. This configuration defines the list of sub-steps to run concurrently, along with optional settings for controlling concurrency.
 
 ```python
 class ParallelConfig(StepConfig):
@@ -2832,9 +3164,9 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 ### Internal Components
 
 - **Protocols** – (Required) Uses ContextProtocol for context management, ExecutorProtocol for parallel execution, and StepProtocol for the step interface
-- **Step Interface** – (Required) Adheres to the step execution interface via StepProtocol
-- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each parallel sub-step
+- **Step Base** – (Required) Adheres to the step execution interface via StepProtocol
 - **Step Registry** – (Required) Uses the step registry to instantiate the `execute_recipe` step for each sub-step
+- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each sub-step
 - **Executor** – (Required) Uses an Executor implementing ExecutorProtocol to run each sub-recipe in a separate thread
 - **Utils** – (Optional) Uses template rendering for sub-step configurations
 
@@ -3519,6 +3851,7 @@ from recipe_executor.steps.base import BaseStep
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
+    "loop": LoopStep,
     "parallel": ParallelStep,
     "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,
@@ -3636,6 +3969,7 @@ Create the `__init__.py` file in the `steps` directory to ensure it is treated a
 from recipe_executor.steps.registry import STEP_REGISTRY
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.generate_llm import GenerateWithLLMStep
+from recipe_executor.steps.loop import LoopStep
 from recipe_executor.steps.parallel import ParallelStep
 from recipe_executor.steps.read_files import ReadFilesStep
 from recipe_executor.steps.write_files import WriteFilesStep
@@ -3644,6 +3978,7 @@ from recipe_executor.steps.write_files import WriteFilesStep
 STEP_REGISTRY.update({
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
+    "loop": LoopStep,
     "parallel": ParallelStep,
     "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,

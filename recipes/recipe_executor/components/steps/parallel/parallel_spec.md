@@ -32,9 +32,9 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 ### Internal Components
 
 - **Protocols** – (Required) Uses ContextProtocol for context management, ExecutorProtocol for parallel execution, and StepProtocol for the step interface
-- **Step Interface** – (Required) Adheres to the step execution interface via StepProtocol
-- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each parallel sub-step
+- **Step Base** – (Required) Adheres to the step execution interface via StepProtocol
 - **Step Registry** – (Required) Uses the step registry to instantiate the `execute_recipe` step for each sub-step
+- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each sub-step
 - **Executor** – (Required) Uses an Executor implementing ExecutorProtocol to run each sub-recipe in a separate thread
 - **Utils** – (Optional) Uses template rendering for sub-step configurations
 

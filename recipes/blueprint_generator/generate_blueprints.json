@@ -1,0 +1,35 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{output_dir}}/evaluation/generation_order.json",
+        "artifact": "generation_order"
+      }
+    },
+    {
+      "type": "loop",
+      "config": {
+        "items": "{{generation_order}}",
+        "item_key": "component",
+        "process_recipe": "generate_blueprint.json",
+        "result_key": "blueprint_results"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Create a summary report of all generated blueprints:\n\n{{blueprint_results}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "blueprint_summary"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "blueprint_summary",
+        "root": "{{output_dir}}/reports"
+      }
+    }
+  ]
+}

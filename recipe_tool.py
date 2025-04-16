@@ -4,6 +4,7 @@ import os
 import sys
 from typing import Dict, List
 
+import debugpy
 from dotenv import load_dotenv
 
 from recipe_executor.context import Context
@@ -36,11 +37,11 @@ async def execute_recipe(recipe_path: str, context_args: List[str], log_dir: str
 
     # Create context and executor
     context = Context(artifacts=context_dict)
-    executor = Executor()
+    executor = Executor(logger)
 
     # Execute the recipe
     try:
-        await executor.execute(recipe_path, context, logger=logger)
+        await executor.execute(recipe_path, context)
         logger.info("Recipe execution completed successfully")
     except Exception as e:
         logger.error(f"Recipe execution failed: {e}")
@@ -66,7 +67,7 @@ async def create_recipe(idea_path: str, context_args: List[str], log_dir: str) -
 
     # Create context and executor
     context = Context(artifacts=context_dict)
-    executor = Executor()
+    executor = Executor(logger)
 
     # Path to the recipe creator recipe
     creator_recipe_path = "recipes/recipe_creator/create.json"
@@ -78,7 +79,7 @@ async def create_recipe(idea_path: str, context_args: List[str], log_dir: str) -
 
     # Execute the recipe creator
     try:
-        await executor.execute(creator_recipe_path, context, logger=logger)
+        await executor.execute(creator_recipe_path, context)
         logger.info("Recipe creation completed successfully")
     except Exception as e:
         logger.error(f"Recipe creation failed: {e}")
@@ -100,8 +101,17 @@ async def main_async() -> None:
     # Add log directory option
     parser.add_argument("--log-dir", default="logs", help="Directory for log files (default: logs)")
 
+    # Add debug option
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+
     # Capture remaining arguments to use as context variables
     args, remaining = parser.parse_known_args()
+
+    # Enable debugpy if debug mode is on
+    if args.debug:
+        debugpy.listen(("localhost", 5678))
+        print("Debugging enabled. Attach your debugger to localhost:5678.")
+        debugpy.wait_for_client()
 
     # Determine which command to run
     if args.execute:

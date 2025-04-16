@@ -2,18 +2,20 @@
   "steps": [
     {
       "type": "parallel",
-      "substeps": [
-        {
-          "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_edit.json"
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_edit.json"
-        }
-      ],
-      "max_concurrency": 0,
-      "delay": 0
+      "config": {
+        "substeps": [
+          {
+            "type": "execute_recipe",
+            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_edit.json"
+          },
+          {
+            "type": "execute_recipe",
+            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_edit.json"
+          }
+        ],
+        "max_concurrency": 0,
+        "delay": 0
+      }
     }
   ]
 }

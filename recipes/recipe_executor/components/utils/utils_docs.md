@@ -31,11 +31,10 @@ def render_template(text: str, context: ContextProtocol) -> str:
 Basic usage example:
 
 ```python
-from recipe_executor.context import Context
 from recipe_executor.utils import render_template
 
 # Create a context with some values
-context: ContextProtocol = Context(artifacts={"name": "World", "count": 42})
+context = Context(artifacts={"name": "World", "count": 42})
 
 # Render a template string using the context
 template = "Hello, {{name}}! You have {{count}} messages."

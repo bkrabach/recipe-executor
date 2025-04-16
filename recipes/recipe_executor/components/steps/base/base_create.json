@@ -2,27 +2,35 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-      "artifact": "context_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
+        "artifact": "context_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-      "artifact": "models_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
+        "artifact": "models_docs"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-      "artifact": "protocols_docs"
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
+        "artifact": "protocols_docs"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "base",
-        "component_path": "/steps",
-        "existing_code": "{{existing_code}}",
-        "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "base",
+          "component_path": "/steps",
+          "existing_code": "{{existing_code}}",
+          "additional_content": "<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
+        }
       }
     }
   ]

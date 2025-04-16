@@ -1,0 +1,51 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{output_dir}}/analysis/component_lists.json",
+        "artifact": "component_lists"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Extract just the components_to_split array from:\n\n{{component_lists}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "components_to_split"
+      }
+    },
+    {
+      "type": "loop",
+      "config": {
+        "items": "{{components_to_split.files[0].content}}",
+        "item_key": "component_to_split",
+        "process_recipe": "split_component.json",
+        "result_key": "split_results"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Extract all sub-components from these split results and combine into a single list:\n\n{{split_results}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "new_sub_components"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Update the components manifest by removing components that were split and adding their sub-components. Current manifest: {{components_manifest}}. Components to remove: {{components_to_split.files[0].content}}. New sub-components to add: {{new_sub_components.files[0].content}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "updated_manifest"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "updated_manifest",
+        "root": "{{output_dir}}/components"
+      }
+    }
+  ]
+}

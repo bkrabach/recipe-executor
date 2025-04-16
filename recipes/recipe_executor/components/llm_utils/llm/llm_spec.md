@@ -6,27 +6,28 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Core Requirements
 
-- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Ollama, Gemini (not Vertex))
+- Support multiple LLM providers (Azure OpenAI, OpenAI, Anthropic, Ollama)
 - Provide model initialization based on a standardized model identifier format
 - Encapsulate LLM API details behind a unified interface
 - Use PydanticAI's async interface for non-blocking LLM calls
 - Use PydanticAI for consistent handling and validation of LLM responses
 - Implement basic error handling
-- Support structured output format for file generation
+- Support optional structured output format
 
 ## Implementation Considerations
 
-- Use a clear provider/model_name identifier format
-- Do not need to pass api keys directly to model classes (do need to provide to AzureProvider)
+- Use a clear `provider/model_name` identifier format
+- Do not need to pass api keys directly to model classes
+  - Exception: need to provide to AzureProvider)
 - Use PydanticAI's provider-specific model classes, passing only the model name
   - pydantic_ai.models.openai.OpenAIModel (used also for Azure OpenAI and Ollama)
   - pydantic_ai.models.anthropic.AnthropicModel
-  - pydantic_ai.models.gemini.GeminiModel
 - Create a PydanticAI Agent with the model and a structured output type
+  - Support: `output_type: Type[Union[str, BaseModel]] = str`
 - Implement fully asynchronous execution:
-  - Make `call_llm` an async function (`async def call_llm`)
+  - Make `generate` an async function (`async def generate`)
   - Use `await agent.run(prompt)` method of the Agent to make requests
-- CRITICAL: make sure to return the result.data in the call_llm method
+- CRITICAL: make sure to return the `result.data` in the `generate` method to return only the structured output
 
 ## Logging
 
@@ -37,20 +38,19 @@ The LLM component provides a unified interface for interacting with various larg
 
 ### Internal Components
 
-- **Models** - (Required) Uses FileGenerationResult and FileSpec for structured output validation
-- **Azure OpenAI** - (Required for Azure provider) Uses `get_azure_openai_model` for Azure OpenAI model initialization, installed by default
+- **Azure OpenAI**: Uses `get_azure_openai_model` for Azure OpenAI model initialization
+- **Logger**: Uses the logger for logging LLM calls
 
 ### External Libraries
 
-- **pydantic-ai** - (Required) Relies on PydanticAI for model initialization, Agent-based request handling, and structured-output response processing
+- **pydantic-ai**: Uses PydanticAI for model initialization, Agent-based request handling, and structured-output response processing
 
 ### Configuration Dependencies
 
-- **DEFAULT_MODEL** - (Optional) Environment variable specifying the default LLM model in format "provider/model_name"
-- **OPENAI_API_KEY** - (Required for OpenAI) API key for OpenAI access
-- **ANTHROPIC_API_KEY** - (Required for Anthropic) API key for Anthropic access
-- **OLLAMA_ENDPOINT** - (Required for Ollama) Endpoint for Ollama models
-- **GEMINI_API_KEY** - (Required for Gemini) API key for Google Gemini AI access
+- **DEFAULT_MODEL**: (Optional) Environment variable specifying the default LLM model in format "provider/model_name"
+- **OPENAI_API_KEY**: (Required for OpenAI) API key for OpenAI access
+- **ANTHROPIC_API_KEY**: (Required for Anthropic) API key for Anthropic access
+- **OLLAMA_ENDPOINT**: (Required for Ollama) Endpoint for Ollama models
 
 ## Error Handling
 
@@ -62,11 +62,6 @@ The LLM component provides a unified interface for interacting with various larg
 
 - `llm_utils/llm.py`
 
-## Future Considerations
-
-- Additional LLM providers
-- Enhanced parameter control for model fine-tuning
-
 ## Dependency Integration Considerations
 
 ### PydanticAI
@@ -74,7 +69,7 @@ The LLM component provides a unified interface for interacting with various larg
 Create a PydanticAI model for the LLM provider and model name. This will be used to initialize the model and make requests.
 
 ```python
-def get_model(model_id: str) -> OpenAIModel | AnthropicModel | GeminiModel:
+def get_model(model_id: str) -> OpenAIModel | AnthropicModel:
     """
     Initialize an LLM model based on a standardized model_id string.
     Expected format: 'provider/model_name' or 'provider/model_name/deployment_name'.
@@ -84,7 +79,6 @@ def get_model(model_id: str) -> OpenAIModel | AnthropicModel | GeminiModel:
     - azure (for Azure OpenAI, use 'azure/model_name/deployment_name' or 'azure/model_name')
     - anthropic
     - ollama
-    - gemini
 
     Args:
         model_id (str): Model identifier in format 'provider/model_name'
@@ -97,6 +91,8 @@ def get_model(model_id: str) -> OpenAIModel | AnthropicModel | GeminiModel:
     Raises:
         ValueError: If model_id format is invalid or if the provider is unsupported.
     """
+
+    # If 'azure' is the model provider, use the `get_azure_openai_model` function
 ```
 
 Usage example:
@@ -113,10 +109,21 @@ anthropic_model = get_model("anthropic/claude-3-7-sonnet-latest")
 # Get an Ollama model
 ollama_model = get_model("ollama/phi4")
 # Uses OllamaModel('phi4')
+```
 
-# Get a Gemini model
-gemini_model = get_model("gemini/gemini-pro")
-# Uses GeminiModel('gemini-pro')
+Getting an agent:
+
+```python
+from pydantic_ai import Agent
+
+# Create an agent with the model
+agent: Agent[None, Union[str, BaseModel]] = Agent(model=ollama_model, output_type=str)
+
+# Call the agent with a prompt
+result = await agent.run("What is the capital of France?")
+
+# Process the result
+print(result.data)  # This will print the structured output
 ```
 
 #### Ollama

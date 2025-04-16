@@ -1,4 +1,9 @@
-from typing import Dict, List, Optional
+"""
+Core data models for the Recipe Executor system.
+Defines file and recipe schemas using Pydantic for validation.
+"""
+
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -7,32 +12,20 @@ class FileSpec(BaseModel):
     """Represents a single file to be generated.
 
     Attributes:
-        path (str): Relative path where the file should be written.
-        content (str): The content of the file.
+        path: Relative path where the file should be written.
+        content: The content of the file.
     """
 
     path: str
     content: str
 
 
-class FileGenerationResult(BaseModel):
-    """Result of an LLM file generation request.
-
-    Attributes:
-        files (List[FileSpec]): List of files to generate.
-        commentary (Optional[str]): Optional commentary from the LLM.
-    """
-
-    files: List[FileSpec]
-    commentary: Optional[str] = None
-
-
 class RecipeStep(BaseModel):
     """A single step in a recipe.
 
     Attributes:
-        type (str): The type of the recipe step.
-        config (Dict): Dictionary containing configuration for the step.
+        type: The type of the recipe step.
+        config: Dictionary containing configuration for the step.
     """
 
     type: str

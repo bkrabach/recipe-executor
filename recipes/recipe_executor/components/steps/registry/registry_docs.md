@@ -19,6 +19,7 @@ from recipe_executor.steps.base import BaseStep
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {
     "execute_recipe": ExecuteRecipeStep,
     "generate": GenerateWithLLMStep,
+    "loop": LoopStep,
     "parallel": ParallelStep,
     "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,

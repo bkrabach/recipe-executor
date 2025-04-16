@@ -15,6 +15,7 @@ The Context component is the shared state container for the Recipe Executor syst
 - Ensure that modifying the context in one step affects subsequent steps (shared mutability), while also allowing safe copying when needed.
 - Provide a `clone()` method to create a deep copy of the entire context (both artifacts and configuration) for use cases like parallel execution where isolation is required.
 - Remain lightweight and straightforward, following minimalist design principles (it should essentially behave like a `dict` with a config attached, without extra complexity).
+- Provide a `dict()` and `json()` method to return a deep copy of the artifacts as a standard Python dictionary and a JSON string, respectively. This is useful for serialization or logging purposes.
 
 ## Implementation Considerations
 
@@ -31,19 +32,18 @@ The Context component is the shared state container for the Recipe Executor syst
 
 ## Logging
 
-- Debug: Not typically used within Context. (If needed, could log when keys are set or retrieved, but by default it stays silent.)
-- Info: None. The Context operations are low-level and usually do not produce log output by themselves.
+- None
 
 ## Dependency Integration Considerations
 
 ### Internal Components
 
-- **Protocols** - (Required) The Context component conforms to the `ContextProtocol` interface, which is defined in the Protocols component. This ensures other components (like Executor or Steps) interact with Context through a well-defined contract.
+- **Protocols** - (Required) The Context component conforms to the `ContextProtocol` interface, which is defined in the Protocols component. This ensures other components interact with Context through a well-defined contract.
 
 ### External Libraries
 
 - **copy** (Python stdlib) - (Required) Uses `copy.deepcopy` for cloning internal state safely.
-- **typing** - (Required) Used for type hints (e.g., `Dict[str, Any]`, `Iterator[str]`) to clarify usage. (The Protocol for Context is also part of typing integration.)
+- **typing** - (Required) Used for type hints (e.g., `Dict[str, Any]`, `Iterator[str]`) to clarify usage.
 
 ### Configuration Dependencies
 
@@ -63,6 +63,4 @@ The Context component is the shared state container for the Recipe Executor syst
 ## Future Considerations
 
 - **Namespacing or Hierarchies**: In larger workflows, there might be a need to namespace context data (e.g., per step or per sub-recipe) to avoid key collisions. Future versions might introduce optional namespacing schemes or structured keys.
-- **Selective Cloning**: For efficiency, a future context might support partial clone or lazy copy on write if performance becomes a concern with very large contexts.
-- **Serialization**: Consider methods to serialize and deserialize the entire context (for caching or checkpointing execution state).
-- **Immutable Context Option**: Possibly provide a mode or subclass for an immutable context (read-only once created) for scenarios where you want to ensure no step modifies the data (this would be a significant change and is speculative).
+- **Immutable Context Option**: Possibly provide a mode or subclass for an immutable context (read-only once created) for scenarios where you want to ensure no step modifies the data.

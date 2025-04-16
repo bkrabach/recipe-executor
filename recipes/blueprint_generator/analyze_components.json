@@ -1,0 +1,43 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{output_dir}}/components/components_manifest.json",
+        "artifact": "components_manifest"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Extract the components array from this manifest:\n\n{{components_manifest}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "components_list"
+      }
+    },
+    {
+      "type": "loop",
+      "config": {
+        "items": "{{components_list.files[0].content}}",
+        "item_key": "current_component",
+        "process_recipe": "analyze_component.json",
+        "result_key": "component_analyses"
+      }
+    },
+    {
+      "type": "generate",
+      "config": {
+        "prompt": "Based on these analysis results, create two lists:\n1. components_to_split - components that need further splitting\n2. final_components - components that don't need further splitting\n\n{{component_analyses}}",
+        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "artifact": "component_lists"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "artifact": "component_lists",
+        "root": "{{output_dir}}/analysis"
+      }
+    }
+  ]
+}
