@@ -3,8 +3,6 @@ import asyncio
 import os
 import sys
 from typing import Dict, List
-
-import debugpy
 from dotenv import load_dotenv
 
 from recipe_executor.context import Context
@@ -107,8 +105,13 @@ async def main_async() -> None:
     # Capture remaining arguments to use as context variables
     args, remaining = parser.parse_known_args()
 
-    # Enable debugpy if debug mode is on
+    # Enable debug mode if requested (requires debugpy)
     if args.debug:
+        try:
+            import debugpy
+        except ImportError:
+            sys.stderr.write("Debug mode requested but debugpy is not installed.\n")
+            raise RuntimeError("debugpy package is required for debug mode")
         debugpy.listen(("localhost", 5678))
         print("Debugging enabled. Attach your debugger to localhost:5678.")
         debugpy.wait_for_client()

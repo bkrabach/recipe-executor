@@ -104,5 +104,5 @@ class LoopStep(BaseStep[LoopStepConfig]):
                 raise ValueError(f"Step type '{step_type}' not registered in STEP_REGISTRY")
 
             self.logger.debug(f"Executing substep {idx} of type '{step_type}'")
-            step_instance = step_class(step_config, logger=self.logger)
+            step_instance = step_class(logger=self.logger, config=step_config)
             await step_instance.execute(context)

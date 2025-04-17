@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
@@ -20,13 +20,11 @@ class ExecuteRecipeConfig(StepConfig):
 
 
 class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
-    def __init__(
-        self, config: Union[Dict[str, Any], ExecuteRecipeConfig], logger: Optional[logging.Logger] = None
-    ) -> None:
+    def __init__(self, config: Union[Dict[str, Any], ExecuteRecipeConfig], logger: logging.Logger) -> None:
         # Ensure config is an ExecuteRecipeConfig object, not a raw dict
         if not isinstance(config, ExecuteRecipeConfig):
             config = ExecuteRecipeConfig(**config)
-        super().__init__(config, logger)
+        super().__init__(logger, config)
 
     async def execute(self, context: ContextProtocol) -> None:
         """

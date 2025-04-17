@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List
 
@@ -21,8 +22,8 @@ class WriteFilesConfig(StepConfig):
 
 
 class WriteFilesStep(BaseStep[WriteFilesConfig]):
-    def __init__(self, config: dict, logger=None) -> None:
-        super().__init__(WriteFilesConfig(**config), logger)
+    def __init__(self, config: dict, logger: logging.Logger) -> None:
+        super().__init__(logger, WriteFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         # Retrieve the artifact from the context

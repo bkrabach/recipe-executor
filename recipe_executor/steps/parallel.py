@@ -33,9 +33,9 @@ class ParallelStep(BaseStep[ParallelConfig]):
     the error is propagated.
     """
 
-    def __init__(self, config: Dict[str, Any], logger: Optional[logging.Logger] = None) -> None:
+    def __init__(self, config: Dict[str, Any], logger: logging.Logger) -> None:
         # Parse config using the ParallelConfig model
-        super().__init__(ParallelConfig(**config), logger)
+        super().__init__(logger, ParallelConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         self.logger.info(f"Starting ParallelStep with {len(self.config.substeps)} substeps")

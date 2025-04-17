@@ -32,8 +32,8 @@ class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
     and stores the generated result in the execution context under a dynamic artifact key.
     """
 
-    def __init__(self, config: dict, logger: Optional[logging.Logger] = None) -> None:
-        super().__init__(GenerateLLMConfig(**config), logger or logging.getLogger(__name__))
+    def __init__(self, config: dict, logger: logging.Logger) -> None:
+        super().__init__(logger, GenerateLLMConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         """

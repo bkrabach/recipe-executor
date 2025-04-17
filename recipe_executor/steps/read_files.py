@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, List, Union
 
@@ -26,8 +27,8 @@ class ReadFilesConfig(StepConfig):
 
 
 class ReadFilesStep(BaseStep[ReadFilesConfig]):
-    def __init__(self, config: dict, logger=None):
-        super().__init__(ReadFilesConfig(**config), logger)
+    def __init__(self, config: dict, logger: logging.Logger):
+        super().__init__(logger, ReadFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         """
