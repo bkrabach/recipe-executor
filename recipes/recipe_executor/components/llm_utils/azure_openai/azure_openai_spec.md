@@ -28,7 +28,7 @@ The Azure OpenAI component provides a PydanticAI wrapper for Azure OpenAI models
 # Option 1: Create AsyncAzureOpenAI client with API key
 azure_client = AsyncAzureOpenAI(
     api_key=AZURE_OPENAI_API_KEY,
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    azure_endpoint=AZURE_OPENAI_BASE_URL,
     api_version=AZURE_OPENAI_API_VERSION,
     azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME,
 )
@@ -36,7 +36,7 @@ azure_client = AsyncAzureOpenAI(
 # Option 2: Create AsyncAzureOpenAI client with Azure Identity
 azure_client = AsyncAzureOpenAI(
     azure_ad_token_provider=token_provider,
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    azure_endpoint=AZURE_OPENAI_BASE_URL,
     api_version=AZURE_OPENAI_API_VERSION,
     azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME,
 )
@@ -69,7 +69,7 @@ openai_model = OpenAIModel(
 
 - **AZURE_USE_MANAGED_IDENTITY**: (Optional) Boolean flag to use Azure Identity for authentication
 - **AZURE_OPENAI_API_KEY**: (Required for API key auth) API key for Azure OpenAI authentication
-- **AZURE_OPENAI_ENDPOINT**: (Required) Endpoint URL for Azure OpenAI service
+- **AZURE_OPENAI_BASE_URL**: (Required) Endpoint URL for Azure OpenAI service
 - **AZURE_OPENAI_DEPLOYMENT_NAME**: (Required) Deployment name in Azure OpenAI
 - **AZURE_OPENAI_API_VERSION**: (Required) API version to use with Azure OpenAI, defaults to "2025-03-01-preview"
 - **AZURE_CLIENT_ID**: (Optional) Client ID for managed identity authentication

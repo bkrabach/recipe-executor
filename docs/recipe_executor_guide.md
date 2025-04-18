@@ -21,7 +21,7 @@ Recipes are JSON files with a structured format that define a series of steps to
       "artifact": "specs"
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Generate content based on: {{specs}}",
       "model": "{{model|default:'openai/o3-mini'}}",
       "artifact": "generation_result"
@@ -58,7 +58,7 @@ recipe_executor/
 ├── steps/             # Step implementations
 │   ├── base.py        # Base class for all steps
 │   ├── execute_recipe.py  # Step for running sub-recipes
-│   ├── generate_llm.py    # Step for LLM generation
+│   ├── llm_generate.py    # Step for LLM generation
 │   ├── parallel.py    # Step for parallel execution
 │   ├── read_files.py  # Step for reading files
 │   ├── registry.py    # Step type registry
@@ -120,7 +120,7 @@ Example recipe (`hello_world.json`):
 {
   "steps": [
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Write a hello world program in Python",
       "model": "openai/o3-mini",
       "artifact": "hello_world"
@@ -217,7 +217,7 @@ Configure the model in the `generate` step:
 
 ```json
 {
-  "type": "generate",
+  "type": "llm_generate",
   "prompt": "Generate content about: {{topic}}",
   "model": "{{provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
   "artifact": "generated_content"
@@ -237,7 +237,7 @@ Configure the model in the `generate` step:
       "artifact": "raw_data"
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Transform this CSV data into JSON: {{raw_data}}",
       "model": "openai/o3-mini",
       "artifact": "transformed_data"

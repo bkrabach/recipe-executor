@@ -8,7 +8,7 @@ sequenceDiagram
     participant RE as Recipe Executor
     participant Ctx as Context
     participant RFS as ReadFileStep
-    participant GLL as GenerateWithLLMStep
+    participant GLL as LLMGenerateStep
     participant WFS as WriteFilesStep
     participant LLM as LLM Service
 

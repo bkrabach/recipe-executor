@@ -60,7 +60,7 @@ The LoopStep allows you to run multiple steps for each item in a collection. Sub
       "item_key": "component",
       "substeps": [
         {
-          "type": "generate",
+          "type": "llm_generate",
           "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
           "model": "{{model}}",
           "artifact": "component_questions"
@@ -107,7 +107,7 @@ Within each iteration, you can reference:
   "item_key": "component",
   "substeps": [
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
       "model": "{{model}}",
       "artifact": "component_questions"
@@ -136,7 +136,7 @@ Within each iteration, you can reference:
       "artifact": "file_content"
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Analyze this code file:\n{{file_content}}",
       "model": "{{model}}",
       "artifact": "file_analysis"
@@ -155,7 +155,7 @@ Within each iteration, you can reference:
   "item_key": "item",
   "substeps": [
     {
-      "type": "generate",
+      "type": "llm_generate",
       "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
       "model": "{{model}}",
       "artifact": "transformed_item"

@@ -10,9 +10,9 @@ from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils import render_template
 
 
-class GenerateLLMConfig(StepConfig):
+class LLMGenerateConfig(StepConfig):
     """
-    Config for GenerateWithLLMStep.
+    Config for LLMGenerateStep.
 
     Fields:
         prompt: The prompt to send to the LLM (templated beforehand).
@@ -25,15 +25,15 @@ class GenerateLLMConfig(StepConfig):
     artifact: str
 
 
-class GenerateWithLLMStep(BaseStep[GenerateLLMConfig]):
+class LLMGenerateStep(BaseStep[LLMGenerateConfig]):
     """
-    GenerateWithLLMStep enables recipes to generate content using large language models (LLMs).
+    LLMGenerateStep enables recipes to generate content using large language models (LLMs).
     It processes prompt templates using context data, handles model selection, makes LLM calls,
     and stores the generated result in the execution context under a dynamic artifact key.
     """
 
     def __init__(self, config: dict, logger: logging.Logger) -> None:
-        super().__init__(logger, GenerateLLMConfig(**config))
+        super().__init__(logger, LLMGenerateConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         """

@@ -8,7 +8,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Extract just the components_to_split array from:\n\n{{component_lists}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -25,7 +25,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Extract all sub-components from these split results and combine into a single list:\n\n{{split_results}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -33,7 +33,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Update the components manifest by removing components that were split and adding their sub-components. Current manifest: {{components_manifest}}. Components to remove: {{components_to_split.files[0].content}}. New sub-components to add: {{new_sub_components.files[0].content}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",

@@ -20,7 +20,7 @@ The Context component is the shared state container for the Recipe Executor syst
 ## Implementation Considerations
 
 - Use a Python dictionary internally to store artifacts. The keys are strings and values can be of any type (no restriction on artifact data types).
-- Store configuration in a separate dictionary (`config` attribute) to distinguish it from runtime artifacts. Configuration might be populated at context creation and typically remains constant, but it's not enforced as immutable by the class.
+- Store configuration in a separate, internal dictionary (`_config` attribute) to distinguish it from runtime artifacts. Configuration might be populated at context creation and typically remains constant, but it's not enforced as immutable by the class.
 - On initialization (`__init__`), deep copy any provided artifacts or config dictionaries. This prevents unintentional side effects if the caller modifies the dictionaries after passing them in.
 - Implement the magic methods `__getitem__`, `__setitem__`, `__delitem__`, `__contains__`, `__iter__`, and `__len__` to mimic standard dict behavior for artifacts. Also provide a `keys()` method for convenience.
 - The `get` method should allow a default value, similar to `dict.get`, to avoid raising exceptions on missing keys.

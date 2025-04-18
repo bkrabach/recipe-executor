@@ -8,7 +8,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Using the following specification, generate a Python script:\n\n{{spec_text}}",
         "model": "{{model|default:'openai/o3-mini'}}",

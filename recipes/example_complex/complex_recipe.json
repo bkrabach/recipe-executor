@@ -15,7 +15,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Using the following main specification:\n\n{{main_spec}}\n\nand the auxiliary details:\n\n{{aux_spec}}\n\nGenerate a comprehensive Python module that contains a main function printing 'Hello from Main!' and an auxiliary function returning a greeting.",
         "model": "{{model|default:'openai/o3-mini'}}",

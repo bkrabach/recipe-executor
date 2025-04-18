@@ -1,7 +1,7 @@
 {
   "steps": [
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Convert depth {{depth}} to an integer, add 1, and return the result as a string.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -22,7 +22,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Check if any components need further splitting in {{component_lists}}. Output only 'true' or 'false'.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -30,7 +30,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Check if we should continue recursing based on:\n1. need_further_splitting: {{need_further_splitting.files[0].content|trim}}\n2. current_depth: {{depth}}\n3. max_depth: {{max_depth|default:'3'}}\n\nOutput 'true' if need_further_splitting is 'true' AND depth < max_depth, otherwise 'false'.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -38,7 +38,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "If {{should_continue.files[0].content|trim}} is 'true', output 'split_components.json', otherwise output 'stop'.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -53,7 +53,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "If {{should_continue.files[0].content|trim}} is 'true', output 'recursive_process.json', otherwise output 'stop'.",
         "model": "{{model|default:'openai/gpt-4.1'}}",

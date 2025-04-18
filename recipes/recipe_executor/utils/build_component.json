@@ -20,8 +20,6 @@
       "config": {
         "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
         "context_overrides": {
-          "model": "{{model|default:'openai/o3-mini'}}",
-          "output_root": "{{output_root|default:'output'}}",
           "output_path": "recipe_executor{{component_path}}",
           "language": "{{language|default:'python'}}",
           "spec": "{{spec}}",

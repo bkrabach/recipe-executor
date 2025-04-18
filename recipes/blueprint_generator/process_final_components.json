@@ -17,7 +17,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "Analyze all processed components to determine which need human review:\n\n{{processed_components}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
@@ -32,7 +32,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "For all components ready for generation, analyze dependencies and determine generation order:\n\n{{component_status}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",

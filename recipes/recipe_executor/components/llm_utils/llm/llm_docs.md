@@ -3,7 +3,8 @@
 ## Importing
 
 ```python
-from recipe_executor.llm_utils.llm import call_llm
+from recipe_executor.llm_utils.llm import LLM
+from recipe_executor.models import MCPServerConfig
 ```
 
 ## Basic Usage
@@ -15,7 +16,8 @@ class LLM:
     def __init__(
             self,
             logger: logging.Logger,
-            model: str = "openai/gpt-4o"
+            model: str = "openai/gpt-4o",
+            mcp_servers: Optional[List[MCPServerConfig]] = None,
         ):
         """
         Initialize the LLM component.
@@ -23,44 +25,62 @@ class LLM:
             logger (logging.Logger): Logger for logging messages.
             model (str): Model identifier in the format 'provider/model_name' (or 'provider/model_name/deployment_name').
                 Default is "openai/gpt-4o".
+            mcp_servers Optional[List[MCPServerConfig]]: List of MCP server configs for access to tools.
         """
         self.model = model
         self.logger = logger
+        self.mcp_servers = mcp_servers
 
     async def generate(
         prompt: str,
         model: Optional[str] = None,
         output_type: Type[Union[str, BaseModel]] = str,
+        mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> Union[str, BaseModel]:
         """
-        Generate a response from the LLM based on the provided prompt.
+        Generate an output from the LLM based on the provided prompt.
 
         Args:
             prompt (str): The prompt string to be sent to the LLM.
             model (Optional[str]): The model identifier in the format 'provider/model_name' (or 'provider/model_name/deployment_name').
-                If not provided, the default model set during initialization will be used.
-            output_type (Type[Union[str, BaseModel]]): The requested output type for the LLM response.
-                - str: Plain text response (default).
-                - BaseModel: Structured response based on the provided JSON schema.
+                If not provided, the default set during initialization will be used.
+            output_type (Type[Union[str, BaseModel]]): The requested type for the LLM output.
+                - str: Plain text output (default).
+                - BaseModel: Structured output based on the provided JSON schema.
+            mcp_servers Optional[List[MCPServerConfig]]: List of MCP server configs for access to tools.
+                If not provided, the default set during initialization will be used.
 
         Returns:
-            Union[str, BaseModel]: The response from the LLM, either as plain text or structured data.
+            Union[str, BaseModel]: The output from the LLM, either as plain text or structured data.
 
         Raises:
-            Exception: If model value cannot be mapped to valid provider/model_name , LLM call fails, or result validation fails.
+            Exception: If any of the following occurs:
+                - Invalid model ID or format.
+                - Unsupported provider.
+                - MCP server errors.
+                - Network or API errors.
+                - JSON schema validation errors.
         """
 ```
 
 Usage example:
 
-```python
+````python
+from recipe_executor.models import MCPServerHttpConfig
+
 llm = LLM(logger=logger)
+# With optional MCP integration:
+weather_mcp_server = MCPServerHttpConfig(
+    name="my_weather_mcp_server",
+    url="http://localhost:3001/sse"
+)
+llm_mcp = LLM(logger=logger, mcp_servers=[weather_mcp_server])
 
 # Call LLM with default model
-result = async llm.generate("What is the capital of France?")
+result = await llm.generate("What is the weather in Redmond, WA today?")
 
 # Call with specific model
-result = async llm.generate(
+result = await llm.generate(
     prompt="What is the capital of France?",
     model="openai/o3-mini"
 )
@@ -71,12 +91,11 @@ class UserProfile(BaseModel):
     age: int
     email: str
 
-result = async llm.generate(
+result = await llm.generate(
     prompt="Extract the user profile from the following text: {{text}}",
     model="openai/o3-mini",
     output_type=UserProfile
 )
-```
 
 ## Model ID Format
 
@@ -111,7 +130,7 @@ except ValueError as e:
 except Exception as e:
     # Handle other errors (network, API, etc.)
     print(f"LLM call failed: {e}")
-```
+````
 
 ## Important Notes
 

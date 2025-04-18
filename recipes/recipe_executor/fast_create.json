@@ -54,7 +54,7 @@
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/generate_llm/generate_llm_create.json"
+            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/llm_generate/llm_generate_create.json"
           },
           {
             "type": "execute_recipe",

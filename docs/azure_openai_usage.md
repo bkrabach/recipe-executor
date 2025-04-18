@@ -10,7 +10,7 @@ To use Azure OpenAI with Recipe Executor, you need to set the following environm
 
 ```
 # Azure OpenAI Configuration
-AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+AZURE_OPENAI_BASE_URL=https://your-resource-name.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2025-03-01-preview
 AZURE_OPENAI_API_KEY=your-azure-openai-api-key
 AZURE_USE_MANAGED_IDENTITY=false
@@ -18,7 +18,7 @@ AZURE_USE_MANAGED_IDENTITY=false
 
 **Notes:**
 
-- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI service endpoint URL
+- `AZURE_OPENAI_BASE_URL`: Your Azure OpenAI service endpoint URL
 - `AZURE_OPENAI_API_VERSION`: The API version to use (default is `2025-03-01-preview`)
 - `AZURE_OPENAI_API_KEY`: Your API key (not required if using managed identity)
 - `AZURE_USE_MANAGED_IDENTITY`: Set to `true` to use Azure Managed Identity for authentication
@@ -72,7 +72,3 @@ Common issues and solutions:
 
    - Ensure network connectivity to Azure OpenAI endpoints
    - Verify the correct endpoint URL format
-
-4. **Model Response Format Errors**:
-   - If you encounter parsing errors, it might be due to differences in response formats between models
-   - Ensure system prompts are appropriate for the model deployment you're using

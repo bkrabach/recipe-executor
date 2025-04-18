@@ -58,7 +58,7 @@ The component uses environment variables for authentication and configuration. D
 
 ```bash
 AZURE_USE_MANAGED_IDENTITY=true # Set to true to use managed identity
-AZURE_OPENAI_ENDPOINT= # Required
+AZURE_OPENAI_BASE_URL= # Required
 AZURE_OPENAI_API_VERSION= # Optional, defaults to 2025-03-01-preview
 AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 ```
@@ -68,7 +68,7 @@ AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 ```bash
 AZURE_USE_MANAGED_IDENTITY=true # Set to true to use managed identity
 AZURE_MANAGED_IDENTITY_CLIENT_ID= # Required
-AZURE_OPENAI_ENDPOINT= # Required
+AZURE_OPENAI_BASE_URL= # Required
 AZURE_OPENAI_API_VERSION= # Optional, defaults to 2025-03-01-preview
 AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 ```
@@ -77,7 +77,7 @@ AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 
 ```bash
 AZURE_OPENAI_API_KEY= # Required
-AZURE_OPENAI_ENDPOINT= # Required
+AZURE_OPENAI_BASE_URL= # Required
 AZURE_OPENAI_API_VERSION= # Optional, defaults to 2025-03-01-preview
 AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 ```

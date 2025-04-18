@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/mcp.py",
+        "artifact": "existing_code",
+        "optional": true
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_create.json",
+        "context_overrides": {
+          "existing_code": "{{existing_code}}"
+        }
+      }
+    }
+  ]
+}

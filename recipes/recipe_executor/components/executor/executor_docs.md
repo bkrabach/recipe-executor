@@ -44,7 +44,7 @@ recipe_dict = {
             "type": "generate_with_llm",
             "prompt": "Write a poem about the sea",
             "model": "openai/gpt-4o",
-            "response_key": "poem"
+            "output_key": "poem"
         }
     ]
 }

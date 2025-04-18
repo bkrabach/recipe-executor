@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The LLM component provides a unified interface for interacting with various large language model providers. It handles model initialization, request formatting, and response processing, enabling the Recipe Executor to generate content with different LLM providers through a consistent API.
+The LLM component provides a unified interface for interacting with various large language model providers and optional MCP servers. It handles model initialization, request formatting, and result processing, enabling the Recipe Executor to generate content and orchestrate external tools through a single API.
 
 ## Core Requirements
 
@@ -10,9 +10,10 @@ The LLM component provides a unified interface for interacting with various larg
 - Provide model initialization based on a standardized model identifier format
 - Encapsulate LLM API details behind a unified interface
 - Use PydanticAI's async interface for non-blocking LLM calls
-- Use PydanticAI for consistent handling and validation of LLM responses
+- Use PydanticAI for consistent handling and validation of LLM output
 - Implement basic error handling
 - Support optional structured output format
+- Accept an optional `mcp_servers: Optional[List[MCPServerConfig]]` to enable remote MCP tool integration
 
 ## Implementation Considerations
 
@@ -22,17 +23,21 @@ The LLM component provides a unified interface for interacting with various larg
 - Use PydanticAI's provider-specific model classes, passing only the model name
   - pydantic_ai.models.openai.OpenAIModel (used also for Azure OpenAI and Ollama)
   - pydantic_ai.models.anthropic.AnthropicModel
-- Create a PydanticAI Agent with the model and a structured output type
-  - Support: `output_type: Type[Union[str, BaseModel]] = str`
+- Create a PydanticAI Agent with the model, structured output type, and optional MCP servers
+- Support: `output_type: Type[Union[str, BaseModel]] = str`
+- If `mcp_servers` are provided:
+  - Create PydanticAI `pydantic_ai.mcp.MCPServer` instances from them using `llm_utils.mcp.get_mcp_server`
+  - Pass the PydanticAI versions into the Agent constructor (e.g. `Agent(model, mcp_servers=mcp_servers, output_type=output_type)`)
+- If `mcp_servers` are not provided, pass an empty list to the Agent constructor
 - Implement fully asynchronous execution:
   - Make `generate` an async function (`async def generate`)
   - Use `await agent.run(prompt)` method of the Agent to make requests
-- CRITICAL: make sure to return the `result.data` in the `generate` method to return only the structured output
+- CRITICAL: make sure to return the `result.output` in the `generate` method to return only the structured output
 
 ## Logging
 
-- Debug: Log full request payload before making call and then full response payload after receiving it
-- Info: Log model name and provider before making call (do not include the request payload details) and then include response times and tokens used upon completion (do not include the response payload details)
+- Debug: Log full request payload before making call and then full result payload after receiving it
+- Info: Log model name and provider before making call (do not include the request payload details) and then include processing times and tokens used upon completion (do not include the result payload details)
 
 ## Component Dependencies
 
@@ -40,17 +45,20 @@ The LLM component provides a unified interface for interacting with various larg
 
 - **Azure OpenAI**: Uses `get_azure_openai_model` for Azure OpenAI model initialization
 - **Logger**: Uses the logger for logging LLM calls
+- **Models**: Uses `MCPServerConfig`, `MCPServerHttpConfig`, and `MCPServerStdioConfig` for MCP server configuration and transport
+- **MCP**: Integrates remote MCP tools when `mcp_servers` are provided (uses `pydantic_ai.mcp`)
 
 ### External Libraries
 
-- **pydantic-ai**: Uses PydanticAI for model initialization, Agent-based request handling, and structured-output response processing
+- **pydantic-ai**: Uses PydanticAI for model initialization, Agent-based request handling, and structured-output processing
+- **pydantic-ai.mcp**: Provides `MCPServerHTTP` and `MCPServerStdio` classes for MCP server transports
 
 ### Configuration Dependencies
 
 - **DEFAULT_MODEL**: (Optional) Environment variable specifying the default LLM model in format "provider/model_name"
 - **OPENAI_API_KEY**: (Required for OpenAI) API key for OpenAI access
 - **ANTHROPIC_API_KEY**: (Required for Anthropic) API key for Anthropic access
-- **OLLAMA_ENDPOINT**: (Required for Ollama) Endpoint for Ollama models
+- **OLLAMA_BASE_URL**: (Required for Ollama) Endpoint for Ollama models
 
 ## Error Handling
 
@@ -117,7 +125,7 @@ Getting an agent:
 from pydantic_ai import Agent
 
 # Create an agent with the model
-agent: Agent[None, Union[str, BaseModel]] = Agent(model=ollama_model, output_type=str)
+agent: Agent[None, Union[str, BaseModel]] = Agent(model=ollama_model, output_type=str, mcp_servers=mcp_servers)
 
 # Call the agent with a prompt
 result = await agent.run("What is the capital of France?")
@@ -141,11 +149,11 @@ import os
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
-OLLAMA_ENDPOINT = os.getenv('OLLAMA_ENDPOINT', 'http://localhost:11434')
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
 
 # inside the get_model function
 return OpenAIModel(
     model_name='qwen2.5-coder:7b',
-    provider=OpenAIProvider(base_url=f'{OLLAMA_ENDPOINT}/v1'),
+    provider=OpenAIProvider(base_url=f'{OLLAMA_BASE_URL}/v1'),
 )
 ```

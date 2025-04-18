@@ -13,6 +13,9 @@ python -m recipe_executor.main recipes/my_recipe.json --log-dir custom_logs
 
 # With context values:
 python -m recipe_executor.main recipes/my_recipe.json --context key1=value1 --context key2=value2
+
+# With static configuration:
+python -m recipe_executor.main recipes/my_recipe.json --config api_key=XYZ --config timeout=30
 ```
 
 ## Command-Line Arguments
@@ -21,7 +24,8 @@ The Main component supports these command-line arguments:
 
 1. **`recipe_path`** (positional, required): Path to the recipe file to execute.
 2. **`--log-dir`** (optional): Directory for log files (default: `"logs"`). If the directory does not exist, it will be created.
-3. **`--context`** (optional, repeatable): Context values as `key=value` pairs. You can specify this option multiple times to provide multiple context entries.
+3. **`--context`** (optional, repeatable): Context artifact values as `key=value` pairs. You can specify this option multiple times.
+4. **`--config`** (optional, repeatable): Static configuration values as `key=value` pairs, populated into context config. Useful for settings like MCP servers or API credentials.
 
 ## Context Parsing
 

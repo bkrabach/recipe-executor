@@ -35,7 +35,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "# Project Splitting Task\n\n## Goal\n\nSplit project into sub-components based on the provided breakdown analysis.\n\n## Project Specification\n\n<PROJECT_SPECIFICATION>\n{{analysis_source}}\n</PROJECT_SPECIFICATION>\n\n## Breakdown Analysis\n\n<BREAKDOWN_ANALYSIS>\n{{input_file}}\n</BREAKDOWN_ANALYSIS>\n\n## Additional Files\n\n{% if additional_files != '' %}\n\n- Additional Content:\n  <ADDITIONAL_CONTENT>\n  {{additional_files}}\n  </ADDITIONAL_CONTENT>\n  {% endif %}\n\n- Guidance Philosophies (how to make decisions):\n  <GUIDANCE_PHILOSOPHY>\n  {{guidance_files}}\n  </GUIDANCE_PHILOSOPHY>\n\n## Task\n\nCreate detailed component specifications for each component based on the breakdown analysis and the additional files.\n\nFor each component, include the following:\n\n- Component name and ID (from the breakdown analysis)\n- Purpose and responsibilities\n- Core requirements and functionalities\n- API interfaces and data structures\n- Dependencies (internal and external) and interactions with other components\n- Implemtation considerations\n- Error handling and logging specifics (not all, just non-standard)\n- Testing and validation strategies\n\nEach component specification should be comprehensive enough to allow for independent development and integration into the larger project by an independent developer that does not have access to the breakdown analysis or the additional files.\n\n## Output format\n\n- Each component specification should be saved in a separate file named `components/<component_id>/<component_id>_candidate_spec.md`.\n- The component ID should be derived from the breakdown analysis.",
         "model": "{{model|default:'openai/o3-mini'}}",
@@ -50,7 +50,7 @@
       }
     },
     {
-      "type": "generate",
+      "type": "llm_generate",
       "config": {
         "prompt": "# Components Manifest Creation Task\n\n## Goal\n\nCreate a components manifest file that lists all of the generated component specifications.\n\n## Component Specifications\n\n<COMPONENT_SPECIFICATIONS>\n{{generated_files}}\n</COMPONENT_SPECIFICATIONS>\n\n## Output format\n\n- Create a JSON array of objects, each representing a component.\n- Each object should include the following fields:\n\n  - `component_id`: The ID of the component.\n  - `component_name`: The name of the component.\n  - `spec_file_path`: The file path to the component specification.\n  - `description`: A brief description of the component's purpose and responsibilities.\n  - `dependencies`: A list of internal and external dependencies, just the IDs.\n\n- The JSON array should be saved as `components_manifest.json` (no path).",
         "model": "{{model|default:'openai/o3-mini'}}",
