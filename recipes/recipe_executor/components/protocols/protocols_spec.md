@@ -31,11 +31,11 @@ The Protocols component defines the core interfaces for the Recipe Executor syst
 
 ### Internal Components
 
-- None
+- **Models**: The `Recipe` class is used in the `ExecutorProtocol` to define the type of the recipe parameter in the `execute` method.
 
 ### External Libraries
 
-- **typing** - (Required) Uses Python's built-in `typing` module (particularly `Protocol` and related features) to define structural interfaces.
+- **typing**: Uses Python's built-in `typing` module (particularly `Protocol` and related features) to define structural interfaces.
 
 ### Configuration Dependencies
 
@@ -47,4 +47,4 @@ The Protocols component defines the core interfaces for the Recipe Executor syst
 
 ## Output Files
 
-- `protocols.py` (contains `ContextProtocol`, `StepProtocol`, `ExecutorProtocol` definitions)
+- `protocols.py`

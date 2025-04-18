@@ -62,11 +62,13 @@ class MCPServerHttpConfig(BaseModel):
     """Configuration for an MCP server HTTP client.
 
     Attributes:
+        name: The name of the MCP server.
         url: The URL of the MCP server.
         headers: Optional headers for the HTTP request.
     """
 
-    url: URL
+    name: str
+    url: str
     headers: Optional[Dict[str, Any]] = None
 ```
 
@@ -80,11 +82,14 @@ class MCPServerStdioConfig(BaseModel):
 
     Attributes:
 
+        name: The name of the MCP server.
         command: The command to run the MCP server.
         args: A list of arguments for the command.
         env: Optional environment variables for the command.
         cwd: Optional working directory for the command.
     """
+
+    name: str
     command: str
     args: List[str]
     env: Optional[Dict[str, str]] = None

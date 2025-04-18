@@ -14,14 +14,14 @@ def get_mcp_server(
     config: MCPServerConfig
 ) -> MCPServer:
     """
-    Create an MCP server client based on the specified URI and server type.
+    Create an MCP server client based on the provided configuration.
 
     Args:
-        logger (logging.Logger): Logger for logging messages.
-        config: (MCPServerConfig): Configuration for the MCP server.
+        logger: Logger for logging messages.
+        config: Configuration for the MCP server.
 
     Returns:
-        MCPServer: A configured PydanticAI MCP server client.
+        A configured PydanticAI MCP server client.
     """
 ```
 
@@ -29,17 +29,16 @@ Use the provided `MCPServer` client to connect to an MCP server for external too
 
 ```python
 from recipe_executor.llm_utils.mcp import get_mcp_server
-
-# Define server configuration
 from recipe_executor.models import MCPServerHttpConfig
-
-mcp_server_config = MCPServerHttpConfig(
-    uri="http://localhost:3001/sse",
-    args={"arg1": "value1", "arg2": "value2"},
-)
 mcp_server = get_mcp_server(
     logger=logger,
-    config=mcp_server_config
+    config=MCPServerHttpConfig(
+        name="weather_mcp_server",
+        url="http://localhost:3001/sse",
+        headers={
+            "Authorization": "{{token}}",
+        }
+    )
 )
 
 # List available tools

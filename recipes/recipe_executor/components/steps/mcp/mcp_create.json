@@ -24,6 +24,13 @@
     {
       "type": "read_files",
       "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
+        "artifact": "utils_docs"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
         "path": "ai_context/AZURE_IDENTITY_CLIENT_DOCS.md",
         "artifact": "azure_identity_client_docs"
       }
@@ -43,7 +50,7 @@
           "component_id": "mcp",
           "component_path": "/steps",
           "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<LLM_UTILS_MCP_DOCS>\n{{llm_utils_mcp_docs}}\n</LLM_UTILS_MCP_DOCS>\n<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<PYDANTIC_AI_DOCS>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCS>"
+          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<LLM_UTILS_MCP_DOCS>\n{{llm_utils_mcp_docs}}\n</LLM_UTILS_MCP_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>\n<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<PYDANTIC_AI_DOCS>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCS>"
         }
       }
     }

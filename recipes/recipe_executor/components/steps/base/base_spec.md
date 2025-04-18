@@ -10,7 +10,7 @@ The purpose of the Steps Base component is to provide a foundational structure f
 - Provide a base configuration model class (`StepConfig`) using Pydantic for validation of step-specific configuration.
 - Enforce a consistent interface for step execution (each step must implement an async `execute(context)` method).
 - Utilize generics to allow `BaseStep` to be typed with a specific `StepConfig` subclass for that step, enabling type-safe access to configuration attributes within step implementations.
-- Integrate logging into steps, so each step has an optional logger to record its actions.
+- Integrate logging into steps, so each step has a logger to record its actions.
 - Keep the base step minimal—only define structure and common functionality, deferring actual execution logic to subclasses.
 
 ## Implementation Considerations

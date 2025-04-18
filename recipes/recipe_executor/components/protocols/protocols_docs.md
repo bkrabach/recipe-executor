@@ -58,7 +58,7 @@ The `StepProtocol` defines the interface for steps within a recipe. Each step mu
 ```python
 from typing import Protocol
 class StepProtocol(Protocol):
-    def __init__(self, logger: logging.Logger) -> None:
+    def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:
         ...
 
     def execute(self, context: ContextProtocol) -> None:
@@ -70,7 +70,9 @@ class StepProtocol(Protocol):
 The `ExecutorProtocol` defines the interface for the executor component, which is responsible for executing recipes. It specifies an `execute` method that takes a recipe (which can be a string, path, or a Recipe object) and a context. This allows the executor to run recipes in a consistent manner, regardless of their specific implementations.
 
 ```python
-from typing import Protocol, Optional
+from typing import Protocol
+from recipe_executor.models import Recipe
+
 class ExecutorProtocol(Protocol):
     def __init__(self, logger: logging.Logger) -> None:
         ...

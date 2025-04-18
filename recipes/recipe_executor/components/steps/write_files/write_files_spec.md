@@ -7,7 +7,7 @@ The WriteFilesStep component writes generated files to disk based on content fro
 ## Core Requirements
 
 - Write one or more files to disk from the context
-- Support both FileGenerationResult and list of FileSpec formats as input
+- Support both single FileSpec and list of FileSpec formats as input
 - Create directories as needed for file paths
 - Apply template rendering to file paths
 - Provide appropriate logging for file operations
@@ -15,7 +15,7 @@ The WriteFilesStep component writes generated files to disk based on content fro
 
 ## Implementation Considerations
 
-- Support multiple file output formats (FileGenerationResult or list of FileSpec)
+- Support multiple file output formats (single FileSpec or list of FileSpec)
 - Use template rendering for dynamic path resolution
 - Create parent directories automatically if they do not exist
 - Keep the implementation simple and focused on a single responsibility
@@ -33,7 +33,7 @@ The WriteFilesStep component writes generated files to disk based on content fro
 - **Protocols** – (Required) Uses ContextProtocol for reading artifact data and StepProtocol for step interface compliance
 - **Step Interface** – (Required) Follows the step interface via StepProtocol
 - **Context** – (Required) Retrieves file content from a context implementing ContextProtocol
-- **Models** – (Required) Uses FileGenerationResult and FileSpec models for content structure
+- **Models** – (Required) Uses FileSpec models for content structure
 - **Utils** – (Required) Uses render_template for dynamic path resolution
 
 ### External Libraries
@@ -47,7 +47,7 @@ None
 ## Error Handling
 
 - Validate that the specified artifact exists in context
-- Ensure the artifact contains a valid FileGenerationResult or list of FileSpec objects
+- Ensure the artifact contains a valid single FileSpec or list of FileSpec objects
 - Handle file writing errors with clear messages
 - Log successes and failures appropriately
 

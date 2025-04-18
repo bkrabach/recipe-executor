@@ -7,7 +7,7 @@ The next step should load the following files into context as `context_files`:
 - `ai_context/generated/recipe_executor_code_files.md`
 - `ai_context/generated/recipe_executor_recipe_files.md`
 
-The `input` value will be of type FileGenerationResult from the recipe executor, you will need to unpack that value properly to use it in the next `generate` step.
+The `input` value will be of type FileSpec or List[FileSpec] from the recipe executor, you will need to unpack that value properly to use it in the next `generate` step.
 
 Pass the loaded content to a `generate` step that extracts values to `recipe_idea`, `additional_files`, and `target_file` from the loaded content if such values are present. If the values are not present, assume the request is actually the recipe idea and set `recipe_idea` to the loaded content. The `additional_files` value should be a comma-separated list of files to be loaded into context, and the `target_file` value should be the name of the file to save the generated recipe to.
 

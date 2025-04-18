@@ -160,7 +160,7 @@ If an optional file is not found:
 
 - For a single file: an empty string is stored in the context
 - For multiple files with `merge_mode: "concat"`: the missing file is skipped in the concatenated result
-- For multiple files with `merge_mode: "dict"`: an empty string is stored for that file’s key
+- For multiple files with `merge_mode: "dict"`: the missing file is omitted from the dictionary
 
 ## Common Use Cases
 
@@ -210,7 +210,7 @@ If an optional file is not found:
 You can also supply paths via command-line context values:
 
 ```bash
-python -m recipe_executor.main recipes/generate.json --context files_to_read="specs/component_a.md,specs/component_b.md"
+recipe-tool --execute recipes/generate.json files_to_read="specs/component_a.md,specs/component_b.md"
 ```
 
 Then in the recipe you can use that context value:
@@ -232,6 +232,5 @@ Then in the recipe you can use that context value:
 - The step uses UTF-8 encoding by default for all files
 - When a file is optional and missing, it is handled according to the specified `merge_mode`
 - Template variables in all paths are resolved before reading the files
-- For backwards compatibility, single-file behavior matches the original `read_file` step
-- When using `merge_mode: "dict"`, the keys in the output are the base names of the files (not the full paths)
+- When using `merge_mode: "dict"`, the keys in the output are the full paths of the files
 - All paths support template rendering (including each path in a list)

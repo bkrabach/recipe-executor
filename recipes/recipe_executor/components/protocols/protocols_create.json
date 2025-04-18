@@ -1,13 +1,21 @@
 {
   "steps": [
     {
+      "type": "read_files",
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
+        "artifact": "models_docs"
+      }
+    },
+    {
       "type": "execute_recipe",
       "config": {
         "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
         "context_overrides": {
           "component_id": "protocols",
           "component_path": "/",
-          "existing_code": "{{existing_code}}"
+          "existing_code": "{{existing_code}}",
+          "additional_content": "<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>"
         }
       }
     }

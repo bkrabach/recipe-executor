@@ -127,7 +127,7 @@ The MCP server configuration can be specified in two formats:
 - **STDIO**: For STDIO-based MCP servers, provide:
   - `name`: The name of the MCP server.
   - `command`: The command to run the MCP server.
-  - `args`: Optional list of arguments for the command.
+  - `args`: List of arguments for the command.
   - `env`: Optional dictionary of environment variables for the command.
   - `cwd`: Optional working directory for the command.
 

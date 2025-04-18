@@ -40,8 +40,8 @@ None
 ## Error Handling
 
 - Wrap template rendering in try/except blocks
-- Provide specific error messages indicating the source of template failures
-- Propagate rendering errors with useful context information
+- Raise ValueError with a clear message if rendering fails
+- Ensure that the error message includes the template and context for easier debugging
 
 ## Output Files
 

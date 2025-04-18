@@ -48,13 +48,14 @@ import logging
 from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
-async def execute_step(step: Dict[str, Any], context: Context, logger: logging.Logger) -> None:
+async def execute_step(logger: logging.Logger, step: Dict[str, Any], context: Context) -> None:
     step_type = step["type"]
     if step_type not in STEP_REGISTRY:
         raise ValueError(f"Unknown step type '{step_type}'")
 
     step_class = STEP_REGISTRY[step_type]
-    step_instance = step_class(step, logger)
+    step_config = step.get("config", {})
+    step_instance = step_class(logger, step_config)
     await step_instance.execute(context)
 ```
 

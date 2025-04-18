@@ -54,22 +54,14 @@ The WriteFilesStep can be used in recipes like this:
 
 The WriteFilesStep can work with two types of artifacts in the context:
 
-### FileGenerationResult
+### Single FileSpec object
 
 ```python
-from recipe_executor.models import FileGenerationResult, FileSpec
-
-# Example of generating a FileGenerationResult
-result = FileGenerationResult(
-    files=[
-        FileSpec(path="src/main.py", content="print('Hello, world!')"),
-        FileSpec(path="src/utils.py", content="def add(a, b):\n    return a + b")
-    ],
-    commentary="Generated a simple Python project"
-)
-
+from recipe_executor.models import FileSpec
+# Example of generating a FileSpec object
+file = FileSpec(path="src/main.py", content="print('Hello, world!')")
 # Store in context
-context["generated_files"] = result
+context["generated_file"] = file
 ```
 
 ### List of FileSpec objects
@@ -150,4 +142,4 @@ FileSpec(
 - Files are overwritten without confirmation if they already exist
 - All paths are rendered using template variables from the context (ContextProtocol)
 - File content is written using UTF-8 encoding
-- Both FileGenerationResult and List[FileSpec] input formats are supported
+- Both FileSpec and List[FileSpec] input formats are supported
