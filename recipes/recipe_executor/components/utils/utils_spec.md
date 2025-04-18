@@ -41,6 +41,7 @@ None
 
 - Wrap template rendering in try/except blocks
 - Raise ValueError with a clear message if rendering fails
+- Use `liquid.exceptions.LiquidError` for Liquid-specific errors, otherwise just raise a generic ValueError
 - Ensure that the error message includes the template and context for easier debugging
 
 ## Output Files

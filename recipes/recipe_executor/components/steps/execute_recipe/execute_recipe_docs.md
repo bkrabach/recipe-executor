@@ -43,7 +43,9 @@ The ExecuteRecipeStep can be used in recipes like this:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/sub_recipe.json"
+      "config": {
+        "recipe_path": "recipes/sub_recipe.json"
+      }
     }
   ]
 }
@@ -58,10 +60,12 @@ You can override specific context values for the sub-recipe execution:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/generate_component.json",
-      "context_overrides": {
-        "component_name": "Utils",
-        "output_dir": "output/components/utils"
+      "config": {
+        "recipe_path": "recipes/generate_component.json",
+        "context_overrides": {
+          "component_name": "Utils",
+          "output_dir": "output/components/utils"
+        }
       }
     }
   ]
@@ -77,10 +81,12 @@ Both the `recipe_path` and `context_overrides` can include template variables:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/{{recipe_type}}/{{component_id}}.json",
-      "context_overrides": {
-        "component_name": "{{component_display_name}}",
-        "output_dir": "output/components/{{component_id}}"
+      "config": {
+        "recipe_path": "recipes/{{recipe_type}}/{{component_id}}.json",
+        "context_overrides": {
+          "component_name": "{{component_display_name}}",
+          "output_dir": "output/components/{{component_id}}"
+        }
       }
     }
   ]
@@ -96,23 +102,31 @@ Sub-recipes can be composed to create more complex workflows:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/project_spec.md",
-      "artifact": "project_spec"
-    },
-    {
-      "type": "execute_recipe",
-      "recipe_path": "recipes/parse_project.json",
-      "context_overrides": {
-        "spec": "{{project_spec}}"
+      "config": {
+        "path": "specs/project_spec.md",
+        "contents_key": "project_spec"
       }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/generate_components.json"
+      "config": {
+        "recipe_path": "recipes/parse_project.json",
+        "context_overrides": {
+          "spec": "{{project_spec}}"
+        }
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/assemble_project.json"
+      "config": {
+        "recipe_path": "recipes/generate_components.json"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "recipes/assemble_project.json"
+      }
     }
   ]
 }
@@ -125,10 +139,12 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/generate_component.json",
-  "context_overrides": {
-    "component_id": "utils",
-    "component_name": "Utils Component"
+  "config": {
+    "recipe_path": "recipes/generate_component.json",
+    "context_overrides": {
+      "component_id": "utils",
+      "component_name": "Utils Component"
+    }
   }
 }
 ```
@@ -138,10 +154,12 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/component_template.json",
-  "context_overrides": {
-    "template_type": "create",
-    "component_id": "{{component_id}}"
+  "config": {
+    "recipe_path": "recipes/component_template.json",
+    "context_overrides": {
+      "template_type": "create",
+      "component_id": "{{component_id}}"
+    }
   }
 }
 ```
@@ -151,7 +169,9 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/workflow/{{workflow_name}}.json"
+  "config": {
+    "recipe_path": "recipes/workflow/{{workflow_name}}.json"
+  }
 }
 ```
 

@@ -2185,7 +2185,9 @@ The ExecuteRecipeStep can be used in recipes like this:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/sub_recipe.json"
+      "config": {
+        "recipe_path": "recipes/sub_recipe.json"
+      }
     }
   ]
 }
@@ -2200,10 +2202,12 @@ You can override specific context values for the sub-recipe execution:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/generate_component.json",
-      "context_overrides": {
-        "component_name": "Utils",
-        "output_dir": "output/components/utils"
+      "config": {
+        "recipe_path": "recipes/generate_component.json",
+        "context_overrides": {
+          "component_name": "Utils",
+          "output_dir": "output/components/utils"
+        }
       }
     }
   ]
@@ -2219,10 +2223,12 @@ Both the `recipe_path` and `context_overrides` can include template variables:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/{{recipe_type}}/{{component_id}}.json",
-      "context_overrides": {
-        "component_name": "{{component_display_name}}",
-        "output_dir": "output/components/{{component_id}}"
+      "config": {
+        "recipe_path": "recipes/{{recipe_type}}/{{component_id}}.json",
+        "context_overrides": {
+          "component_name": "{{component_display_name}}",
+          "output_dir": "output/components/{{component_id}}"
+        }
       }
     }
   ]
@@ -2238,23 +2244,31 @@ Sub-recipes can be composed to create more complex workflows:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/project_spec.md",
-      "artifact": "project_spec"
-    },
-    {
-      "type": "execute_recipe",
-      "recipe_path": "recipes/parse_project.json",
-      "context_overrides": {
-        "spec": "{{project_spec}}"
+      "config": {
+        "path": "specs/project_spec.md",
+        "contents_key": "project_spec"
       }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/generate_components.json"
+      "config": {
+        "recipe_path": "recipes/parse_project.json",
+        "context_overrides": {
+          "spec": "{{project_spec}}"
+        }
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/assemble_project.json"
+      "config": {
+        "recipe_path": "recipes/generate_components.json"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "recipes/assemble_project.json"
+      }
     }
   ]
 }
@@ -2267,10 +2281,12 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/generate_component.json",
-  "context_overrides": {
-    "component_id": "utils",
-    "component_name": "Utils Component"
+  "config": {
+    "recipe_path": "recipes/generate_component.json",
+    "context_overrides": {
+      "component_id": "utils",
+      "component_name": "Utils Component"
+    }
   }
 }
 ```
@@ -2280,10 +2296,12 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/component_template.json",
-  "context_overrides": {
-    "template_type": "create",
-    "component_id": "{{component_id}}"
+  "config": {
+    "recipe_path": "recipes/component_template.json",
+    "context_overrides": {
+      "template_type": "create",
+      "component_id": "{{component_id}}"
+    }
   }
 }
 ```
@@ -2293,7 +2311,9 @@ Sub-recipes can be composed to create more complex workflows:
 ```json
 {
   "type": "execute_recipe",
-  "recipe_path": "recipes/workflow/{{workflow_name}}.json"
+  "config": {
+    "recipe_path": "recipes/workflow/{{workflow_name}}.json"
+  }
 }
 ```
 
@@ -2480,10 +2500,12 @@ The GenerateWithLLMStep can be used in recipes like this:
 {
   "steps": [
     {
-      "type": "generate",
-      "prompt": "Generate Python code for a utility that: {{requirements}}",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "artifact": "generation_result"
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Generate Python code for a utility that: {{requirements}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_key": "generation_result"
+      }
     }
   ]
 }
@@ -2498,14 +2520,18 @@ The prompt can include template variables from the context:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md",
-      "artifact": "spec"
+      "config": {
+        "path": "specs/component_spec.md",
+        "contents_key": "spec"
+      }
     },
     {
-      "type": "generate",
-      "prompt": "You are an expert Python developer. Based on the following specification, generate code for a component:\n\n{{spec}}",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "artifact": "codegen_result"
+      "type": "llm_generate",
+      "config": {
+        "prompt": "You are an expert Python developer. Based on the following specification, generate code for a component:\n\n{{spec}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_key": "codegen_result"
+      }
     }
   ]
 }
@@ -2519,10 +2545,12 @@ The model identifier can also use template variables:
 {
   "steps": [
     {
-      "type": "generate",
-      "prompt": "Generate code based on: {{spec}}",
-      "model": "{{model_provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
-      "artifact": "codegen_result"
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Generate code based on: {{spec}}",
+        "model": "{{model_provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
+        "output_key": "codegen_result"
+      }
     }
   ]
 }
@@ -2536,10 +2564,12 @@ The artifact key can be templated to create dynamic storage locations:
 {
   "steps": [
     {
-      "type": "generate",
-      "prompt": "Generate code for: {{component_name}}",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "artifact": "{{component_name}}_result"
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Generate code for: {{component_name}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_key": "{{component_name}}_result"
+      }
     }
   ]
 }
@@ -2754,22 +2784,28 @@ The LoopStep allows you to run multiple steps for each item in a collection. Sub
   "steps": [
     {
       "type": "loop",
-      "items": "components",
-      "item_key": "component",
-      "substeps": [
-        {
-          "type": "generate",
-          "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
-          "model": "{{model}}",
-          "artifact": "component_questions"
-        },
-        {
-          "type": "write_files",
-          "artifact": "component_questions",
-          "root": "{{output_dir}}/components/{{component.id}}"
-        }
-      ],
-      "result_key": "processed_components"
+      "config": {
+        "items": "components",
+        "item_key": "component",
+        "substeps": [
+          {
+            "type": "llm_generate",
+            "config": {
+              "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+              "model": "{{model}}",
+              "output_key": "component_questions"
+            }
+          },
+          {
+            "type": "write_files",
+            "config": {
+              "root": "{{output_dir}}/components/{{component.id}}",
+              "files_key": "component_questions"
+            }
+          }
+        ],
+        "result_key": "processed_components"
+      }
     }
   ]
 }
@@ -2801,22 +2837,28 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "components",
-  "item_key": "component",
-  "substeps": [
-    {
-      "type": "generate",
-      "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
-      "model": "{{model}}",
-      "artifact": "component_questions"
-    },
-    {
-      "type": "write_files",
-      "artifact": "component_questions",
-      "root": "output/{{component.id}}"
-    }
-  ],
-  "result_key": "processed_components"
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+          "model": "{{model}}",
+          "output_key": "component_questions"
+        }
+      },
+      {
+        "type": "write_files",
+        "config": {
+          "root": "output/{{component.id}}",
+          "files_key": "component_questions"
+        }
+      }
+    ],
+    "result_key": "processed_components"
+  }
 }
 ```
 
@@ -2825,22 +2867,28 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "code_files",
-  "item_key": "file",
-  "substeps": [
-    {
-      "type": "read_files",
-      "path": "{{file.path}}",
-      "artifact": "file_content"
-    },
-    {
-      "type": "generate",
-      "prompt": "Analyze this code file:\n{{file_content}}",
-      "model": "{{model}}",
-      "artifact": "file_analysis"
-    }
-  ],
-  "result_key": "analyzed_files"
+  "config": {
+    "items": "code_files",
+    "item_key": "file",
+    "substeps": [
+      {
+        "type": "read_files",
+        "config": {
+          "path": "{{file.path}}",
+          "contents_key": "file_content"
+        }
+      },
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Analyze this code file:\n{{file_content}}",
+          "model": "{{model}}",
+          "output_key": "file_analysis"
+        }
+      }
+    ],
+    "result_key": "analyzed_files"
+  }
 }
 ```
 
@@ -2849,17 +2897,21 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "input_data",
-  "item_key": "item",
-  "substeps": [
-    {
-      "type": "generate",
-      "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
-      "model": "{{model}}",
-      "artifact": "transformed_item"
-    }
-  ],
-  "result_key": "transformed_data"
+  "config": {
+    "items": "input_data",
+    "item_key": "item",
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
+          "model": "{{model}}",
+          "output_key": "transformed_item"
+        }
+      }
+    ],
+    "result_key": "transformed_data"
+  }
 }
 ```
 
@@ -3073,24 +3125,30 @@ The ParallelStep allows you to run multiple steps concurrently. Sub-steps are de
   "steps": [
     {
       "type": "parallel",
-      "substeps": [
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/subtask_a.json",
-          "context_overrides": {
-            "input_data": "{{shared_input}}"
+      "config": {
+        "substeps": [
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/subtask_a.json",
+              "context_overrides": {
+                "input_data": "{{shared_input}}"
+              }
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/subtask_b.json",
+              "context_overrides": {
+                "input_data": "{{shared_input}}"
+              }
+            }
           }
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/subtask_b.json",
-          "context_overrides": {
-            "input_data": "{{shared_input}}"
-          }
-        }
-      ],
-      "max_concurrency": 2,
-      "delay": 1
+        ],
+        "max_concurrency": 2,
+        "delay": 1
+      }
     }
   ]
 }
@@ -3292,8 +3350,10 @@ The ReadFilesStep can be used to read a single file (just like the original `rea
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/component_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -3308,8 +3368,10 @@ You can read multiple files by providing a comma-separated string of paths:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md,specs/component_docs.md",
-      "artifact": "component_specs"
+      "config": {
+        "path": "specs/component_spec.md,specs/component_docs.md",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3322,9 +3384,14 @@ You can also read multiple files by providing a list of path strings:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "concat"
+      "config": {
+        "path": [
+          "specs/component_spec.md",
+          "specs/component_docs.md"
+        ],
+        "merge_mode": "concat",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3339,9 +3406,14 @@ You can store multiple files as a dictionary with filenames as keys:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "dict"
+      "config": {
+        "path": [
+          "specs/component_spec.md",
+          "specs/component_docs.md"
+        ],
+        "merge_mode": "dict",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3356,8 +3428,10 @@ The `path` parameter can include template variables from the context:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/{{component_id}}_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/{{component_id}}_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -3370,11 +3444,13 @@ Template variables can also be used within list paths:
   "steps": [
     {
       "type": "read_files",
-      "path": [
-        "specs/{{component_id}}_spec.md",
-        "specs/{{component_id}}_docs.md"
-      ],
-      "artifact": "component_files"
+      "config": {
+        "path": [
+          "specs/{{component_id}}_spec.md",
+          "specs/{{component_id}}_docs.md"
+        ],
+        "contents_key": "component_files"
+      }
     }
   ]
 }
@@ -3389,9 +3465,14 @@ You can specify that files are optional. If an optional file doesn't exist, exec
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/required_file.md", "specs/optional_file.md"],
-      "artifact": "component_files",
-      "optional": true
+      "config": {
+        "path": [
+          "specs/required_file.md",
+          "specs/optional_file.md"
+        ],
+        "optional": true,
+        "contents_key": "component_files"
+      }
     }
   ]
 }
@@ -3410,9 +3491,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": ["specs/{{component_id}}_spec.md", "specs/{{component_id}}_docs.md"],
-  "artifact": "component_files",
-  "merge_mode": "concat"
+  "config": {
+    "path": [
+      "specs/{{component_id}}_spec.md",
+      "specs/{{component_id}}_docs.md"
+    ],
+    "merge_mode": "concat",
+    "contents_key": "component_files"
+  }
 }
 ```
 
@@ -3421,14 +3507,16 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "templates/email_base.txt",
-    "templates/email_header.txt",
-    "templates/email_footer.txt"
-  ],
-  "artifact": "email_templates",
-  "optional": true,
-  "merge_mode": "dict"
+  "config": {
+    "path": [
+      "templates/email_base.txt",
+      "templates/email_header.txt",
+      "templates/email_footer.txt"
+    ],
+    "optional": true,
+    "merge_mode": "dict",
+    "contents_key": "email_templates"
+  }
 }
 ```
 
@@ -3437,12 +3525,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "docs/{{project}}/{{component}}/README.md",
-    "docs/{{project}}/{{component}}/USAGE.md"
-  ],
-  "artifact": "documentation",
-  "optional": true
+  "config": {
+    "path": [
+      "docs/{{project}}/{{component}}/README.md",
+      "docs/{{project}}/{{component}}/USAGE.md"
+    ],
+    "optional": true,
+    "contents_key": "documentation"
+  }
 }
 ```
 
@@ -3461,8 +3551,10 @@ Then in the recipe you can use that context value:
   "steps": [
     {
       "type": "read_files",
-      "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
-      "artifact": "input_files"
+      "config": {
+        "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
+        "contents_key": "input_files"
+      }
     }
   ]
 }
@@ -3627,8 +3719,10 @@ The ReadFilesStep can be used to read a single file (just like the original `rea
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/component_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -3643,8 +3737,10 @@ You can read multiple files by providing a comma-separated string of paths:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md,specs/component_docs.md",
-      "artifact": "component_specs"
+      "config": {
+        "path": "specs/component_spec.md,specs/component_docs.md",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3657,9 +3753,14 @@ You can also read multiple files by providing a list of path strings:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "concat"
+      "config": {
+        "path": [
+          "specs/component_spec.md",
+          "specs/component_docs.md"
+        ],
+        "merge_mode": "concat",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3674,9 +3775,14 @@ You can store multiple files as a dictionary with filenames as keys:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "dict"
+      "config": {
+        "path": [
+          "specs/component_spec.md",
+          "specs/component_docs.md"
+        ],
+        "merge_mode": "dict",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -3691,8 +3797,10 @@ The `path` parameter can include template variables from the context:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/{{component_id}}_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/{{component_id}}_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -3705,11 +3813,13 @@ Template variables can also be used within list paths:
   "steps": [
     {
       "type": "read_files",
-      "path": [
-        "specs/{{component_id}}_spec.md",
-        "specs/{{component_id}}_docs.md"
-      ],
-      "artifact": "component_files"
+      "config": {
+        "path": [
+          "specs/{{component_id}}_spec.md",
+          "specs/{{component_id}}_docs.md"
+        ],
+        "contents_key": "component_files"
+      }
     }
   ]
 }
@@ -3724,9 +3834,14 @@ You can specify that files are optional. If an optional file doesn't exist, exec
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/required_file.md", "specs/optional_file.md"],
-      "artifact": "component_files",
-      "optional": true
+      "config": {
+        "path": [
+          "specs/required_file.md",
+          "specs/optional_file.md"
+        ],
+        "optional": true,
+        "contents_key": "component_files"
+      }
     }
   ]
 }
@@ -3745,9 +3860,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": ["specs/{{component_id}}_spec.md", "specs/{{component_id}}_docs.md"],
-  "artifact": "component_files",
-  "merge_mode": "concat"
+  "config": {
+    "path": [
+      "specs/{{component_id}}_spec.md",
+      "specs/{{component_id}}_docs.md"
+    ],
+    "merge_mode": "concat",
+    "contents_key": "component_files"
+  }
 }
 ```
 
@@ -3756,14 +3876,16 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "templates/email_base.txt",
-    "templates/email_header.txt",
-    "templates/email_footer.txt"
-  ],
-  "artifact": "email_templates",
-  "optional": true,
-  "merge_mode": "dict"
+  "config": {
+    "path": [
+      "templates/email_base.txt",
+      "templates/email_header.txt",
+      "templates/email_footer.txt"
+    ],
+    "optional": true,
+    "merge_mode": "dict",
+    "contents_key": "email_templates"
+  }
 }
 ```
 
@@ -3772,12 +3894,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "docs/{{project}}/{{component}}/README.md",
-    "docs/{{project}}/{{component}}/USAGE.md"
-  ],
-  "artifact": "documentation",
-  "optional": true
+  "config": {
+    "path": [
+      "docs/{{project}}/{{component}}/README.md",
+      "docs/{{project}}/{{component}}/USAGE.md"
+    ],
+    "optional": true,
+    "contents_key": "documentation"
+  }
 }
 ```
 
@@ -3796,8 +3920,10 @@ Then in the recipe you can use that context value:
   "steps": [
     {
       "type": "read_files",
-      "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
-      "artifact": "input_files"
+      "config": {
+        "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
+        "contents_key": "input_files"
+      }
     }
   ]
 }
@@ -4074,8 +4200,10 @@ The WriteFilesStep can be used in recipes like this:
   "steps": [
     {
       "type": "write_files",
-      "artifact": "generated_files",
-      "root": "output/project"
+      "config": {
+        "root": "output/project",
+        "files_key": "generated_files"
+      }
     }
   ]
 }
@@ -4127,8 +4255,10 @@ The root path and individual file paths can include template variables:
   "steps": [
     {
       "type": "write_files",
-      "artifact": "generated_files",
-      "root": "output/{{project_name}}"
+      "config": {
+        "root": "output/{{project_name}}",
+        "files_key": "generated_files"
+      }
     }
   ]
 }
@@ -4150,8 +4280,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "generated_files",
-  "root": "output/src"
+  "config": {
+    "root": "output/src",
+    "files_key": "generated_files"
+  }
 }
 ```
 
@@ -4160,8 +4292,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "project_files",
-  "root": "output/{{project_name}}"
+  "config": {
+    "root": "output/{{project_name}}",
+    "files_key": "project_files"
+  }
 }
 ```
 
@@ -4170,8 +4304,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "component_result",
-  "root": "output/components"
+  "config": {
+    "root": "output/components",
+    "files_key": "component_result"
+  }
 }
 ```
 

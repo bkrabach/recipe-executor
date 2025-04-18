@@ -6,31 +6,45 @@
         "substeps": [
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_edit.json"
+            }
           },
           {
             "type": "execute_recipe",
-            "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_edit.json"
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_edit.json"
+            }
           }
         ],
         "max_concurrency": 0,

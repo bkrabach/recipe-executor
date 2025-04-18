@@ -22,7 +22,7 @@ class WriteFilesConfig(StepConfig):
 
 
 class WriteFilesStep(BaseStep[WriteFilesConfig]):
-    def __init__(self, config: dict, logger: logging.Logger) -> None:
+    def __init__(self, logger: logging.Logger, config: dict) -> None:
         super().__init__(logger, WriteFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:

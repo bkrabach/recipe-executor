@@ -56,22 +56,28 @@ The LoopStep allows you to run multiple steps for each item in a collection. Sub
   "steps": [
     {
       "type": "loop",
-      "items": "components",
-      "item_key": "component",
-      "substeps": [
-        {
-          "type": "llm_generate",
-          "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
-          "model": "{{model}}",
-          "artifact": "component_questions"
-        },
-        {
-          "type": "write_files",
-          "artifact": "component_questions",
-          "root": "{{output_dir}}/components/{{component.id}}"
-        }
-      ],
-      "result_key": "processed_components"
+      "config": {
+        "items": "components",
+        "item_key": "component",
+        "substeps": [
+          {
+            "type": "llm_generate",
+            "config": {
+              "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+              "model": "{{model}}",
+              "output_key": "component_questions"
+            }
+          },
+          {
+            "type": "write_files",
+            "config": {
+              "root": "{{output_dir}}/components/{{component.id}}",
+              "files_key": "component_questions"
+            }
+          }
+        ],
+        "result_key": "processed_components"
+      }
     }
   ]
 }
@@ -103,22 +109,28 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "components",
-  "item_key": "component",
-  "substeps": [
-    {
-      "type": "llm_generate",
-      "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
-      "model": "{{model}}",
-      "artifact": "component_questions"
-    },
-    {
-      "type": "write_files",
-      "artifact": "component_questions",
-      "root": "output/{{component.id}}"
-    }
-  ],
-  "result_key": "processed_components"
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
+          "model": "{{model}}",
+          "output_key": "component_questions"
+        }
+      },
+      {
+        "type": "write_files",
+        "config": {
+          "root": "output/{{component.id}}",
+          "files_key": "component_questions"
+        }
+      }
+    ],
+    "result_key": "processed_components"
+  }
 }
 ```
 
@@ -127,22 +139,28 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "code_files",
-  "item_key": "file",
-  "substeps": [
-    {
-      "type": "read_files",
-      "path": "{{file.path}}",
-      "artifact": "file_content"
-    },
-    {
-      "type": "llm_generate",
-      "prompt": "Analyze this code file:\n{{file_content}}",
-      "model": "{{model}}",
-      "artifact": "file_analysis"
-    }
-  ],
-  "result_key": "analyzed_files"
+  "config": {
+    "items": "code_files",
+    "item_key": "file",
+    "substeps": [
+      {
+        "type": "read_files",
+        "config": {
+          "path": "{{file.path}}",
+          "contents_key": "file_content"
+        }
+      },
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Analyze this code file:\n{{file_content}}",
+          "model": "{{model}}",
+          "output_key": "file_analysis"
+        }
+      }
+    ],
+    "result_key": "analyzed_files"
+  }
 }
 ```
 
@@ -151,17 +169,21 @@ Within each iteration, you can reference:
 ```json
 {
   "type": "loop",
-  "items": "input_data",
-  "item_key": "item",
-  "substeps": [
-    {
-      "type": "llm_generate",
-      "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
-      "model": "{{model}}",
-      "artifact": "transformed_item"
-    }
-  ],
-  "result_key": "transformed_data"
+  "config": {
+    "items": "input_data",
+    "item_key": "item",
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
+          "model": "{{model}}",
+          "output_key": "transformed_item"
+        }
+      }
+    ],
+    "result_key": "transformed_data"
+  }
 }
 ```
 

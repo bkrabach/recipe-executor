@@ -42,16 +42,18 @@ The LLMGenerateStep can be used in recipes via the `generate_with_llm` step type
   "steps": [
     {
       "type": "generate_with_llm",
-      "prompt": "What is the weather in Redmond, WA today?",
-      "model": "openai/o3-mini",
-      "mcp_servers": [
-        {
-          "name": "weather_mcp_server",
-          "url": "http://localhost:3001/sse"
-        }
-      ],
-      "output_format": "text",
-      "output_key": "capital_result"
+      "config": {
+        "prompt": "What is the weather in Redmond, WA today?",
+        "model": "openai/o3-mini",
+        "mcp_servers": [
+          {
+            "name": "weather_mcp_server",
+            "url": "http://localhost:3001/sse"
+          }
+        ],
+        "output_format": "text",
+        "output_key": "capital_result"
+      }
     }
   ]
 }
@@ -66,15 +68,19 @@ The prompt can include template variables from the context:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md",
-      "content_key": "component_spec_contents"
+      "config": {
+        "path": "specs/component_spec.md",
+        "content_key": "component_spec_contents"
+      }
     },
     {
       "type": "generate_with_llm",
-      "prompt": "Based on the following specification, generate python code for a component:\n\n{{component_spec_contents}}",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "output_format": "files",
-      "output_key": "component_code_files"
+      "config": {
+        "prompt": "Based on the following specification, generate python code for a component:\n\n{{component_spec_contents}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": "files",
+        "output_key": "component_code_files"
+      }
     }
   ]
 }
@@ -89,22 +95,31 @@ The output key can be templated to create dynamic storage locations:
   "steps": [
     {
       "type": "llm_generate",
-      "prompt": "Generate a JSON object with user details.",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "output_format": {
-        "type": "object",
-        "properties": {
-          "user": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string" },
-              "age": { "type": "integer" }
-            },
-            "required": ["name", "age"]
+      "config": {
+        "prompt": "Generate a JSON object with user details.",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "age"
+              ]
+            }
           }
-        }
-      },
-      "output_key": "user_details_{{name}}"
+        },
+        "output_key": "user_details_{{name}}"
+      }
     }
   ]
 }
@@ -146,10 +161,12 @@ Request:
 ```json
 {
   "type": "generate_with_llm",
-  "prompt": "What is the capital of France?",
-  "model": "openai/o3-mini",
-  "output_format": "text",
-  "output_key": "capital_result"
+  "config": {
+    "prompt": "What is the capital of France?",
+    "model": "openai/o3-mini",
+    "output_format": "text",
+    "output_key": "capital_result"
+  }
 }
 ```
 
@@ -168,10 +185,12 @@ Request:
 ```json
 {
   "type": "generate_with_llm",
-  "prompt": "Generate Python files for a simple calculator.",
-  "model": "openai/o3-mini",
-  "output_format": "files",
-  "output_key": "calculator_files"
+  "config": {
+    "prompt": "Generate Python files for a simple calculator.",
+    "model": "openai/o3-mini",
+    "output_format": "files",
+    "output_key": "calculator_files"
+  }
 }
 ```
 
@@ -199,20 +218,29 @@ Request:
 ```json
 {
   "type": "generate_with_llm",
-  "prompt": "Extract the list of users from this document: {{document_content}}.",
-  "model": "openai/o3-mini",
-  "output_format": {
-    "type": "list",
-    "items": {
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "age": { "type": "integer" }
-      },
-      "required": ["name", "age"]
-    }
-  },
-  "output_key": "user_details"
+  "config": {
+    "prompt": "Extract the list of users from this document: {{document_content}}.",
+    "model": "openai/o3-mini",
+    "output_format": {
+      "type": "list",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "age"
+        ]
+      }
+    },
+    "output_key": "user_details"
+  }
 }
 ```
 

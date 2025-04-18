@@ -17,19 +17,25 @@ Recipes are JSON files with a structured format that define a series of steps to
   "steps": [
     {
       "type": "read_files",
-      "path": "input/specifications.md",
-      "artifact": "specs"
+      "config": {
+        "path": "input/specifications.md",
+        "contents_key": "specs"
+      }
     },
     {
       "type": "llm_generate",
-      "prompt": "Generate content based on: {{specs}}",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "artifact": "generation_result"
+      "config": {
+        "prompt": "Generate content based on: {{specs}}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_key": "generation_result"
+      }
     },
     {
       "type": "write_files",
-      "artifact": "generation_result",
-      "root": "./output"
+      "config": {
+        "root": "./output",
+        "files_key": "generation_result"
+      }
     }
   ]
 }
@@ -121,14 +127,18 @@ Example recipe (`hello_world.json`):
   "steps": [
     {
       "type": "llm_generate",
-      "prompt": "Write a hello world program in Python",
-      "model": "openai/o3-mini",
-      "artifact": "hello_world"
+      "config": {
+        "prompt": "Write a hello world program in Python",
+        "model": "openai/o3-mini",
+        "output_key": "hello_world"
+      }
     },
     {
       "type": "write_files",
-      "artifact": "hello_world",
-      "root": "./output"
+      "config": {
+        "root": "./output",
+        "files_key": "hello_world"
+      }
     }
   ]
 }
@@ -151,8 +161,10 @@ Recipe Executor supports dynamic content using Liquid template syntax:
   "steps": [
     {
       "type": "read_files",
-      "path": "{{file_path}}",
-      "artifact": "content"
+      "config": {
+        "path": "{{file_path}}",
+        "contents_key": "content"
+      }
     }
   ]
 }
@@ -169,11 +181,15 @@ Recipes can execute other recipes, allowing for modular composition:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "sub_recipes/prepare_data.json"
+      "config": {
+        "recipe_path": "sub_recipes/prepare_data.json"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "sub_recipes/generate_content.json"
+      "config": {
+        "recipe_path": "sub_recipes/generate_content.json"
+      }
     }
   ]
 }
@@ -188,17 +204,23 @@ The `parallel` step type allows executing multiple steps concurrently:
   "steps": [
     {
       "type": "parallel",
-      "substeps": [
-        {
-          "type": "execute_recipe",
-          "recipe_path": "task_a.json"
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "task_b.json"
-        }
-      ],
-      "max_concurrency": 2
+      "config": {
+        "substeps": [
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "task_a.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "task_b.json"
+            }
+          }
+        ],
+        "max_concurrency": 2
+      }
     }
   ]
 }
@@ -218,9 +240,11 @@ Configure the model in the `generate` step:
 ```json
 {
   "type": "llm_generate",
-  "prompt": "Generate content about: {{topic}}",
-  "model": "{{provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
-  "artifact": "generated_content"
+  "config": {
+    "prompt": "Generate content about: {{topic}}",
+    "model": "{{provider/default:'openai'}}:{{model_name|default:'o3-mini'}}",
+    "output_key": "generated_content"
+  }
 }
 ```
 
@@ -233,19 +257,25 @@ Configure the model in the `generate` step:
   "steps": [
     {
       "type": "read_files",
-      "path": "data/input.csv",
-      "artifact": "raw_data"
+      "config": {
+        "path": "data/input.csv",
+        "contents_key": "raw_data"
+      }
     },
     {
       "type": "llm_generate",
-      "prompt": "Transform this CSV data into JSON: {{raw_data}}",
-      "model": "openai/o3-mini",
-      "artifact": "transformed_data"
+      "config": {
+        "prompt": "Transform this CSV data into JSON: {{raw_data}}",
+        "model": "openai/o3-mini",
+        "output_key": "transformed_data"
+      }
     },
     {
       "type": "write_files",
-      "artifact": "transformed_data",
-      "root": "./output"
+      "config": {
+        "root": "./output",
+        "files_key": "transformed_data"
+      }
     }
   ]
 }
@@ -258,23 +288,31 @@ Configure the model in the `generate` step:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/requirements.md",
-      "artifact": "requirements"
-    },
-    {
-      "type": "execute_recipe",
-      "recipe_path": "stages/parse_requirements.json",
-      "context_overrides": {
-        "input": "{{requirements}}"
+      "config": {
+        "path": "specs/requirements.md",
+        "contents_key": "requirements"
       }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "stages/process_data.json"
+      "config": {
+        "recipe_path": "stages/parse_requirements.json",
+        "context_overrides": {
+          "input": "{{requirements}}"
+        }
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "stages/generate_output.json"
+      "config": {
+        "recipe_path": "stages/process_data.json"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "stages/generate_output.json"
+      }
     }
   ]
 }

@@ -20,7 +20,11 @@ class ExecuteRecipeConfig(StepConfig):
 
 
 class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
-    def __init__(self, config: Union[Dict[str, Any], ExecuteRecipeConfig], logger: logging.Logger) -> None:
+    def __init__(
+        self,
+        logger: logging.Logger,
+        config: Union[Dict[str, Any], ExecuteRecipeConfig],
+    ) -> None:
         # Ensure config is an ExecuteRecipeConfig object, not a raw dict
         if not isinstance(config, ExecuteRecipeConfig):
             config = ExecuteRecipeConfig(**config)

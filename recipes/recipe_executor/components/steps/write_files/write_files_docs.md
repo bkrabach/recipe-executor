@@ -43,8 +43,10 @@ The WriteFilesStep can be used in recipes like this:
   "steps": [
     {
       "type": "write_files",
-      "artifact": "generated_files",
-      "root": "output/project"
+      "config": {
+        "root": "output/project",
+        "files_key": "generated_files"
+      }
     }
   ]
 }
@@ -88,8 +90,10 @@ The root path and individual file paths can include template variables:
   "steps": [
     {
       "type": "write_files",
-      "files": "generated_files",
-      "root": "output/{{project_name}}"
+      "config": {
+        "files": "generated_files",
+        "root": "output/{{project_name}}"
+      }
     }
   ]
 }
@@ -111,8 +115,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "generated_files",
-  "root": "output/src"
+  "config": {
+    "root": "output/src",
+    "files_key": "generated_files"
+  }
 }
 ```
 
@@ -121,8 +127,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "project_files",
-  "root": "output/{{project_name}}"
+  "config": {
+    "root": "output/{{project_name}}",
+    "files_key": "project_files"
+  }
 }
 ```
 
@@ -131,8 +139,10 @@ FileSpec(
 ```json
 {
   "type": "write_files",
-  "artifact": "component_result",
-  "root": "output/components"
+  "config": {
+    "root": "output/components",
+    "files_key": "component_result"
+  }
 }
 ```
 

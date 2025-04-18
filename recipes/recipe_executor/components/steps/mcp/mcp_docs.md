@@ -16,18 +16,15 @@ class McpConfig(StepConfig):
     Configuration for McpStep.
 
     Fields:
-        endpoint (str): The MCP server URL (templated).
-        service_name (str): Name of the service on the MCP server (templated).
-        tool_name (str): Name of the tool to invoke (templated).
-        arguments (Dict[str, Any]): Arguments to pass to the tool (templated).
-        output_key (str): Context key under which to store the tool output.
-        timeout (Optional[int]): Optional timeout in seconds for the call.
+        server: Configuration for the MCP server.
+        tool_name: Name of the tool to invoke.
+        arguments: Arguments to pass to the tool.
+        output_key: Context key under which to store the tool output.
+        timeout: Optional timeout in seconds for the call.
     """
-    endpoint: str
-    service_name: str
+    server: Dict[str, Any]
     tool_name: str
-    arguments: Dict[str, Any]
-    output_key: str = "output"
+    output_key: str = "tool_result"
     timeout: Optional[int] = None
 ```
 
@@ -40,11 +37,15 @@ The `McpStep` is available via the `mcp` step type in recipes:
   "steps": [
     {
       "type": "mcp",
-      "endpoint": "https://mcp.example.com",
-      "service_name": "inventory_service",
-      "tool_name": "get_stock",
-      "arguments": { "item_id": "{{item_id}}" },
-      "output_key": "stock_info"
+      "config": {
+        "server": {
+          "url": "http://localhost:5000",
+          "api_key": "your_api_key"
+        },
+        "tool_name": "get_stock",
+        "arguments": { "item_id": "{{item_id}}" },
+        "output_key": "stock_info"
+      }
     }
   ]
 }

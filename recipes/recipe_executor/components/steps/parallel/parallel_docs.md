@@ -53,24 +53,30 @@ The ParallelStep allows you to run multiple steps concurrently. Sub-steps are de
   "steps": [
     {
       "type": "parallel",
-      "substeps": [
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/subtask_a.json",
-          "context_overrides": {
-            "input_data": "{{shared_input}}"
+      "config": {
+        "substeps": [
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/subtask_a.json",
+              "context_overrides": {
+                "input_data": "{{shared_input}}"
+              }
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/subtask_b.json",
+              "context_overrides": {
+                "input_data": "{{shared_input}}"
+              }
+            }
           }
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/subtask_b.json",
-          "context_overrides": {
-            "input_data": "{{shared_input}}"
-          }
-        }
-      ],
-      "max_concurrency": 2,
-      "delay": 1
+        ],
+        "max_concurrency": 2,
+        "delay": 1
+      }
     }
   ]
 }

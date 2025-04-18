@@ -27,7 +27,7 @@ class ReadFilesConfig(StepConfig):
 
 
 class ReadFilesStep(BaseStep[ReadFilesConfig]):
-    def __init__(self, config: dict, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger, config: dict):
         super().__init__(logger, ReadFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:

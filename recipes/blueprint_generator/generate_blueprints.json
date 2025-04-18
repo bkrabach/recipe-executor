@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "{{output_dir}}/evaluation/generation_order.json",
-        "artifact": "generation_order"
+        "contents_key": "generation_order"
       }
     },
     {

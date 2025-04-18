@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "{{output_dir}}/components/components_manifest.json",
-        "artifact": "components_manifest"
+        "contents_key": "components_manifest"
       }
     },
     {

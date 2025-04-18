@@ -17,14 +17,14 @@ class ReadFilesConfig(StepConfig):
 
     Fields:
         path (Union[str, List[str]]): Path, comma-separated string, or list of paths to the file(s) to read (may be templated).
-        artifact (str): Name to store the file contents in context.
+        contents_key (str): Name to store the file contents in context.
         optional (bool): Whether to continue if a file is not found.
         merge_mode (str): How to handle multiple files' content. Options:
             - "concat" (default): Concatenate all files with newlines between filenames + contents
             - "dict": Store a dictionary with filenames as keys and contents as values
     """
     path: Union[str, List[str]]
-    artifact: str
+    contents_key: str
     optional: bool = False
     merge_mode: str = "concat"
 ```
@@ -51,8 +51,10 @@ The ReadFilesStep can be used to read a single file (just like the original `rea
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/component_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -67,8 +69,10 @@ You can read multiple files by providing a comma-separated string of paths:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/component_spec.md,specs/component_docs.md",
-      "artifact": "component_specs"
+      "config": {
+        "path": "specs/component_spec.md,specs/component_docs.md",
+        "contents_key": "component_specs"
+      }
     }
   ]
 }
@@ -81,9 +85,11 @@ You can also read multiple files by providing a list of path strings:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "concat"
+      "config": {
+        "path": ["specs/component_spec.md", "specs/component_docs.md"],
+        "contents_key": "component_specs",
+        "merge_mode": "concat"
+      }
     }
   ]
 }
@@ -98,9 +104,11 @@ You can store multiple files as a dictionary with filenames as keys:
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/component_spec.md", "specs/component_docs.md"],
-      "artifact": "component_specs",
-      "merge_mode": "dict"
+      "config": {
+        "path": ["specs/component_spec.md", "specs/component_docs.md"],
+        "contents_key": "component_specs",
+        "merge_mode": "dict"
+      }
     }
   ]
 }
@@ -115,8 +123,10 @@ The `path` parameter can include template variables from the context:
   "steps": [
     {
       "type": "read_files",
-      "path": "specs/{{component_id}}_spec.md",
-      "artifact": "component_spec"
+      "config": {
+        "path": "specs/{{component_id}}_spec.md",
+        "contents_key": "component_spec"
+      }
     }
   ]
 }
@@ -129,11 +139,13 @@ Template variables can also be used within list paths:
   "steps": [
     {
       "type": "read_files",
-      "path": [
-        "specs/{{component_id}}_spec.md",
-        "specs/{{component_id}}_docs.md"
-      ],
-      "artifact": "component_files"
+      "config": {
+        "path": [
+          "specs/{{component_id}}_spec.md",
+          "specs/{{component_id}}_docs.md"
+        ],
+        "contents_key": "component_files"
+      }
     }
   ]
 }
@@ -148,9 +160,11 @@ You can specify that files are optional. If an optional file doesn't exist, exec
   "steps": [
     {
       "type": "read_files",
-      "path": ["specs/required_file.md", "specs/optional_file.md"],
-      "artifact": "component_files",
-      "optional": true
+      "config": {
+        "path": ["specs/required_file.md", "specs/optional_file.md"],
+        "contents_key": "component_files",
+        "optional": true
+      }
     }
   ]
 }
@@ -169,9 +183,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": ["specs/{{component_id}}_spec.md", "specs/{{component_id}}_docs.md"],
-  "artifact": "component_files",
-  "merge_mode": "concat"
+  "config": {
+    "path": [
+      "specs/{{component_id}}_spec.md",
+      "specs/{{component_id}}_docs.md"
+    ],
+    "contents_key": "component_files",
+    "merge_mode": "concat"
+  }
 }
 ```
 
@@ -180,14 +199,16 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "templates/email_base.txt",
-    "templates/email_header.txt",
-    "templates/email_footer.txt"
-  ],
-  "artifact": "email_templates",
-  "optional": true,
-  "merge_mode": "dict"
+  "config": {
+    "path": [
+      "templates/email_base.txt",
+      "templates/email_header.txt",
+      "templates/email_footer.txt"
+    ],
+    "contents_key": "email_templates",
+    "optional": true,
+    "merge_mode": "dict"
+  }
 }
 ```
 
@@ -196,12 +217,14 @@ If an optional file is not found:
 ```json
 {
   "type": "read_files",
-  "path": [
-    "docs/{{project}}/{{component}}/README.md",
-    "docs/{{project}}/{{component}}/USAGE.md"
-  ],
-  "artifact": "documentation",
-  "optional": true
+  "config": {
+    "path": [
+      "docs/{{project}}/{{component}}/README.md",
+      "docs/{{project}}/{{component}}/USAGE.md"
+    ],
+    "contents_key": "documentation",
+    "merge_mode": "dict"
+  }
 }
 ```
 
@@ -220,8 +243,10 @@ Then in the recipe you can use that context value:
   "steps": [
     {
       "type": "read_files",
-      "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
-      "artifact": "input_files"
+      "config": {
+        "path": "{{files_to_read.split(',')|default:'specs/default.md'}}",
+        "contents_key": "input_files"
+      }
     }
   ]
 }

@@ -39,25 +39,33 @@ The core recipe for generating code is defined in `recipes/codebase_generator/ge
   "steps": [
     {
       "type": "read_files",
-      "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
-      "artifact": "implementation_philosophy"
+      "config": {
+        "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+        "contents_key": "implementation_philosophy"
+      }
     },
     {
       "type": "read_files",
-      "path": "ai_context/dev_guides/DEV_GUIDE_FOR_{{language | upcase}}.md",
-      "artifact": "dev_guide",
-      "optional": true
+      "config": {
+        "path": "ai_context/dev_guides/DEV_GUIDE_FOR_{{language | upcase}}.md",
+        "contents_key": "dev_guide",
+        "optional": true
+      }
     },
     {
       "type": "llm_generate",
-      "prompt": "You are an expert developer...",
-      "model": "{{model|default:'openai/o3-mini'}}",
-      "artifact": "generated_files"
+      "config": {
+        "prompt": "You are an expert developer...",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_key": "generated_files"
+      }
     },
     {
       "type": "write_files",
-      "artifact": "generated_files",
-      "root": "{{output_root|default:'output'}}"
+      "config": {
+        "root": "{{output_root|default:'output'}}",
+        "files_key": "generated_files"
+      }
     }
   ]
 }
@@ -91,26 +99,32 @@ The main component building recipe, found in `recipes/recipe_executor/utils/buil
   "steps": [
     {
       "type": "read_files",
-      "path": "...{{component_id}}/{{component_id}}_spec.md",
-      "artifact": "spec"
+      "config": {
+        "path": "...{{component_id}}/{{component_id}}_spec.md",
+        "contents_key": "spec"
+      }
     },
     {
       "type": "read_files",
-      "path": "...{{component_id}}/{{component_id}}_docs.md",
-      "artifact": "usage_docs",
-      "optional": true
+      "config": {
+        "path": "...{{component_id}}/{{component_id}}_docs.md",
+        "contents_key": "usage_docs",
+        "optional": true
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/codebase_generator/generate_code.json",
-      "context_overrides": {
-        "model": "{{model|default:'openai/o3-mini'}}",
-        "output_root": "{{output_root|default:'output'}}",
-        "output_path": "recipe_executor{{component_path}}",
-        "language": "{{language|default:'python'}}",
-        "spec": "{{spec}}",
-        "usage_docs": "{{usage_docs}}",
-        "existing_code": "{{existing_code}}"
+      "config": {
+        "recipe_path": "recipes/codebase_generator/generate_code.json",
+        "context_overrides": {
+          "model": "{{model|default:'openai/o3-mini'}}",
+          "output_root": "{{output_root|default:'output'}}",
+          "output_path": "recipe_executor{{component_path}}",
+          "language": "{{language|default:'python'}}",
+          "spec": "{{spec}}",
+          "usage_docs": "{{usage_docs}}",
+          "existing_code": "{{existing_code}}"
+        }
       }
     }
   ]
@@ -277,11 +291,15 @@ List any caveats, limitations, or best practices.
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
+      "config": {
+        "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/my_project/components/component_b/component_b_create.json"
+      "config": {
+        "recipe_path": "recipes/my_project/components/component_b/component_b_create.json"
+      }
     }
   ]
 }
@@ -294,11 +312,13 @@ List any caveats, limitations, or best practices.
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/my_project/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "component_a",
-        "component_path": "/components",
-        "model": "openai/o3-mini"
+      "config": {
+        "recipe_path": "recipes/my_project/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "component_a",
+          "component_path": "/components",
+          "model": "openai/o3-mini"
+        }
       }
     }
   ]
@@ -322,17 +342,23 @@ Generate multiple components simultaneously:
   "steps": [
     {
       "type": "parallel",
-      "substeps": [
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
-        },
-        {
-          "type": "execute_recipe",
-          "recipe_path": "recipes/my_project/components/component_b/component_b_create.json"
-        }
-      ],
-      "max_concurrency": 2
+      "config": {
+        "substeps": [
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "recipes/my_project/components/component_b/component_b_create.json"
+            }
+          }
+        ],
+        "max_concurrency": 2
+      }
     }
   ]
 }
@@ -347,16 +373,20 @@ For iterative development, create edit recipes that pass the existing code:
   "steps": [
     {
       "type": "read_files",
-      "path": "output/my_project/components/component_a.py",
-      "artifact": "existing_code"
+      "config": {
+        "path": "output/my_project/components/component_a.py",
+        "contents_key": "existing_code"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/my_project/utils/build_component.json",
-      "context_overrides": {
-        "component_id": "component_a",
-        "component_path": "/components",
-        "existing_code": "{{existing_code}}"
+      "config": {
+        "recipe_path": "recipes/my_project/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "component_a",
+          "component_path": "/components",
+          "existing_code": "{{existing_code}}"
+        }
       }
     }
   ]
@@ -372,13 +402,17 @@ After generating code, add a human review step:
   "steps": [
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
+      "config": {
+        "recipe_path": "recipes/my_project/components/component_a/component_a_create.json"
+      }
     },
     {
       "type": "execute_recipe",
-      "recipe_path": "recipes/review_code.json",
-      "context_overrides": {
-        "component_id": "component_a"
+      "config": {
+        "recipe_path": "recipes/review_code.json",
+        "context_overrides": {
+          "component_id": "component_a"
+        }
       }
     }
   ]
