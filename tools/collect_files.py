@@ -24,7 +24,7 @@ import pathlib
 from typing import List, Optional, Set, Tuple
 
 # Default exclude patterns: common directories and binary files to ignore.
-DEFAULT_EXCLUDE = [".venv", "node_modules", ".git", "__pycache__", "*.pyc"]
+DEFAULT_EXCLUDE = [".venv", "node_modules", ".git", "__pycache__", "*.pyc", "*.ruff_cache"]
 
 
 def parse_patterns(pattern_str: str) -> List[str]:
@@ -185,8 +185,12 @@ def process_directory(
     """Process a directory recursively"""
     for root, dirs, files in os.walk(dir_path):
         # Filter directories based on exclude patterns, but respect include patterns
-        dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d), exclude_patterns)
-                  or should_include(os.path.join(root, d), include_patterns)]
+        dirs[:] = [
+            d
+            for d in dirs
+            if not should_exclude(os.path.join(root, d), exclude_patterns)
+            or should_include(os.path.join(root, d), include_patterns)
+        ]
 
         # Process each file in the directory
         for file in files:
@@ -205,7 +209,7 @@ def read_file(file_path: str) -> Tuple[str, Optional[str]]:
     try:
         with open(file_path, "rb") as f:
             chunk = f.read(1024)
-            if b'\0' in chunk:  # Simple binary check
+            if b"\0" in chunk:  # Simple binary check
                 return "[Binary file not displayed]", None
 
         # If not binary, read as text
@@ -219,8 +223,11 @@ def read_file(file_path: str) -> Tuple[str, Optional[str]]:
 
 
 def format_output(
-    file_paths: List[str], format_type: str, exclude_patterns: List[str],
-    include_patterns: List[str], patterns: List[str]
+    file_paths: List[str],
+    format_type: str,
+    exclude_patterns: List[str],
+    include_patterns: List[str],
+    patterns: List[str],
 ) -> str:
     """
     Format the collected files according to the output format.

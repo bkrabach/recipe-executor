@@ -34,6 +34,8 @@ htmlcov/
 .coverage.*
 .cache
 
+.ruff_cache
+
 # Environment variables
 .env
 

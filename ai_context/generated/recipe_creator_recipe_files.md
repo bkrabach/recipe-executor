@@ -3,32 +3,42 @@
   "steps": [
     {
       "type": "read_files",
-      "path": "{{input}}",
-      "artifact": "recipe_idea"
+      "config": {
+        "path": "{{input}}",
+        "contents_key": "recipe_idea"
+      }
     },
     {
       "type": "read_files",
-      "path": "ai_context/generated/recipe_executor_code_files.md,ai_context/generated/recipe_executor_recipe_files.md",
-      "artifact": "context_files",
-      "merge_mode": "concat"
+      "config": {
+        "path": "ai_context/generated/recipe_executor_code_files.md,ai_context/generated/recipe_executor_recipe_files.md",
+        "contents_key": "context_files",
+        "merge_mode": "concat"
+      }
     },
     {
       "type": "read_files",
-      "path": "{{files}}",
-      "artifact": "additional_files",
-      "optional": true,
-      "merge_mode": "concat"
+      "config": {
+        "path": "{{files}}",
+        "contents_key": "additional_files",
+        "optional": true,
+        "merge_mode": "concat"
+      }
     },
     {
-      "type": "generate",
-      "prompt": "Create a new JSON recipe file for use with recipe executor based on the following content:\n\n- Recipe Idea: {{recipe_idea}}\n- Context Files:\n  <CONTEXT_FILES>{{context_files}}</CONTEXT_FILES>\n  {% if additional_files %}\n- Additional Files:\n  <ADDITIONAL_FILES>{{additional_files}}</ADDITIONAL_FILES>\n  {% endif %}\n\nSave the generated recipe file as {{target_file | default:'generated_recipe.json'}} unless a different name is specified in the recipe idea.",
-      "model": "{{model | default:'openai/o3-mini'}}",
-      "artifact": "generated_recipe"
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Create a new JSON recipe file for use with recipe executor based on the following content:\n\n- Recipe Idea: {{recipe_idea}}\n- Context Files:\n  <CONTEXT_FILES>{{context_files}}</CONTEXT_FILES>\n  {% if additional_files %}\n- Additional Files:\n  <ADDITIONAL_FILES>{{additional_files}}</ADDITIONAL_FILES>\n  {% endif %}\n\nSave the generated recipe file as {{target_file | default:'generated_recipe.json'}} unless a different name is specified in the recipe idea.",
+        "model": "{{model | default:'openai/o3-mini'}}",
+        "output_key": "generated_recipe"
+      }
     },
     {
       "type": "write_files",
-      "artifact": "generated_recipe",
-      "root": "{{output_root | default:'output'}}"
+      "config": {
+        "files_key": "generated_recipe",
+        "root": "{{output_root | default:'output'}}"
+      }
     }
   ]
 }
@@ -91,7 +101,7 @@ The next step should load the following files into context as `context_files`:
 - `ai_context/generated/recipe_executor_code_files.md`
 - `ai_context/generated/recipe_executor_recipe_files.md`
 
-The `input` value will be of type FileGenerationResult from the recipe executor, you will need to unpack that value properly to use it in the next `generate` step.
+The `input` value will be of type FileSpec or List[FileSpec] from the recipe executor, you will need to unpack that value properly to use it in the next `generate` step.
 
 Pass the loaded content to a `generate` step that extracts values to `recipe_idea`, `additional_files`, and `target_file` from the loaded content if such values are present. If the values are not present, assume the request is actually the recipe idea and set `recipe_idea` to the loaded content. The `additional_files` value should be a comma-separated list of files to be loaded into context, and the `target_file` value should be the name of the file to save the generated recipe to.
 

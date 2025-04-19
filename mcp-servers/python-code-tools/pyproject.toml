@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "python-code-tools"
+version = "0.1.0"
+description = "MCP server providing Python code quality tools"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+dependencies = ["pydantic>=2.7.2,<3.0.0", "mcp>=1.6.0", "ruff>=0.1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "black>=23.0.0", "mypy>=1.0.0"]
+
+[project.scripts]
+# Main entry point
+python-code-tools = "python_code_tools.cli:main"
+
+# Convenience scripts for specific transports
+python-code-tools-stdio = "python_code_tools.cli:stdio_main"
+python-code-tools-sse = "python_code_tools.cli:sse_main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]

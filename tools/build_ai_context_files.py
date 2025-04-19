@@ -71,6 +71,13 @@ def build_context_files() -> None:
             "exclude": collect_files.DEFAULT_EXCLUDE,
             "include": [],
         },
+        # Collect files from mcp-servers/python-code-tools
+        {
+            "patterns": ["mcp-servers/python-code-tools"],
+            "output": f"{OUTPUT_DIR}/python_code_tools_files.md",
+            "exclude": collect_files.DEFAULT_EXCLUDE,
+            "include": [],
+        },
     ]
 
     # Execute each task
