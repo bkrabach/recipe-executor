@@ -31,17 +31,15 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 
 ### Internal Components
 
-- **Protocols** – (Required) Uses ContextProtocol for context management, ExecutorProtocol for parallel execution, and StepProtocol for the step interface
-- **Step Base** – (Required) Adheres to the step execution interface via StepProtocol
-- **Step Registry** – (Required) Uses the step registry to instantiate the `execute_recipe` step for each sub-step
-- **Context** – (Required) Utilizes a ContextProtocol implementation (e.g. using Context.clone()) to create isolated contexts for each sub-step
-- **Executor** – (Required) Uses an Executor implementing ExecutorProtocol to run each sub-recipe in a separate thread
-- **Utils** – (Optional) Uses template rendering for sub-step configurations
+- **Protocols**: Uses ContextProtocol for context management, ExecutorProtocol for parallel execution, and StepProtocol for the step interface
+- **Step Base**: Adheres to the step execution interface via StepProtocol
+- **Step Registry**: Uses the step registry to instantiate the `execute_recipe` step for each sub-step
+- **Utils**: Uses template rendering for sub-step configurations
 
 ### External Libraries
 
-- **ThreadPoolExecutor** – (Required) Uses `concurrent.futures.ThreadPoolExecutor` for parallel execution
-- **time** – (Optional) Uses `time.sleep` to implement delays between sub-step launches
+- **ThreadPoolExecutor**: Uses `concurrent.futures.ThreadPoolExecutor` for parallel execution
+- **time**: Uses `time.sleep` to implement delays between sub-step launches
 
 ### Configuration Dependencies
 
@@ -63,12 +61,3 @@ None
 - Include clear error context identifying which sub-step failed
 - Ensure proper thread pool shutdown to prevent orphaned threads
 - Propagate the original exception with contextual information about the failure
-
-## Future Considerations
-
-- Support arbitrary step types beyond just execute_recipe
-- Aggregate results from sub-steps back into the parent context
-- Dynamic concurrency control based on system load
-- Configurable per-step timeouts with proper cancellation
-- Task prioritization within the global executor
-- Monitoring and reporting for resource usage across the task queue

@@ -48,11 +48,9 @@ class Context(ContextProtocol):
         return copy.deepcopy(self._artifacts)
 
     def json(self) -> str:
-        # Use standard json module for serialization
         return jsonlib.dumps(self._artifacts)
 
     def keys(self) -> Iterator[str]:
-        # Return an iterator over a static list of keys
         return iter(list(self._artifacts.keys()))
 
     def get_config(self) -> Dict[str, Any]:

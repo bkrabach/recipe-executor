@@ -17,20 +17,6 @@
     {
       "type": "read_files",
       "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "contents_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
-        "contents_key": "executor_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
         "contents_key": "utils_docs"
       }
@@ -43,7 +29,7 @@
           "component_id": "parallel",
           "component_path": "/steps",
           "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>\n"
+          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>\n"
         }
       }
     }

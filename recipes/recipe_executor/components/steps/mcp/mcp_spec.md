@@ -12,7 +12,6 @@ The McpStep component allows recipes to invoke tools on remote MCP servers. It c
   - `tool_name`: Name of the tool to invoke.
   - `arguments`: Dictionary of arguments to pass to the tool.
   - `result_key`: Context key under which to store the result.
-  - Optional `timeout`: Time in seconds to wait for a result.
 - Use a minimal MCP client implementation:
   - Connect to the server if not already connected.
   - Call the specified tool with the provided arguments.

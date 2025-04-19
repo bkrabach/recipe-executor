@@ -18,14 +18,13 @@ class McpConfig(StepConfig):
     Fields:
         server: Configuration for the MCP server.
         tool_name: Name of the tool to invoke.
-        arguments: Arguments to pass to the tool.
+        arguments: Arguments to pass to the tool as a dictionary.
         output_key: Context key under which to store the tool output.
-        timeout: Optional timeout in seconds for the call.
     """
     server: Dict[str, Any]
     tool_name: str
+    arguments: Dict[str, Any]
     output_key: str = "tool_result"
-    timeout: Optional[int] = None
 ```
 
 ## Basic Usage in Recipes

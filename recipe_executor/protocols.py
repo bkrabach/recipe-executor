@@ -17,8 +17,7 @@ from typing import (
 import logging
 from pathlib import Path
 
-# We import Recipe only for type hints; to avoid cyclical import issues,
-# it is safe and idiomatic to import in function signatures if needed.
+# Import only for type hints; concrete import in function signatures avoids cyclical dependencies.
 from recipe_executor.models import Recipe
 
 

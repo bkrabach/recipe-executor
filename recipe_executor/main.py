@@ -3,14 +3,13 @@ import asyncio
 import sys
 import time
 import traceback
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 
 from recipe_executor.context import Context
 from recipe_executor.executor import Executor
 from recipe_executor.logger import init_logger
-
 
 def parse_key_value_pairs(pairs: List[str], arg_name: str) -> Dict[str, str]:
     result: Dict[str, str] = {}
@@ -23,14 +22,12 @@ def parse_key_value_pairs(pairs: List[str], arg_name: str) -> Dict[str, str]:
         result[key] = value
     return result
 
-
 def main() -> None:
     try:
         asyncio.run(main_async())
     except KeyboardInterrupt:
         sys.stderr.write("\nExecution interrupted by user.\n")
         sys.exit(1)
-
 
 async def main_async() -> None:
     load_dotenv()
@@ -62,12 +59,12 @@ async def main_async() -> None:
     )
     args = parser.parse_args()
 
-    logger = None
+    logger: Optional[Any] = None
     exit_code: int = 0
     try:
         logger = init_logger(log_dir=args.log_dir)
-    except Exception as e:
-        sys.stderr.write(f"Logger initialization failed: {str(e)}\n")
+    except Exception as exc:
+        sys.stderr.write(f"Logger initialization failed: {str(exc)}\n")
         sys.exit(1)
 
     logger.info("Starting Recipe Executor Tool")
@@ -78,16 +75,16 @@ async def main_async() -> None:
         try:
             artifacts: Dict[str, str] = parse_key_value_pairs(args.context, '--context')
             config: Dict[str, str] = parse_key_value_pairs(args.config, '--config')
-        except ValueError as ve:
-            logger.error(f"Context Error: {str(ve)}")
-            sys.stderr.write(f"Context Error: {str(ve)}\n")
+        except ValueError as value_error:
+            logger.error(f"Context Error: {str(value_error)}")
+            sys.stderr.write(f"Context Error: {str(value_error)}\n")
             sys.exit(1)
 
         logger.debug(f"Initial context artifacts: {artifacts}")
         logger.debug(f"Initial config: {config}")
 
-        context = Context(artifacts=artifacts, config=config)
-        executor = Executor(logger)
+        context: Context = Context(artifacts=artifacts, config=config)
+        executor: Executor = Executor(logger)
 
         logger.info(f"Executing recipe: {args.recipe_path}")
         await executor.execute(args.recipe_path, context)

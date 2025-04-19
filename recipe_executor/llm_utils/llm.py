@@ -10,121 +10,127 @@ from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from recipe_executor.llm_utils.azure_openai import get_azure_openai_model
-from recipe_executor.llm_utils.mcp import MCPServer
 
-# Default model falls back to openai/gpt-4o
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "openai/gpt-4o")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+# MCP integration
+def _get_default_ollama_url() -> str:
+    return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+
+def get_model(model_id: Optional[str], logger: Optional[logging.Logger] = None) -> Any:
+    """
+    Initialize an LLM model based on a standardized model_id string.
+    Format: 'provider/model_name' or 'provider/model_name/deployment_name'.
+    """
+    if not model_id or not isinstance(model_id, str):
+        model_id = os.getenv("DEFAULT_MODEL", "openai/gpt-4o")
+
+    if "/" not in model_id:
+        raise ValueError(f"Invalid model_id format: '{model_id}'. Expected 'provider/model_name'.")
+
+    parts = model_id.split("/")
+    provider = parts[0].strip().lower()
+    if provider == "openai":
+        if len(parts) != 2:
+            raise ValueError(f"Invalid openai model_id: '{model_id}'. Format is 'openai/model_name'.")
+        model_name = parts[1]
+        return OpenAIModel(model_name)
+    elif provider == "azure":
+        if len(parts) == 2:
+            model_name = parts[1]
+            deployment_name = None
+        elif len(parts) == 3:
+            model_name, deployment_name = parts[1], parts[2]
+        else:
+            raise ValueError(
+                f"Invalid azure model_id: '{model_id}'. Format is 'azure/model_name' or 'azure/model_name/deployment_name'."
+            )
+        if logger is None:
+            import logging as _logging
+
+            logger = _logging.getLogger("llm")
+        return get_azure_openai_model(logger=logger, model_name=model_name, deployment_name=deployment_name)
+    elif provider == "anthropic":
+        if len(parts) != 2:
+            raise ValueError(f"Invalid anthropic model_id: '{model_id}'. Format is 'anthropic/model_name'.")
+        model_name = parts[1]
+        return AnthropicModel(model_name)
+    elif provider == "ollama":
+        if len(parts) != 2:
+            raise ValueError(f"Invalid ollama model_id: '{model_id}'. Format is 'ollama/model_name'.")
+        model_name = parts[1]
+        endpoint = _get_default_ollama_url()
+        return OpenAIModel(
+            model_name=model_name,
+            provider=OpenAIProvider(base_url=f"{endpoint}/v1"),
+        )
+    else:
+        raise ValueError(f"Unsupported provider: '{provider}'. Allowed: openai, azure, anthropic, ollama.")
 
 
 class LLM:
-    model: str
-    logger: logging.Logger
-    mcp_servers: Optional[List[MCPServer]]
-
     def __init__(
         self,
         logger: logging.Logger,
-        model: str = DEFAULT_MODEL,
-        mcp_servers: Optional[List[MCPServer]] = None,
-    ) -> None:
-        self.model = model
-        self.logger = logger
-        self.mcp_servers = mcp_servers
-
-    @staticmethod
-    def get_model(model_id: Optional[str], logger: logging.Logger) -> Any:
+        model: str = "openai/gpt-4o",
+        mcp_servers: Optional[List[Any]] = None,
+    ):
         """
-        Initialize an LLM model based on a standardized model_id string.
-        Expected format: 'provider/model_name' or 'provider/model_name/deployment_name'.
+        Initialize the LLM component.
+        Args:
+            logger (logging.Logger): Logger for logging messages.
+            model (str): Model identifier.
+            mcp_servers (Optional[List[MCPServer]]): List of MCP servers.
         """
-        if not model_id or not isinstance(model_id, str):
-            model_id = DEFAULT_MODEL
-
-        parts = model_id.split("/")
-        if len(parts) < 2:
-            raise ValueError(f"Invalid model_id '{model_id}'. Expected format 'provider/model_name'.")
-
-        provider = parts[0].lower()
-        # Azure: handle deployment name if present
-        if provider == "azure":
-            model_name = parts[1]
-            deployment_name = parts[2] if len(parts) > 2 else None
-            return get_azure_openai_model(
-                logger=logger,
-                model_name=model_name,
-                deployment_name=deployment_name,
-            )
-        elif provider == "openai":
-            model_name = parts[1]
-            return OpenAIModel(model_name=model_name)
-        elif provider == "anthropic":
-            model_name = parts[1]
-            return AnthropicModel(model_name=model_name)
-        elif provider == "ollama":
-            model_name = parts[1]
-            return OpenAIModel(
-                model_name=model_name,
-                provider=OpenAIProvider(base_url=f"{OLLAMA_BASE_URL}/v1"),
-            )
-        else:
-            raise ValueError(f"Unsupported provider '{provider}' in model_id '{model_id}'.")
+        self.logger: logging.Logger = logger
+        self.model: str = model
+        self.mcp_servers: Optional[List[Any]] = mcp_servers if mcp_servers is not None else []
 
     async def generate(
         self,
         prompt: str,
         model: Optional[str] = None,
         output_type: Type[Union[str, BaseModel]] = str,
-        mcp_servers: Optional[List[MCPServer]] = None,
+        mcp_servers: Optional[List[Any]] = None,
     ) -> Union[str, BaseModel]:
         """
         Generate an output from the LLM based on the provided prompt.
         """
-        # Determine model id and mcp_servers to use
-        model_id = model if model else self.model
-        servers = mcp_servers if mcp_servers is not None else self.mcp_servers
-        if servers is None:
-            servers = []
-        else:
-            # Defend against mutable default list; always use a copy
-            servers = list(servers)
-
-        # Model initialization
+        # Determine model_id and mcp_servers
+        model_id: str = model if model is not None else self.model
+        servers: List[Any] = mcp_servers if mcp_servers is not None else self.mcp_servers or []
+        logger = self.logger
+        # Prepare model and agent
         try:
-            model_instance = self.get_model(model_id, self.logger)
-        except Exception as e:
-            self.logger.error(f"Model initialization failed: {e}")
-            raise
-        # Agent initialization
-        agent = Agent(model=model_instance, output_type=output_type, mcp_servers=servers)
-        # Logging: request payload
-        self.logger.debug({
-            "event": "llm_request",
-            "prompt": prompt,
-            "model": model_id,
-            "output_type": str(output_type),
-            "mcp_servers": [str(s) for s in servers],
-        })
-        # Logging: model/provider info
-        self.logger.info(f"Requesting LLM (provider/model): {model_id}")
-        start_time = time.monotonic()
-        try:
+            start_time = time.time()
+            mdl = get_model(model_id, logger=logger)
+            logger.info(f"LLM Call - provider/model: {model_id}")
+            logger.debug(
+                f"LLM request payload: prompt={repr(prompt)}, mcp_servers={[str(s) for s in servers]}, output_type={output_type}"
+            )
+            agent = Agent(
+                model=mdl,
+                output_type=output_type,
+                mcp_servers=servers,
+            )
             result = await agent.run(prompt)
-        except Exception as e:
-            self.logger.error(f"LLM call failed: {e}", exc_info=True)
-            raise
-        duration = time.monotonic() - start_time
-        # Log completion info
-        usage = None
-        try:
-            usage = result.usage()
-        except Exception:
+            elapsed = time.time() - start_time
+            # Try to fetch usage if possible
             usage = None
-        self.logger.info(
-            f"LLM call finished: provider/model={model_id}, "
-            f"duration={duration:.2f}s, "
-            f"tokens={getattr(usage, 'total_tokens', '?') if usage else '?'}"
-        )
-        # Log result payload
-        self.logger.debug({"event": "llm_result", "provider/model": model_id, "result": str(result.output)})
-        return result.output
+            tokens_used = None
+            try:
+                if hasattr(result, "usage"):
+                    usage = result.usage()
+                    if usage:
+                        tokens_used = usage.total_tokens if hasattr(usage, "total_tokens") else None
+            except Exception:
+                tokens_used = None
+            logger.info(
+                f"LLM call finished (model: {model_id}) in {elapsed:.2f}s"
+                + (f", tokens used: {tokens_used}" if tokens_used is not None else "")
+            )
+            logger.debug(f"LLM result payload: {result}")
+            return result.output
+        except Exception as exc:
+            logger.error(f"LLM call failed with error: {str(exc)}", exc_info=True)
+            raise
