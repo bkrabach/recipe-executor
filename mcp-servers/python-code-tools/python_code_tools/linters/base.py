@@ -30,14 +30,21 @@ class ProjectLintResult(LintResult):
     )
     project_path: str = Field(..., description="Path to the project directory that was linted")
     has_ruff_config: bool = Field(False, description="Whether the project has a ruff configuration file")
-    # New fields for configuration information - with defaults to prevent validation errors
+    # Configuration information
     config_source: Optional[str] = Field(
         "default", description="Source of the configuration (none, pyproject.toml, ruff.toml, etc.)"
     )
     config_summary: Dict[str, Dict[str, Any]] = Field(
-        default_factory=dict, description="Summary of configuration from different sources (default, project, user)"
+        default_factory=dict, description="Summary of configuration from different sources"
     )
     files_summary: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Summary of issues by file")
+    # New fields for tracking fixed issues
+    fixed_issues: List[Dict[str, Any]] = Field(
+        default_factory=list, description="List of issues that were fixed during linting"
+    )
+    fixed_issues_summary: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict, description="Summary of fixed issues grouped by file"
+    )
 
 
 class BaseLinter(abc.ABC):

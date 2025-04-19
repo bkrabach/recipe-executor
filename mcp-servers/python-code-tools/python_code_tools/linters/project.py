@@ -59,20 +59,24 @@ class RuffProjectLinter(ProjectLinter):
             raise ValueError(f"Project path is not a directory: {project_path}")
 
         # Read project configuration and determine config source
-        project_config, config_source = await self._read_project_config(path)
+        project_config, config_source_str = await self._read_project_config(path)
         has_ruff_config = bool(project_config)
 
         # Merge configurations (priority: user config > project config > default config)
-        effective_config, config_summary = self._merge_configs(
+        effective_config, config_summary, active_config_source = self._merge_configs(
             user_config=config or {},
             project_config=project_config,
         )
+
+        # Use the active source returned from _merge_configs
+        config_source_str = active_config_source
 
         # Get a list of Python files to lint
         py_files = await self._get_python_files(path, file_patterns)
 
         # If no Python files found, return empty result
         if not py_files:
+            print("No Python files found to lint")
             return ProjectLintResult(
                 issues=[],
                 fixed_count=0,
@@ -80,63 +84,91 @@ class RuffProjectLinter(ProjectLinter):
                 modified_files=[],
                 project_path=str(path),
                 has_ruff_config=has_ruff_config,
-                config_source=config_source,
+                config_source=config_source_str,
                 config_summary=config_summary,
                 files_summary={},
+                fixed_issues=[],
+                fixed_issues_summary={},
             )
 
         try:
             # First, check for issues without fixing them
             initial_issues = await self._run_ruff_check(path, py_files, effective_config)
-            initial_issue_count = len(initial_issues)
 
             # Get file hashes before fixing to detect changes
             file_hashes_before = await self._get_file_hashes(path, py_files)
 
+            modified_files = []
+            fixed_issues = []
+
             # Run the fix command if requested and if there are issues
             if fix and initial_issues:
-                await self._run_ruff_fix(path, py_files, effective_config)
+                fix_success = await self._run_ruff_fix(path, py_files, effective_config)
 
-            # Get file hashes after fixing to detect changes
-            file_hashes_after = await self._get_file_hashes(path, py_files)
+                # Get file hashes after fixing to detect changes
+                file_hashes_after = await self._get_file_hashes(path, py_files)
 
-            # Determine which files were actually modified
-            modified_files = self._get_modified_files(file_hashes_before, file_hashes_after)
+                # Determine which files were actually modified
+                modified_files = self._get_modified_files(file_hashes_before, file_hashes_after)
 
-            # Check for remaining issues after fixing
-            remaining_issues = await self._run_ruff_check(path, py_files, effective_config)
+                # Check for remaining issues after fixing
+                remaining_issues = await self._run_ruff_check(path, py_files, effective_config)
 
-            # Calculate fixed count
-            fixed_count = initial_issue_count - len(remaining_issues)
+                # Identify which issues were fixed by comparing initial and remaining issues
+                fixed_issues = self._identify_fixed_issues(initial_issues, remaining_issues)
 
-            # Create a summary of findings by file
-            files_summary = {}
-            for issue in remaining_issues:
-                file_path = issue.get("file", "unknown")
-                if file_path not in files_summary:
-                    files_summary[file_path] = {"total_issues": 0, "issue_types": {}}
+            else:
+                # If we didn't run the fix, then remaining issues are the same as initial
+                remaining_issues = initial_issues.copy()
 
-                files_summary[file_path]["total_issues"] += 1
+            # Calculate counts
+            initial_count = len(initial_issues)
+            fixed_count = len(fixed_issues)
+            remaining_count = len(remaining_issues)
 
-                code = issue.get("code", "unknown")
-                if code not in files_summary[file_path]["issue_types"]:
-                    files_summary[file_path]["issue_types"][code] = 0
-                files_summary[file_path]["issue_types"][code] += 1
+            # Sanity check - if something went wrong and our counts are inconsistent,
+            # recalculate to make them valid
+            if initial_count != (fixed_count + remaining_count):
+                # The most reliable is the count of the remaining issues
+                fixed_count = initial_count - remaining_count
+
+            # Create fixed issues summary
+            fixed_issues_summary = self._create_issues_summary(fixed_issues, "fixed_types", "total_fixed")
+
+            # Create remaining issues summary
+            files_summary = self._create_issues_summary(remaining_issues, "issue_types", "total_issues")
+
+            # Generate the final report just before returning
+            self._print_final_report(
+                total_issue_count=initial_count,
+                fixed_count=fixed_count,
+                remaining_count=remaining_count,
+                modified_files=modified_files,
+                fixed_issues=fixed_issues,
+                remaining_issues=remaining_issues,
+                files_summary=files_summary,
+                fixed_issues_summary=fixed_issues_summary,
+            )
 
             return ProjectLintResult(
                 issues=remaining_issues,
                 fixed_count=fixed_count,
-                remaining_count=len(remaining_issues),
+                remaining_count=remaining_count,
                 modified_files=modified_files,
                 project_path=str(path),
                 has_ruff_config=has_ruff_config,
-                config_source=config_source,
+                config_source=config_source_str,
                 config_summary=config_summary,
                 files_summary=files_summary,
+                fixed_issues=fixed_issues,
+                fixed_issues_summary=fixed_issues_summary,
             )
 
         except Exception as e:
             print(f"Error during project linting: {e}")
+            import traceback
+
+            traceback.print_exc()
             return ProjectLintResult(
                 issues=[],
                 fixed_count=0,
@@ -144,10 +176,149 @@ class RuffProjectLinter(ProjectLinter):
                 modified_files=[],
                 project_path=str(path),
                 has_ruff_config=has_ruff_config,
-                config_source=config_source,
+                config_source=config_source_str,
                 config_summary=config_summary,
                 files_summary={},
+                fixed_issues=[],
+                fixed_issues_summary={},
             )
+
+    def _print_final_report(
+        self,
+        total_issue_count: int,
+        fixed_count: int,
+        remaining_count: int,
+        modified_files: List[str],
+        fixed_issues: List[Dict[str, Any]],
+        remaining_issues: List[Dict[str, Any]],
+        files_summary: Dict[str, Dict[str, Any]],
+        fixed_issues_summary: Dict[str, Dict[str, Any]],
+    ) -> None:
+        """Print a comprehensive final report.
+
+        Args:
+            total_issue_count: Total number of issues found
+            fixed_count: Number of issues fixed
+            remaining_count: Number of issues remaining
+            modified_files: List of files that were modified
+            fixed_issues: List of issues that were fixed
+            remaining_issues: List of issues remaining
+            files_summary: Summary of remaining issues by file
+            fixed_issues_summary: Summary of fixed issues by file
+        """
+        # Report on issues found, fixed, and remaining
+        print(f"\nTotal issues found: {total_issue_count}")
+        print(f"Fixed issues: {fixed_count}")
+        print(f"Remaining issues: {remaining_count}")
+
+        # Report on fixed issues
+        if fixed_count > 0:
+            print("\nFixed issues:")
+            for issue in fixed_issues:
+                file_path = issue.get("file", "unknown")
+                code = issue.get("code", "unknown")
+                message = issue.get("message", "unknown")
+                line = issue.get("line", 0)
+                column = issue.get("column", 0)
+                print(f"- {file_path} (Line {line}, Col {column}): {code} - {message}")
+
+            # Print summary by file
+            if fixed_issues_summary:
+                print("\nFixed issues by file:")
+                for file_path, summary in fixed_issues_summary.items():
+                    print(f"- {file_path}: {summary.get('total_fixed', 0)} issues")
+                    if "fixed_types" in summary:
+                        for code, count in summary["fixed_types"].items():
+                            print(f"    {code}: {count}")
+
+        # Report on remaining issues
+        if remaining_count > 0:
+            print("\nRemaining issues:")
+            for issue in remaining_issues:
+                file_path = issue.get("file", "unknown")
+                code = issue.get("code", "unknown")
+                message = issue.get("message", "unknown")
+                line = issue.get("line", 0)
+                column = issue.get("column", 0)
+                print(f"- {file_path} (Line {line}, Col {column}): {code} - {message}")
+
+            # Print summary by file
+            if files_summary:
+                print("\nRemaining issues by file:")
+                for file_path, summary in files_summary.items():
+                    print(f"- {file_path}: {summary.get('total_issues', 0)} issues")
+                    if "issue_types" in summary:
+                        for code, count in summary["issue_types"].items():
+                            print(f"    {code}: {count}")
+
+        # Report on modified files
+        if modified_files:
+            print("\nModified files:")
+            for file in modified_files:
+                print(f"- {file}")
+        else:
+            print("\nNo files were modified.")
+            if fixed_count > 0:
+                print("Note: Some issues were fixed in memory but changes were not written to disk.")
+                print(
+                    "This can happen with certain types of issues that the linter can detect but not automatically fix."
+                )
+
+    def _create_issues_summary(
+        self, issues: List[Dict[str, Any]], types_key: str, total_key: str
+    ) -> Dict[str, Dict[str, Any]]:
+        """Create a summary of issues by file.
+
+        Args:
+            issues: List of issues to summarize
+            types_key: Key to use for the types dictionary
+            total_key: Key to use for the total count
+
+        Returns:
+            Dictionary mapping file paths to issue summaries
+        """
+        summary = {}
+        for issue in issues:
+            file_path = issue.get("file", "unknown")
+            if file_path not in summary:
+                summary[file_path] = {total_key: 0, types_key: {}}
+
+            summary[file_path][total_key] += 1
+
+            code = issue.get("code", "unknown")
+            if code not in summary[file_path][types_key]:
+                summary[file_path][types_key][code] = 0
+            summary[file_path][types_key][code] += 1
+
+        return summary
+
+    def _identify_fixed_issues(
+        self, initial_issues: List[Dict[str, Any]], remaining_issues: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Identify which issues were fixed by comparing initial and remaining issues.
+
+        Args:
+            initial_issues: List of issues found before fixing
+            remaining_issues: List of issues found after fixing
+
+        Returns:
+            List of issues that were fixed
+        """
+        # Create a map of remaining issues for quick lookup
+        remaining_map = {}
+        for issue in remaining_issues:
+            # Create a unique key for each issue
+            key = f"{issue.get('file', '')}:{issue.get('line', '')}:{issue.get('column', '')}:{issue.get('code', '')}"
+            remaining_map[key] = True
+
+        # Filter out issues that don't exist in the remaining issues
+        fixed_issues = []
+        for issue in initial_issues:
+            key = f"{issue.get('file', '')}:{issue.get('line', '')}:{issue.get('column', '')}:{issue.get('code', '')}"
+            if key not in remaining_map:
+                fixed_issues.append(issue)
+
+        return fixed_issues
 
     async def _read_project_config(self, path: Path) -> Tuple[Dict[str, Any], str]:
         """Read Ruff configuration from the project directory.
@@ -164,7 +335,23 @@ class RuffProjectLinter(ProjectLinter):
         if not tomli:
             return config, source
 
-        # Check for pyproject.toml
+        # Check for .ruff.toml (highest priority)
+        ruff_toml_path = path / ".ruff.toml"
+        if ruff_toml_path.exists():
+            try:
+                with open(ruff_toml_path, "rb") as f:
+                    ruff_config = tomli.load(f)
+                    if "lint" in ruff_config:
+                        config.update(ruff_config["lint"])
+                    else:
+                        config.update(ruff_config)
+                    source = ".ruff.toml"
+                    # Return immediately since this is highest priority
+                    return config, source
+            except Exception as e:
+                print(f"Error reading .ruff.toml: {e}")
+
+        # Check for pyproject.toml (lower priority)
         pyproject_path = path / "pyproject.toml"
         if pyproject_path.exists():
             try:
@@ -181,51 +368,42 @@ class RuffProjectLinter(ProjectLinter):
             except Exception as e:
                 print(f"Error reading pyproject.toml: {e}")
 
-        # Check for ruff.toml (takes precedence over pyproject.toml)
-        ruff_toml_path = path / ".ruff.toml"
-        if ruff_toml_path.exists():
-            try:
-                with open(ruff_toml_path, "rb") as f:
-                    ruff_config = tomli.load(f)
-                    if "lint" in ruff_config:
-                        config.update(ruff_config["lint"])
-                    else:
-                        config.update(ruff_config)
-                    source = ".ruff.toml"
-            except Exception as e:
-                print(f"Error reading .ruff.toml: {e}")
-
         return config, source
 
     def _merge_configs(
         self, user_config: Dict[str, Any], project_config: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
-        """Merge configuration sources based on priority.
+    ) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]], str]:
+        """Select configuration source based on priority.
 
         Args:
             user_config: Configuration provided by the user
             project_config: Configuration from the project's config files
 
         Returns:
-            Tuple of (effective configuration, configuration summary)
+            Tuple of (effective configuration, configuration summary, config source)
         """
+        # Start with an empty configuration
         effective_config = {}
-        config_summary = {
-            "default": self.default_config.copy(),
-            "project": project_config.copy(),
-            "user": user_config.copy(),
-        }
+        config_source = "default"
 
-        # Start with default config (lowest priority)
-        effective_config.update(self.default_config)
+        # Select ONLY the highest priority config that's available
+        if user_config:
+            # User config has highest priority - use ONLY this
+            effective_config = user_config.copy()
+            config_source = "user"
+        elif project_config:
+            # Project config has second priority - use ONLY this
+            effective_config = project_config.copy()
+            config_source = "project"
+        else:
+            # Default config has lowest priority - use ONLY this
+            effective_config = self.default_config.copy()
+            config_source = "default"
 
-        # Project config overrides default
-        effective_config.update(project_config)
+        # Only include the active configuration in the summary
+        config_summary = {config_source: effective_config.copy()}
 
-        # User config has highest priority
-        effective_config.update(user_config)
-
-        return effective_config, config_summary
+        return effective_config, config_summary, config_source
 
     async def _get_python_files(self, path: Path, file_patterns: Optional[List[str]] = None) -> List[str]:
         """Get a list of Python files to lint.
@@ -249,23 +427,33 @@ class RuffProjectLinter(ProjectLinter):
                 proc = await asyncio.create_subprocess_exec(
                     *cmd, cwd=str(path), stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
-                stdout, _ = await proc.communicate()
+                stdout_bytes, _ = await proc.communicate()
+
+                stdout_text = stdout_bytes.decode().strip() if stdout_bytes else ""
+
+                if proc.returncode != 0:
+                    # Fallback to directory scanning
+                    py_files = self._find_python_files_in_dir(path)
+                    return py_files
 
                 try:
                     # Parse JSON output to get files
-                    data = json.loads(stdout.decode())
-                    for item in data:
-                        file_path = item.get("filename")
-                        if file_path and file_path not in py_files:
-                            py_files.append(file_path)
-                except:
+                    if stdout_text:
+                        data = json.loads(stdout_text)
+                        for item in data:
+                            file_path = item.get("filename")
+                            if file_path and file_path not in py_files:
+                                py_files.append(file_path)
+                    else:
+                        py_files = self._find_python_files_in_dir(path)
+                except json.JSONDecodeError:
                     # Fallback to directory scanning if JSON parsing fails
                     py_files = self._find_python_files_in_dir(path)
-            except:
+            except Exception:
                 # Fallback to directory scanning
                 py_files = self._find_python_files_in_dir(path)
         else:
-            # Scan directory for Python files
+            # No patterns provided, scan directory for Python files
             py_files = self._find_python_files_in_dir(path)
 
         return py_files
@@ -302,17 +490,40 @@ class RuffProjectLinter(ProjectLinter):
         Returns:
             List of issues found
         """
+        # Make sure we have files to check
+        if not py_files:
+            return []
+
+        # Verify the files exist
+        existing_files = []
+        for file_path in py_files:
+            full_path = path / file_path
+            if full_path.exists():
+                existing_files.append(file_path)
+
+        if not existing_files:
+            return []
+
+        py_files = existing_files
+
+        # Build the command
         cmd = ["ruff", "check", "--output-format=json"]
 
         # Add configuration options
         if "select" in config:
-            cmd.extend(["--select", config["select"]])
+            select_value = config["select"]
+            if isinstance(select_value, list):
+                select_str = ",".join(select_value)
+            else:
+                select_str = str(select_value)
+            cmd.extend(["--select", select_str])
 
         if "ignore" in config and config["ignore"]:
             if isinstance(config["ignore"], list):
-                cmd.extend(["--ignore", ",".join(config["ignore"])])
+                ignore_str = ",".join(config["ignore"])
             else:
-                cmd.extend(["--ignore", config["ignore"]])
+                ignore_str = str(config["ignore"])
+            cmd.extend(["--ignore", ignore_str])
 
         if "line-length" in config:
             cmd.extend(["--line-length", str(config["line-length"])])
@@ -321,17 +532,20 @@ class RuffProjectLinter(ProjectLinter):
         cmd.extend(py_files)
 
         try:
+            # Now run the actual check command
             proc = await asyncio.create_subprocess_exec(
                 *cmd, cwd=str(path), stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-            stdout, _ = await proc.communicate()
+            stdout_bytes, _ = await proc.communicate()
+
+            stdout_text = stdout_bytes.decode().strip() if stdout_bytes else ""
 
             issues = []
-            output = stdout.decode().strip()
 
-            if output:
+            # Only try to parse JSON if we actually have output
+            if stdout_text:
                 try:
-                    json_data = json.loads(output)
+                    json_data = json.loads(stdout_text)
 
                     for item in json_data:
                         try:
@@ -366,8 +580,7 @@ class RuffProjectLinter(ProjectLinter):
 
             return issues
 
-        except Exception as e:
-            print(f"Error checking issues: {e}")
+        except Exception:
             return []
 
     async def _run_ruff_fix(self, path: Path, py_files: List[str], config: Dict[str, Any]) -> bool:
@@ -381,17 +594,40 @@ class RuffProjectLinter(ProjectLinter):
         Returns:
             True if fixing succeeded, False otherwise
         """
+        # Make sure we have files to check
+        if not py_files:
+            return False
+
+        # Verify the files exist
+        existing_files = []
+        for file_path in py_files:
+            full_path = path / file_path
+            if full_path.exists():
+                existing_files.append(file_path)
+
+        if not existing_files:
+            return False
+
+        py_files = existing_files
+
+        # Build the command
         cmd = ["ruff", "check", "--fix"]
 
         # Add configuration options
         if "select" in config:
-            cmd.extend(["--select", config["select"]])
+            select_value = config["select"]
+            if isinstance(select_value, list):
+                select_str = ",".join(select_value)
+            else:
+                select_str = str(select_value)
+            cmd.extend(["--select", select_str])
 
         if "ignore" in config and config["ignore"]:
             if isinstance(config["ignore"], list):
-                cmd.extend(["--ignore", ",".join(config["ignore"])])
+                ignore_str = ",".join(config["ignore"])
             else:
-                cmd.extend(["--ignore", config["ignore"]])
+                ignore_str = str(config["ignore"])
+            cmd.extend(["--ignore", ignore_str])
 
         if "line-length" in config:
             cmd.extend(["--line-length", str(config["line-length"])])
@@ -407,8 +643,7 @@ class RuffProjectLinter(ProjectLinter):
 
             return proc.returncode == 0
 
-        except Exception as e:
-            print(f"Error fixing issues: {e}")
+        except Exception:
             return False
 
     async def _get_file_hashes(self, path: Path, file_paths: List[str]) -> Dict[str, str]:
