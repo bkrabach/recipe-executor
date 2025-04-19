@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-# Import the RuffProjectLinter directly from the module
 from python_code_tools.linters.project import RuffProjectLinter
 from python_code_tools.linters.ruff import RuffLinter
 
@@ -29,9 +28,7 @@ def create_mcp_server(host: str = "localhost", port: int = 3001) -> FastMCP:
     project_linter = RuffProjectLinter()
 
     @mcp.tool()
-    async def lint_code(
-        code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    async def lint_code(code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Lint Python code and optionally fix issues.
 
         Args:

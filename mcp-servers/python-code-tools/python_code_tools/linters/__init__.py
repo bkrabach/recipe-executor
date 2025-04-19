@@ -22,6 +22,13 @@ class RuffProjectLinter(ProjectLinter):
         """
         super().__init__(name="ruff-project", **kwargs)
 
+        # Default configuration settings
+        self.default_config = {
+            "select": "E,F,W,I",  # Default rule selection
+            "ignore": [],  # No ignored rules by default
+            "line-length": 100,  # Default line length
+        }
+
     async def lint_project(
         self,
         project_path: str,
@@ -47,10 +54,20 @@ class RuffProjectLinter(ProjectLinter):
         if not path.is_dir():
             raise ValueError(f"Project path is not a directory: {project_path}")
 
+        # Check if there's a project-level Ruff configuration and determine config source
+        config_source = "default"
+        config_summary = {"default": self.default_config.copy(), "project": {}, "user": config.copy() if config else {}}
+
         # Check if there's a pyproject.toml or ruff.toml in the project directory
         pyproject_path = path / "pyproject.toml"
         ruff_toml_path = path / "ruff.toml"
         has_ruff_config = pyproject_path.exists() or ruff_toml_path.exists()
+
+        if has_ruff_config:
+            if ruff_toml_path.exists():
+                config_source = "ruff.toml"
+            else:
+                config_source = "pyproject.toml"
 
         # Build the ruff command
         cmd = ["ruff", "check"]
@@ -106,17 +123,14 @@ class RuffProjectLinter(ProjectLinter):
             # Transform JSON output to our issue format
             issues = []
             for item in json_data:
-                issues.append(
-                    {
-                        "file": item.get("filename", ""),
-                        "line": item.get("location", {}).get("row", 0),
-                        "column": item.get("location", {}).get("column", 0),
-                        "code": item.get("code", ""),
-                        "message": item.get("message", ""),
-                        "fix_available": item.get("fix", {}).get("applicability", "")
-                        == "applicable",
-                    }
-                )
+                issues.append({
+                    "file": item.get("filename", ""),
+                    "line": item.get("location", {}).get("row", 0),
+                    "column": item.get("location", {}).get("column", 0),
+                    "code": item.get("code", ""),
+                    "message": item.get("message", ""),
+                    "fix_available": item.get("fix", {}).get("applicability", "") == "applicable",
+                })
         except Exception as e:
             # Fall back to text parsing if JSON parsing fails
             print(f"JSON parsing failed: {e}, falling back to text parsing")
@@ -152,6 +166,8 @@ class RuffProjectLinter(ProjectLinter):
             modified_files=modified_files,
             project_path=str(path),
             has_ruff_config=has_ruff_config,
+            config_source=config_source,  # Add this parameter
+            config_summary=config_summary,  # Add this parameter
             files_summary=files_summary,
         )
 
@@ -182,15 +198,13 @@ class RuffProjectLinter(ProjectLinter):
                     if len(message_parts) == 2:
                         code, description = message_parts
 
-                        issues.append(
-                            {
-                                "file": file_path,
-                                "line": int(line_num),
-                                "column": int(col_num),
-                                "code": code,
-                                "message": description,
-                            }
-                        )
+                        issues.append({
+                            "file": file_path,
+                            "line": int(line_num),
+                            "column": int(col_num),
+                            "code": code,
+                            "message": description,
+                        })
             except Exception:
                 # Skip lines that don't match the expected format
                 continue
@@ -285,11 +299,7 @@ class RuffProjectLinter(ProjectLinter):
                 stdout, _ = await git_status.communicate()
 
                 # Filter for Python files
-                modified_files = [
-                    line
-                    for line in stdout.decode().strip().split("\n")
-                    if line.endswith(".py") and line
-                ]
+                modified_files = [line for line in stdout.decode().strip().split("\n") if line.endswith(".py") and line]
                 return modified_files
         except Exception:
             # Git not available or error occurred, fall back to another method

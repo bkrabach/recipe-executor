@@ -42,7 +42,7 @@ async def main():
                     "lint_project",
                     {
                         "project_path": PROJECT_PATH,
-                        "file_patterns": ["**/*.py"],  # All Python files in the project
+                        "file_patterns": ["**/*.py", "*.py"],  # Both top-level and nested Python files
                         "fix": True,
                     },
                 )
@@ -57,22 +57,26 @@ async def main():
                     if hasattr(first_content, "type") and first_content.type == "text":
                         lint_result_text = first_content.text
 
-                        # Add debug output to see what we're trying to parse
-                        print(
-                            f"Response content: {lint_result_text[:100]}..."
-                            if len(lint_result_text) > 100
-                            else lint_result_text
-                        )
-
                         try:
                             lint_result = json.loads(lint_result_text)
 
                             print(f"Project path: {lint_result.get('project_path', 'unknown')}")
-                            print(f"Issues found: {len(lint_result.get('issues', []))}")
 
-                            # Print whether project has Ruff configuration
-                            has_config = lint_result.get("has_ruff_config", False)
-                            print(f"Project has Ruff configuration: {has_config}")
+                            # Display configuration information
+                            config_source = lint_result.get("config_source", "unknown")
+                            print(f"Configuration source: {config_source}")
+
+                            if "config_summary" in lint_result:
+                                config_summary = lint_result["config_summary"]
+
+                                # Display each configuration source
+                                for source, config in config_summary.items():
+                                    if config:  # Only show non-empty configs
+                                        print(f"\n{source.capitalize()} configuration:")
+                                        for key, value in config.items():
+                                            print(f"  {key}: {value}")
+
+                            print(f"\nIssues found: {len(lint_result.get('issues', []))}")
 
                             # Group issues by file
                             issues_by_file = {}
@@ -108,9 +112,10 @@ async def main():
                                 print("\nModified files:")
                                 for file in lint_result["modified_files"]:
                                     print(f"- {file}")
+                            else:
+                                print("\nNo files were modified.")
                         except json.JSONDecodeError as e:
                             print(f"Error parsing JSON response: {e}")
-                            print(f"Raw response text: {lint_result_text}")
                     else:
                         print(
                             "Unexpected content type: "

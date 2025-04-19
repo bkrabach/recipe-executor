@@ -5,19 +5,19 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+"""Result models for linting operations."""
+
 
 class LintResult(BaseModel):
-    """Result model for code linting."""
+    """Base result model for linting."""
 
-    issues: List[Dict[str, Any]] = Field(
-        default_factory=list, description="List of issues found in the code"
-    )
+    issues: List[Dict[str, Any]] = Field(default_factory=list, description="List of issues found in the code")
     fixed_count: int = Field(0, description="Number of issues that were automatically fixed")
     remaining_count: int = Field(0, description="Number of issues that could not be fixed")
 
 
 class CodeLintResult(LintResult):
-    """Result model for single code snippet linting."""
+    """Result model for code snippet linting."""
 
     fixed_code: str = Field(..., description="The code after linting and fixing (if enabled)")
 
@@ -29,12 +29,15 @@ class ProjectLintResult(LintResult):
         default_factory=list, description="List of files that were modified by auto-fixes"
     )
     project_path: str = Field(..., description="Path to the project directory that was linted")
-    has_ruff_config: bool = Field(
-        False, description="Whether the project has a ruff configuration file"
+    has_ruff_config: bool = Field(False, description="Whether the project has a ruff configuration file")
+    # New fields for configuration information - with defaults to prevent validation errors
+    config_source: Optional[str] = Field(
+        "default", description="Source of the configuration (none, pyproject.toml, ruff.toml, etc.)"
     )
-    files_summary: Dict[str, Dict[str, Any]] = Field(
-        default_factory=dict, description="Summary of issues by file"
+    config_summary: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict, description="Summary of configuration from different sources (default, project, user)"
     )
+    files_summary: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Summary of issues by file")
 
 
 class BaseLinter(abc.ABC):
@@ -55,9 +58,7 @@ class CodeLinter(BaseLinter):
     """Abstract base class for code snippet linters."""
 
     @abc.abstractmethod
-    async def lint_code(
-        self, code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None
-    ) -> CodeLintResult:
+    async def lint_code(self, code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None) -> CodeLintResult:
         """Lint the provided code snippet and return the results.
 
         Args:
