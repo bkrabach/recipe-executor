@@ -1,7 +1,9 @@
 from typing import Any
-from recipe_executor.protocols import ContextProtocol
+
 from liquid import Template
 from liquid.exceptions import LiquidError
+
+from recipe_executor.protocols import ContextProtocol
 
 
 def render_template(text: str, context: ContextProtocol) -> str:
@@ -29,6 +31,4 @@ def render_template(text: str, context: ContextProtocol) -> str:
             f"Liquid template rendering error: {exc}\nTemplate: {text}\nContext: {string_context}"
         ) from exc
     except Exception as exc:
-        raise ValueError(
-            f"Template rendering error: {exc}\nTemplate: {text}\nContext: {string_context}"
-        ) from exc
+        raise ValueError(f"Template rendering error: {exc}\nTemplate: {text}\nContext: {string_context}") from exc

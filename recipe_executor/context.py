@@ -1,7 +1,9 @@
-from typing import Dict, Any, Iterator, Optional
 import copy
 import json as jsonlib
+from typing import Any, Dict, Iterator, Optional
+
 from recipe_executor.protocols import ContextProtocol
+
 
 class Context(ContextProtocol):
     def __init__(

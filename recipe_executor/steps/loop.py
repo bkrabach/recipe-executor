@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from recipe_executor.protocols import ContextProtocol, ExecutorProtocol, StepProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.steps.registry import STEP_REGISTRY
-from recipe_executor.utils import render_template
 
 
 class LoopStepConfig(StepConfig):
@@ -18,6 +18,7 @@ class LoopStepConfig(StepConfig):
         result_key: Key to store the collection of results in the context.
         fail_fast: Whether to stop processing on the first error (default: True).
     """
+
     items: str
     item_key: str
     substeps: List[Dict[str, Any]]
@@ -42,7 +43,7 @@ class LoopStep(BaseStep[LoopStepConfig]):
             raise ValueError(f"Items key '{items_key}' not found in context.")
 
         if not isinstance(substeps, list) or not substeps:
-            self.logger.error(f"[LoopStep] Substeps must be a non-empty list.")
+            self.logger.error("[LoopStep] Substeps must be a non-empty list.")
             raise ValueError("LoopStep requires at least one substep.")
 
         # Obtain the executor from the context
@@ -60,8 +61,10 @@ class LoopStep(BaseStep[LoopStepConfig]):
             collection = list(enumerate(raw_collection))  # List[Tuple[int, Any]]
             is_dict = False
         else:
-            self.logger.error(f"[LoopStep] The collection under key '{items_key}' "
-                             f"must be a list, tuple, or dict (got {type(raw_collection).__name__}).")
+            self.logger.error(
+                f"[LoopStep] The collection under key '{items_key}' "
+                f"must be a list, tuple, or dict (got {type(raw_collection).__name__})."
+            )
             raise ValueError(
                 f"LoopStep: Items must be list/tuple/dict (got {type(raw_collection).__name__}) at key: {items_key}"
             )
@@ -110,7 +113,7 @@ class LoopStep(BaseStep[LoopStepConfig]):
                 errors.append({
                     "key": key_or_index if is_dict else None,
                     "index": key_or_index if not is_dict else None,
-                    "error": str(e)
+                    "error": str(e),
                 })
                 if fail_fast:
                     raise

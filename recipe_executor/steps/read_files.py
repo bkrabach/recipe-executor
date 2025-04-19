@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional, Union
-from recipe_executor.steps.base import BaseStep, StepConfig
-from recipe_executor.protocols import ContextProtocol
-from recipe_executor.utils import render_template
 import logging
-import os
+from typing import Any, Dict, List, Union
+
+from recipe_executor.protocols import ContextProtocol
+from recipe_executor.steps.base import BaseStep, StepConfig
+from recipe_executor.utils import render_template
 
 
 class ReadFilesConfig(StepConfig):
@@ -18,10 +18,12 @@ class ReadFilesConfig(StepConfig):
             - "concat" (default): Concatenate all files with newlines between filenames + contents
             - "dict": Store a dictionary with filenames as keys and contents as values
     """
+
     path: Union[str, List[str]]
     contents_key: str
     optional: bool = False
     merge_mode: str = "concat"
+
 
 class ReadFilesStep(BaseStep[ReadFilesConfig]):
     def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:

@@ -1,18 +1,20 @@
-import os
 import json
 import logging
+import os
 from pathlib import Path
-from typing import Union, Dict, Any
+from typing import Any, Dict, Union
 
-from recipe_executor.models import Recipe, RecipeStep
-from recipe_executor.protocols import ExecutorProtocol, ContextProtocol
+from recipe_executor.models import Recipe
+from recipe_executor.protocols import ContextProtocol, ExecutorProtocol
 from recipe_executor.steps.registry import STEP_REGISTRY
+
 
 class Executor(ExecutorProtocol):
     """
     Stateless executor for loading, validating, and running recipe steps.
     Implements ExecutorProtocol. Does NOT retain state between runs.
     """
+
     def __init__(self, logger: logging.Logger) -> None:
         self.logger: logging.Logger = logger
 
@@ -26,15 +28,11 @@ class Executor(ExecutorProtocol):
         On error, raises ValueError with context about which step or input failed.
         """
         recipe_obj: Recipe = self._load_recipe(recipe)
-        self.logger.debug(
-            f"Loaded recipe ({len(recipe_obj.steps)} steps): {recipe_obj.model_dump()}"
-        )
+        self.logger.debug(f"Loaded recipe ({len(recipe_obj.steps)} steps): {recipe_obj.model_dump()}")
         for index, step in enumerate(recipe_obj.steps):
             step_type: str = step.type
             step_config: Dict[str, Any] = step.config or {}
-            self.logger.debug(
-                f"Executing step {index}: type='{step_type}', config={step_config}"
-            )
+            self.logger.debug(f"Executing step {index}: type='{step_type}', config={step_config}")
             step_class = STEP_REGISTRY.get(step_type)
             if step_class is None:
                 raise ValueError(f"Unknown step type '{step_type}' at index {index}")
@@ -44,16 +42,11 @@ class Executor(ExecutorProtocol):
                 if hasattr(result, "__await__"):
                     await result
             except Exception as exc:
-                raise ValueError(
-                    f"Step {index} ('{step_type}') failed: {exc}"
-                ) from exc
+                raise ValueError(f"Step {index} ('{step_type}') failed: {exc}") from exc
             self.logger.debug(f"Step {index} ('{step_type}') executed successfully.")
         self.logger.debug("All recipe steps executed successfully.")
 
-    def _load_recipe(
-        self,
-        recipe: Union[str, Path, Dict[str, Any], Recipe]
-    ) -> Recipe:
+    def _load_recipe(self, recipe: Union[str, Path, Dict[str, Any], Recipe]) -> Recipe:
         # If already validated model
         if isinstance(recipe, Recipe):
             self.logger.debug("Recipe input is already a Recipe model.")
@@ -72,9 +65,7 @@ class Executor(ExecutorProtocol):
         else:
             recipe_str = recipe
         if not isinstance(recipe_str, str):
-            raise TypeError(
-                f"Recipe argument must be a str, Path, dict, or Recipe model, not {type(recipe)}"
-            )
+            raise TypeError(f"Recipe argument must be a str, Path, dict, or Recipe model, not {type(recipe)}")
         if os.path.isfile(recipe_str):
             self.logger.debug(f"Recipe input is a file path: {recipe_str}")
             try:

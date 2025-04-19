@@ -80,7 +80,7 @@ class ParallelStep(BaseStep[ParallelConfig]):
         pending_idx: int = 0
 
         stop_launching: bool = False
-        start_event = asyncio.Event()  # Used to wake up waiters on fail-fast
+        asyncio.Event()  # Used to wake up waiters on fail-fast
 
         async def substep_launcher():
             nonlocal pending_idx, all_tasks, stop_launching

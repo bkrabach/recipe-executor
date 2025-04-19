@@ -1,11 +1,8 @@
 import logging
 import os
-from typing import Optional
 
-def init_logger(
-    log_dir: str = "logs",
-    stdio_log_level: str = "INFO"
-) -> logging.Logger:
+
+def init_logger(log_dir: str = "logs", stdio_log_level: str = "INFO") -> logging.Logger:
     """
     Initializes and configures a logger instance writing to stdout and separate log files per level.
     Clears existing log files on each run.
@@ -30,8 +27,7 @@ def init_logger(
         logger.handlers.pop()
 
     formatter: logging.Formatter = logging.Formatter(
-        fmt="%(asctime)s.%(msecs)03d [%(levelname)s] (%(filename)s:%(lineno)d) %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        fmt="%(asctime)s.%(msecs)03d [%(levelname)s] (%(filename)s:%(lineno)d) %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # Ensure log directory exists
@@ -49,7 +45,7 @@ def init_logger(
     log_file_defs = [
         ("debug", os.path.join(log_dir, "debug.log"), logging.DEBUG),
         ("info", os.path.join(log_dir, "info.log"), logging.INFO),
-        ("error", os.path.join(log_dir, "error.log"), logging.ERROR)
+        ("error", os.path.join(log_dir, "error.log"), logging.ERROR),
     ]
 
     for log_name, log_path, level in log_file_defs:

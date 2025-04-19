@@ -11,16 +11,18 @@ from recipe_executor.context import Context
 from recipe_executor.executor import Executor
 from recipe_executor.logger import init_logger
 
+
 def parse_key_value_pairs(pairs: List[str], arg_name: str) -> Dict[str, str]:
     result: Dict[str, str] = {}
     for pair in pairs:
-        if '=' not in pair:
+        if "=" not in pair:
             raise ValueError(f"Invalid {arg_name} format '{pair}'. Expected format: key=value.")
-        key, value = pair.split('=', 1)
+        key, value = pair.split("=", 1)
         if not key:
             raise ValueError(f"Invalid {arg_name} format '{pair}'. Key cannot be empty.")
         result[key] = value
     return result
+
 
 def main() -> None:
     try:
@@ -29,33 +31,17 @@ def main() -> None:
         sys.stderr.write("\nExecution interrupted by user.\n")
         sys.exit(1)
 
+
 async def main_async() -> None:
     load_dotenv()
-    parser = argparse.ArgumentParser(
-        description="Recipe Executor: command-line recipe runner."
+    parser = argparse.ArgumentParser(description="Recipe Executor: command-line recipe runner.")
+    parser.add_argument("recipe_path", type=str, help="Path to the recipe file to execute.")
+    parser.add_argument("--log-dir", type=str, default="logs", help="Directory to write log files (default: 'logs').")
+    parser.add_argument(
+        "--context", action="append", default=[], help="Context artifact as key=value (can be repeated)."
     )
     parser.add_argument(
-        "recipe_path",
-        type=str,
-        help="Path to the recipe file to execute."
-    )
-    parser.add_argument(
-        "--log-dir",
-        type=str,
-        default="logs",
-        help="Directory to write log files (default: 'logs')."
-    )
-    parser.add_argument(
-        "--context",
-        action="append",
-        default=[],
-        help="Context artifact as key=value (can be repeated)."
-    )
-    parser.add_argument(
-        "--config",
-        action="append",
-        default=[],
-        help="Configuration value as key=value (can be repeated)."
+        "--config", action="append", default=[], help="Configuration value as key=value (can be repeated)."
     )
     args = parser.parse_args()
 
@@ -73,8 +59,8 @@ async def main_async() -> None:
     try:
         logger.debug(f"Parsed arguments: {args}")
         try:
-            artifacts: Dict[str, str] = parse_key_value_pairs(args.context, '--context')
-            config: Dict[str, str] = parse_key_value_pairs(args.config, '--config')
+            artifacts: Dict[str, str] = parse_key_value_pairs(args.context, "--context")
+            config: Dict[str, str] = parse_key_value_pairs(args.config, "--config")
         except ValueError as value_error:
             logger.error(f"Context Error: {str(value_error)}")
             sys.stderr.write(f"Context Error: {str(value_error)}\n")
