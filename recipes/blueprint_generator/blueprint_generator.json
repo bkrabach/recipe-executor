@@ -25,7 +25,7 @@
       "config": {
         "prompt": "Parse this analysis result and output only 'true' if needs_splitting is true, otherwise 'false':\n\n{{analysis_result}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "needs_splitting"
+        "output_key": "needs_splitting"
       }
     },
     {
@@ -33,7 +33,7 @@
       "config": {
         "prompt": "Determine which recipe to run next. If {{needs_splitting.files[0].content|trim}} is 'true', output 'split_project.json'. Otherwise output 'process_single_component.json'.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "next_recipe"
+        "output_key": "next_recipe"
       }
     },
     {

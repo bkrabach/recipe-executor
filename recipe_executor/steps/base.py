@@ -1,42 +1,50 @@
 import logging
-
-# Do function-level import to avoid cycles in type hints (see Protocols)
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from recipe_executor.protocols import ContextProtocol
+
+# Avoid direct import to prevent cycles; use runtime import/type only for annotation
+def _get_protocols():
+    from recipe_executor.protocols import ContextProtocol  # type: ignore
+
+    return ContextProtocol
 
 
-# Base configuration class for all steps
 class StepConfig(BaseModel):
     """
-    Pydantic model that serves as the base for all step configuration models.
-    Subclasses should define concrete config fields.
+    Base class for step configuration objects. Extend this using Pydantic fields
+    in your custom step config models. This base class defines no fields,
+    enforcing only structure and validation via Pydantic.
     """
 
     pass
 
 
-# Type variable for StepConfig subclasses
-ConfigType = TypeVar("ConfigType", bound=StepConfig)
+StepConfigType = TypeVar("StepConfigType", bound=StepConfig)
 
 
-class BaseStep(Generic[ConfigType]):
+class BaseStep(Generic[StepConfigType]):
     """
-    Base class for steps, enforcing interface and type safety.
-    All step implementations should subclass BaseStep, specifying their config type.
+    Base class for all steps. Implements common structure: stores config and logger,
+    enforces async execute interface, and type safety for config via generics.
     """
 
-    config: ConfigType
+    config: StepConfigType
     logger: logging.Logger
 
-    def __init__(self, logger: logging.Logger, config: ConfigType) -> None:
+    def __init__(self, logger: logging.Logger, config: StepConfigType) -> None:
         self.logger = logger
         self.config = config
         self.logger.debug(f"Initialized {self.__class__.__name__} with config: {self.config.json()}")
 
-    async def execute(self, context: "ContextProtocol") -> None:
-        """Perform the step's action using the provided context. Must be implemented by subclasses."""
-        raise NotImplementedError(f"{self.__class__.__name__}.execute() must be implemented in subclasses.")
+    async def execute(self, context: Any) -> None:
+        """
+        Execute this step using a context implementing ContextProtocol.
+        Subclasses must implement this method. This base method raises NotImplementedError
+        as a safeguard.
+        """
+        ContextProtocol = _get_protocols()  # Delayed import for typing
+        if not isinstance(context, ContextProtocol):
+            raise TypeError(f"context must implement ContextProtocol, got {type(context)}")
+        raise NotImplementedError(f"{self.__class__.__name__}.execute() must be implemented by subclasses.")

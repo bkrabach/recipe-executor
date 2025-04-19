@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "{{project_idea}}",
-        "artifact": "project_idea_content"
+        "contents_key": "project_idea_content"
       }
     },
     {
@@ -12,7 +12,7 @@
       "config": {
         "prompt": "# Task\n\nExtract a list of context and reference files from the project idea:\n\n- Project Idea:\n  <PROJECT_IDEA>\n  {{project_idea_content}}\n  </PROJECT_IDEA>\n- Context Files: These files provide context for the project idea, such as vision documents or design philosophies.\n- Reference Files: These files are referenced in the project idea, such as library documentation or code files.\n\n# Output Format\n\nThe output should be a JSON file with two keys:\n- context_files: A list of file paths for context files.\n- reference_files: A list of file paths for reference files.",
         "model": "{{model|default:'openai/gpt-4o'}}",
-        "artifact": "extracted_file_lists"
+        "output_key": "extracted_file_lists"
       }
     },
     {

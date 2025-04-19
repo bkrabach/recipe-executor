@@ -4,42 +4,42 @@
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "artifact": "steps_base_docs"
+        "contents_key": "steps_base_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "artifact": "context_docs"
+        "contents_key": "context_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_docs.md",
-        "artifact": "llm_utils_mcp_docs"
+        "contents_key": "llm_utils_mcp_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
-        "artifact": "utils_docs"
+        "contents_key": "utils_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "ai_context/AZURE_IDENTITY_CLIENT_DOCS.md",
-        "artifact": "azure_identity_client_docs"
+        "contents_key": "azure_identity_client_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "ai_context/PYDANTIC_AI_DOCS.md",
-        "artifact": "pydantic_ai_docs"
+        "contents_key": "pydantic_ai_docs"
       }
     },
     {

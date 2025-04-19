@@ -8,10 +8,12 @@ from recipe_executor.llm_utils.mcp import get_mcp_server
 
 ## Basic Usage
 
+You can create an MCP server client using the `get_mcp_server` function. This function takes a logger and a configuration object as arguments.
+
 ```python
 def get_mcp_server(
     logger: logging.Logger,
-    config: MCPServerConfig
+    config: Dict[str, Any]
 ) -> MCPServer:
     """
     Create an MCP server client based on the provided configuration.
@@ -32,13 +34,12 @@ from recipe_executor.llm_utils.mcp import get_mcp_server
 from recipe_executor.models import MCPServerHttpConfig
 mcp_server = get_mcp_server(
     logger=logger,
-    config=MCPServerHttpConfig(
-        name="weather_mcp_server",
-        url="http://localhost:3001/sse",
-        headers={
-            "Authorization": "{{token}}",
+    config={
+        "url": "http://localhost:3001/sse",
+        "headers": {
+            "Authorization": "{{token}}"
         }
-    )
+    }
 )
 
 # List available tools

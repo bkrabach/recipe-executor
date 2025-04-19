@@ -4,28 +4,28 @@
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "artifact": "protocols_docs"
+        "contents_key": "protocols_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "artifact": "models_docs"
+        "contents_key": "models_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_docs.md",
-        "artifact": "registry_docs"
+        "contents_key": "registry_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "artifact": "logger_docs"
+        "contents_key": "logger_docs"
       }
     },
     {

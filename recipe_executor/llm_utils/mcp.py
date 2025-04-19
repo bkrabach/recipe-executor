@@ -1,78 +1,75 @@
 import logging
+from copy import deepcopy
 from typing import Any, Dict, Optional
 
 from pydantic_ai.mcp import MCPServer, MCPServerHTTP, MCPServerStdio
 
-from recipe_executor.models import MCPServerConfig, MCPServerHttpConfig, MCPServerStdioConfig
+SENSITIVE_KEYS = {"authorization", "api_key", "key", "secret", "token", "password"}
 
 
-def _mask_value(key: str, value: Any) -> Any:
+def mask_sensitive(obj: Any) -> Any:
     """
-    Mask sensitive values for logging.
+    Recursively mask sensitive keys in a dict, list, or other supported types.
     """
-    SENSITIVE_KEYS = {"api_key", "authorization", "password", "token"}
-    if isinstance(value, dict):
-        return {k: _mask_value(k, v) for k, v in value.items()}
-    if key.lower() in SENSITIVE_KEYS and isinstance(value, str):
-        return "***MASKED***"
-    return value
+    if isinstance(obj, dict):
+        return {k: ("***MASKED***" if k.lower() in SENSITIVE_KEYS else mask_sensitive(v)) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [mask_sensitive(v) for v in obj]
+    return obj
 
 
-def _log_config(logger: logging.Logger, config: MCPServerConfig) -> None:
+def get_mcp_server(logger: logging.Logger, config: Dict[str, Any]) -> MCPServer:
     """
-    Log configuration with sensitive values masked.
-    """
-    from pydantic import BaseModel
-
-    if isinstance(config, BaseModel):
-        config_dict = config.model_dump()
-    else:
-        config_dict = dict(config)
-    masked = {_k: _mask_value(_k, _v) for _k, _v in config_dict.items()}
-    logger.debug(f"MCPServerConfig: {masked}")
-
-
-def get_mcp_server(
-    logger: logging.Logger,
-    config: MCPServerConfig,
-) -> MCPServer:
-    """
-    Create an MCP server client based on the specified URI and server type.
-
+    Create an MCP server client based on the provided configuration.
     Args:
-        logger (logging.Logger): Logger for logging messages.
-        config: (MCPServerConfig): Configuration for the MCP server.
-
+        logger: Logger for logging messages.
+        config: Configuration for the MCP server.
     Returns:
-        MCPServer: A configured PydanticAI MCP server client.
-
+        A configured PydanticAI MCP server client.
     Raises:
         ValueError: If the configuration is invalid.
-        RuntimeError: If MCP server initialization fails.
+        RuntimeError: If an unexpected exception is encountered.
     """
-    _log_config(logger, config)
+    # Mask and log config for debug
+    masked_config = mask_sensitive(deepcopy(config))
+    logger.debug(f"MCP config: {masked_config}")
 
-    try:
-        if isinstance(config, MCPServerHttpConfig):
-            if not getattr(config, "url", None):
-                raise ValueError('MCPServerHttpConfig missing required "url"')
-            url = str(config.url)
-            headers: Optional[Dict[str, Any]] = getattr(config, "headers", None)
-            server = MCPServerHTTP(url=url, headers=headers)
-            logger.info(f"Initialized MCPServerHTTP (transport=http) to {url}")
-            return server
-        elif isinstance(config, MCPServerStdioConfig):
-            if not getattr(config, "command", None):
-                raise ValueError('MCPServerStdioConfig missing required "command"')
-            command: str = config.command
-            args: list[str] = config.args or []
-            env: Optional[Dict[str, str]] = config.env
-            cwd = getattr(config, "cwd", None)
-            server = MCPServerStdio(command, args=args, env=env, cwd=cwd)
-            logger.info(f"Initialized MCPServerStdio (transport=stdio) with command: {command} {' '.join(args)}")
-            return server
-        else:
-            raise ValueError(f"Unknown MCPServerConfig type: {type(config)}")
-    except Exception as exc:
-        logger.error(f"Failed to initialize MCP server: {exc}")
-        raise RuntimeError(f"Failed to initialize MCP server: {exc}") from exc
+    # Detect server type: HTTP if 'url' key, otherwise stdio if 'command' or 'args'
+    if "url" in config:
+        url: str = config["url"]
+        headers: Optional[Dict[str, str]] = config.get("headers")
+        try:
+            if not isinstance(url, str) or not url:
+                raise ValueError("The 'url' config value must be a non-empty string for MCPServerHTTP.")
+            if headers is not None and not isinstance(headers, dict):
+                raise ValueError("The 'headers' config value must be a dict if provided.")
+            logger.info(f"Creating MCPServerHTTP: url={url}")
+            return MCPServerHTTP(url=url, headers=headers)  # type: ignore[arg-type]
+        except Exception as exc:
+            raise RuntimeError(f"Failed to create MCPServerHTTP: {exc}") from exc
+
+    elif "command" in config or "args" in config:
+        command: Optional[str] = config.get("command")
+        args: Optional[Any] = config.get("args")
+        if command is None:
+            # Support args as a list like ["deno", ...]
+            if isinstance(args, (list, tuple)) and len(args) >= 1:
+                command = args[0]
+                args = args[1:]
+            else:
+                raise ValueError(
+                    "Either 'command' (str) or non-empty 'args' (list/tuple) must be provided for MCPServerStdio."
+                )
+        if not isinstance(command, str) or not command:
+            raise ValueError("The 'command' config value must be a non-empty string for MCPServerStdio.")
+        if args is not None and not isinstance(args, (list, tuple)):
+            raise ValueError("The 'args' config value must be a list or tuple if provided for MCPServerStdio.")
+        logger.info(f"Creating MCPServerStdio: command={command} args={args if args else []}")
+        try:
+            return MCPServerStdio(command, args=list(args) if args is not None else [])
+        except Exception as exc:
+            raise RuntimeError(f"Failed to create MCPServerStdio: {exc}") from exc
+
+    raise ValueError(
+        "Invalid MCP server config: requires either 'url' for HTTP or 'command'/'args' for stdio transport."
+    )

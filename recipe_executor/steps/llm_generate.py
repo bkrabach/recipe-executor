@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel
 
@@ -22,7 +22,7 @@ class LLMGenerateConfig(StepConfig):
 
     prompt: str
     model: str
-    artifact: str
+    output_key: str
 
 
 class LLMGenerateStep(BaseStep[LLMGenerateConfig]):
@@ -55,25 +55,20 @@ class LLMGenerateStep(BaseStep[LLMGenerateConfig]):
             # Render prompt, model, and artifact key using the provided context
             rendered_prompt = render_template(self.config.prompt, context)
             rendered_model: str = render_template(self.config.model, context)
-            artifact_key: str = render_template(self.config.artifact, context)
+            output_key: str = render_template(self.config.output_key, context)
 
             # Log debug message about the LLM call details
             self.logger.debug(f"Calling LLM with prompt: {rendered_prompt[:50]}... and model: {rendered_model}")
 
-            class FileGenerationResult(BaseModel):
-                """
-                FileGenerationResult is a structured result from the LLM containing generated files and optional commentary.
-                """
-
+            class FileSpecCollection(BaseModel):
                 files: List[FileSpec]
-                commentary: Optional[str] = None
 
             # Call the LLM asynchronously
             llm = LLM(self.logger, model=rendered_model)
-            response = await llm.generate(prompt=rendered_prompt, output_type=FileGenerationResult)
+            response = await llm.generate(prompt=rendered_prompt, output_type=FileSpecCollection)
 
             # Store the generated result in the execution context
-            context[artifact_key] = response
+            context[output_key] = response.files if isinstance(response, FileSpecCollection) else response
 
         except Exception as error:
             self.logger.error(f"LLM call failed for prompt: {rendered_prompt[:50]}... with error: {error}")

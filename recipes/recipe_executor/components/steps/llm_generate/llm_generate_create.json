@@ -4,28 +4,35 @@
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "artifact": "steps_base_docs"
+        "contents_key": "steps_base_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "artifact": "context_docs"
+        "contents_key": "context_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_docs.md",
-        "artifact": "llm_docs"
+        "contents_key": "llm_docs"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_docs.md",
+        "contents_key": "mcp_docs"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/utils_docs.md",
-        "artifact": "utils_docs"
+        "contents_key": "utils_docs"
       }
     },
     {
@@ -36,7 +43,7 @@
           "component_id": "llm_generate",
           "component_path": "/steps",
           "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<LLM_DOCS>\n{{llm_docs}}\n</LLM_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"
+          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<LLM_DOCS>\n{{llm_docs}}\n</LLM_DOCS>\n<MCP_DOCS>\n{{mcp_docs}}\n</MCP_DOCS>\n<UTILS_DOCS>\n{{utils_docs}}\n</UTILS_DOCS>"
         }
       }
     }

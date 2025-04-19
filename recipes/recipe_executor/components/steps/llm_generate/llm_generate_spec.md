@@ -18,7 +18,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 ## Implementation Considerations
 
 - Use `render_template` for templating prompts, model identifiers, mcp server configs, and output key
-- Convert any MCP Server configurations to `MCPServerConfig` instances (`MCPServerHttpConfig` or `MCPServerStdioConfig`) to pass as `mcp_servers` to the LLM component
+- Convert any MCP Server configurations to `MCPServer` instances (via `get_mcp_server`) to pass as `mcp_servers` to the LLM component
 - If `output_format` is an object (JSON schema):
   - Validate via `jsonschema.validate` against the provided schema
   - Pass the JSON schema to the LLM call as the `output_type` parameter
@@ -48,8 +48,9 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - **Protocols**: Uses ContextProtocol for context data access and StepProtocol for the step interface (decouples from concrete Context and BaseStep classes)
 - **Step Interface**: Implements the step behavior via `StepProtocol`
 - **Context**: Uses a context implementing `ContextProtocol` to retrieve input values and store generation output
-- **Models**: Uses the `FileSpec` model for file generation output and `MCPServerConfig`, `MCPServerHttpConfig`, and `MCPServerStdioConfig` for MCP server configurations
+- **Models**: Uses the `FileSpec` model for file generation output
 - **LLM**: Uses the LLM component class `LLM` from `llm_utils.llm` to interact with language models and optional MCP servers
+- **MCP**: Uses the `get_mcp_server` function to convert MCP server configurations to `MCPServer` instances
 - **Utils**: Uses `render_template` for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries

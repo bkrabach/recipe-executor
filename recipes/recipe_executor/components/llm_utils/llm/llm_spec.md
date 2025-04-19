@@ -13,7 +13,7 @@ The LLM component provides a unified interface for interacting with various larg
 - Use PydanticAI for consistent handling and validation of LLM output
 - Implement basic error handling
 - Support optional structured output format
-- Accept an optional `mcp_servers: Optional[List[MCPServerConfig]]` to enable remote MCP tool integration
+- Accept an optional `mcp_servers: Optional[List[MCPServer]]` to enable remote MCP tool integration
 
 ## Implementation Considerations
 
@@ -25,10 +25,7 @@ The LLM component provides a unified interface for interacting with various larg
   - pydantic_ai.models.anthropic.AnthropicModel
 - Create a PydanticAI Agent with the model, structured output type, and optional MCP servers
 - Support: `output_type: Type[Union[str, BaseModel]] = str`
-- If `mcp_servers` are provided:
-  - Create PydanticAI `pydantic_ai.mcp.MCPServer` instances from them using `llm_utils.mcp.get_mcp_server`
-  - Pass the PydanticAI versions into the Agent constructor (e.g. `Agent(model, mcp_servers=mcp_servers, output_type=output_type)`)
-- If `mcp_servers` are not provided, pass an empty list to the Agent constructor
+- Pass provided `mcp_servers` (or empty list) to the Agent constructor (e.g. `Agent(model, mcp_servers=mcp_servers, output_type=output_type)`)
 - Implement fully asynchronous execution:
   - Make `generate` an async function (`async def generate`)
   - Use `await agent.run(prompt)` method of the Agent to make requests
@@ -45,7 +42,6 @@ The LLM component provides a unified interface for interacting with various larg
 
 - **Azure OpenAI**: Uses `get_azure_openai_model` for Azure OpenAI model initialization
 - **Logger**: Uses the logger for logging LLM calls
-- **Models**: Uses `MCPServerConfig`, `MCPServerHttpConfig`, and `MCPServerStdioConfig` for MCP server configuration and transport
 - **MCP**: Integrates remote MCP tools when `mcp_servers` are provided (uses `pydantic_ai.mcp`)
 
 ### External Libraries

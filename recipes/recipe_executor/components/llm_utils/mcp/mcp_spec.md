@@ -2,28 +2,30 @@
 
 ## Purpose
 
-The MCP utility provides a minimal, low‑level interface for creating PydanticAI `MCPServer` instances.
+The MCP utilities provide minimal, low‑level utilities for interacting with MCP servers.
 
 ## Core Requirements
 
-- Provide a utilty method to create a PydanticAI `MCPServer` instance from a provided `MCPServerConfig`.
+- Provide a utilty method to create a PydanticAI `MCPServer` instance from a configuration object.
 
 ## Implementation Considerations
 
-- Use `MCPServerHTTP` and `MCPServerStdio` for HTTP and stdio transports, respectively
-- Validate the configuration and raise `ValueError` if invalid
-- Always return a PydanticAI `MCPServer` instance
+- For the `get_mcp_server` function:
+  - Accept a logger and a configuration object.
+  - Create an `MCPServer` instance based on the provided configuration, inferring the type of server (HTTP or stdio) from the configuration.
+  - Only use the values that are necessary for the MCP server, ignore the rest.
+  - Validate the configuration and raise `ValueError` if invalid.
+  - Always return a PydanticAI `MCPServer` instance.
 
 ## Logging
 
-- Debug: Log the configuration values (masking sensitive information).
-- Info: Log the transport type and server URL.
+- Debug: Log the configuration values (masking sensitive information such as keys, secrets, etc.).
+- Info: For `get_mcp_server`, log the server type (HTTP or stdio) and relevant identifying information (e.g., URL, command/arg).
 
 ## Component Dependencies
 
 ### Internal Components
 
-- **Models**: Uses `MCPServerHttpConfig` and `MCPServerStdioConfig` for configuration, which both satisfy the `MCPServerConfig` union type
 - **Logger**: Uses the logger for logging LLM calls
 
 ### External Libraries

@@ -4,7 +4,7 @@
 
 ```python
 from recipe_executor.llm_utils.llm import LLM
-from recipe_executor.models import MCPServerConfig
+from recipe_executor.llm_utils.mcp import create_mcp_server_config
 ```
 
 ## Basic Usage
@@ -17,7 +17,7 @@ class LLM:
             self,
             logger: logging.Logger,
             model: str = "openai/gpt-4o",
-            mcp_servers: Optional[List[MCPServerConfig]] = None,
+            mcp_servers: Optional[List[MCPServer]] = None,
         ):
         """
         Initialize the LLM component.
@@ -25,7 +25,7 @@ class LLM:
             logger (logging.Logger): Logger for logging messages.
             model (str): Model identifier in the format 'provider/model_name' (or 'provider/model_name/deployment_name').
                 Default is "openai/gpt-4o".
-            mcp_servers Optional[List[MCPServerConfig]]: List of MCP server configs for access to tools.
+            mcp_servers Optional[List[MCPServer]]: List of MCP servers for access to tools.
         """
         self.model = model
         self.logger = logger
@@ -35,7 +35,7 @@ class LLM:
         prompt: str,
         model: Optional[str] = None,
         output_type: Type[Union[str, BaseModel]] = str,
-        mcp_servers: Optional[List[MCPServerConfig]] = None
+        mcp_servers: Optional[List[MCPServer]] = None
     ) -> Union[str, BaseModel]:
         """
         Generate an output from the LLM based on the provided prompt.
@@ -47,7 +47,7 @@ class LLM:
             output_type (Type[Union[str, BaseModel]]): The requested type for the LLM output.
                 - str: Plain text output (default).
                 - BaseModel: Structured output based on the provided JSON schema.
-            mcp_servers Optional[List[MCPServerConfig]]: List of MCP server configs for access to tools.
+            mcp_servers Optional[List[MCPServer]]: List of MCP servers for access to tools.
                 If not provided, the default set during initialization will be used.
 
         Returns:
@@ -66,13 +66,18 @@ class LLM:
 Usage example:
 
 ````python
-from recipe_executor.models import MCPServerHttpConfig
+from recipe_executor.llm_utils.mcp import get_mcp_server
 
 llm = LLM(logger=logger)
 # With optional MCP integration:
-weather_mcp_server = MCPServerHttpConfig(
-    name="my_weather_mcp_server",
-    url="http://localhost:3001/sse"
+weather_mcp_server = get_mcp_server(
+    logger=logger,
+    config={
+        "url": "http://localhost:3001/sse",
+        "headers": {
+            "Authorization": "{{token}}"
+        },
+    }
 )
 llm_mcp = LLM(logger=logger, mcp_servers=[weather_mcp_server])
 

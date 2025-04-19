@@ -21,13 +21,13 @@
       "config": {
         "prompt": "Analyze all processed components to determine which need human review:\n\n{{processed_components}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "component_status"
+        "output_key": "component_status"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "component_status",
+        "files_key": "component_status",
         "root": "{{output_dir}}/evaluation"
       }
     },
@@ -36,13 +36,13 @@
       "config": {
         "prompt": "For all components ready for generation, analyze dependencies and determine generation order:\n\n{{component_status}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "generation_order"
+        "output_key": "generation_order"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "generation_order",
+        "files_key": "generation_order",
         "root": "{{output_dir}}/evaluation"
       }
     }

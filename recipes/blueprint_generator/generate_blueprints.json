@@ -21,13 +21,13 @@
       "config": {
         "prompt": "Create a summary report of all generated blueprints:\n\n{{blueprint_results}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "blueprint_summary"
+        "output_key": "blueprint_summary"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "blueprint_summary",
+        "files_key": "blueprint_summary",
         "root": "{{output_dir}}/reports"
       }
     }

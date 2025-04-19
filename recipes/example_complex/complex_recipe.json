@@ -4,14 +4,14 @@
       "type": "read_files",
       "config": {
         "path": "recipes/example_complex/specs/main_spec.txt",
-        "artifact": "main_spec"
+        "contents_key": "main_spec"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "recipes/example_complex/specs/auxiliary_spec.txt",
-        "artifact": "aux_spec"
+        "contents_key": "aux_spec"
       }
     },
     {
@@ -19,13 +19,13 @@
       "config": {
         "prompt": "Using the following main specification:\n\n{{main_spec}}\n\nand the auxiliary details:\n\n{{aux_spec}}\n\nGenerate a comprehensive Python module that contains a main function printing 'Hello from Main!' and an auxiliary function returning a greeting.",
         "model": "{{model|default:'openai/o3-mini'}}",
-        "artifact": "generated_module"
+        "output_key": "generated_module"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "generated_module",
+        "files_key": "generated_module",
         "root": "output/main_module"
       }
     },

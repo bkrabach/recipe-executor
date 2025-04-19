@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "recipes/example_simple/specs/sample_spec.txt",
-        "artifact": "spec_text"
+        "contents_key": "spec_text"
       }
     },
     {
@@ -12,13 +12,13 @@
       "config": {
         "prompt": "Using the following specification, generate a Python script:\n\n{{spec_text}}",
         "model": "{{model|default:'openai/o3-mini'}}",
-        "artifact": "generated_files"
+        "output_key": "generated_files"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "generated_files",
+        "files_key": "generated_files",
         "root": "output"
       }
     }

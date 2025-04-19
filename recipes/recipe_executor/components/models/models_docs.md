@@ -5,7 +5,6 @@
 ```python
 from recipe_executor.models import (
     FileSpec,
-    MCPServerConfig,
     RecipeStep,
     Recipe
 )
@@ -41,59 +40,6 @@ file = FileSpec(
 # Access properties
 print(file.path)      # src/utils.py
 print(file.content)   # def hello_world():...
-```
-
-## LLM Models
-
-### MCPServerConfig
-
-Represents the configuration for an MCP server, and is a type alias for `MCPServerHttpConfig` or `MCPServerStdioConfig`:
-
-```python
-MCPServerConfig = Union[MCPServerHttpConfig, MCPServerStdioConfig]
-```
-
-### MCPServerHttpConfig
-
-Represents the HTTP configuration for an MCP server:
-
-```python
-class MCPServerHttpConfig(BaseModel):
-    """Configuration for an MCP server HTTP client.
-
-    Attributes:
-        name: The name of the MCP server.
-        url: The URL of the MCP server.
-        headers: Optional headers for the HTTP request.
-    """
-
-    name: str
-    url: str
-    headers: Optional[Dict[str, Any]] = None
-```
-
-### MCPServerStdioConfig
-
-Represents the standard input/output configuration for an MCP server:
-
-```python
-class MCPServerStdioConfig(BaseModel):
-    """Configuration for an MCP server STDIO client.
-
-    Attributes:
-
-        name: The name of the MCP server.
-        command: The command to run the MCP server.
-        args: A list of arguments for the command.
-        env: Optional environment variables for the command.
-        cwd: Optional working directory for the command.
-    """
-
-    name: str
-    command: str
-    args: List[str]
-    env: Optional[Dict[str, str]] = None
-    cwd: Optional[str | Path] = None
 ```
 
 ## Recipe Models
@@ -143,7 +89,7 @@ recipe = Recipe(
             config={"path": "specs/component_spec.md", "content_key": "spec"}
         ),
         RecipeStep(
-            type="generate_with_llm",
+            type="llm_generate",
             config={
                 "prompt": "Generate code for: {{spec}}",
                 "model": "{{model|default:'openai/o3-mini'}}",
@@ -157,6 +103,27 @@ recipe = Recipe(
         )
     ]
 )
+```
+
+## Instantiation from JSON
+
+Models can be instantiated from JSON strings or dictionaries:
+
+```python
+# From JSON string
+json_data = '{"path": "src/utils.py", "content": "def hello_world():\\n    print(\'Hello, world!\')"}'
+file = FileSpec.model_validate_json(json_data)
+print(file.path)      # src/utils.py
+print(file.content)   # def hello_world():...
+
+# From dictionary
+dict_data = {
+    "path": "src/utils.py",
+    "content": "def hello_world():\n    print('Hello, world!')"
+}
+file = FileSpec.model_validate(dict_data)
+print(file.path)      # src/utils.py
+print(file.content)   # def hello_world():...
 ```
 
 ## Model Validation

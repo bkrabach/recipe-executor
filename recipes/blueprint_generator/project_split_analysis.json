@@ -4,21 +4,21 @@
       "type": "read_files",
       "config": {
         "path": "{{input}}",
-        "artifact": "input_file"
+        "contents_key": "input_file"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "ai_context/MODULAR_DESIGN_PHILOSOPHY.md,ai_context/IMPLEMENTATION_PHILOSOPHY.md",
-        "artifact": "guidance_files"
+        "contents_key": "guidance_files"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "{{files|default:''}}",
-        "artifact": "additional_files",
+        "contents_key": "additional_files",
         "optional": true
       }
     },
@@ -26,7 +26,7 @@
       "type": "read_files",
       "config": {
         "path": "{{output_root|default:'output'}}/{{target_file|default:'project_component_breakdown_analysis.md'}}",
-        "artifact": "existing_analysis",
+        "contents_key": "existing_analysis",
         "optional": true
       }
     },
@@ -35,13 +35,13 @@
       "config": {
         "prompt": "Create a new project breakdown analysis based on the following content:\n\n- Project Definition:\n  <PROJECT_DEFINITION>\n  {{input_file}}\n  </PROJECT_DEFINITION>\n\n{% if additional_files != '' %}\n\n- Additional Content:\n  <ADDITIONAL_CONTENT>\n  {{additional_files}}\n  </ADDITIONAL_CONTENT>\n  {% endif %}\n\n{% if existing_analysis != '' %}\n\n- Existing Analysis (project definition has been updated, so this is for reference only):\n  <EXISTING_ANALYSIS>\n  {{existing_analysis}}\n  </EXISTING_ANALYSIS>\n  {% endif %}\n\n- Guidance Philosophies (how to make decisions):\n  <GUIDANCE_PHILOSOPHY>\n  {{guidance_files}}\n  </GUIDANCE_PHILOSOPHY>\n\nThe project breakdown analysis should be:\n\n- Based on the philosophies and such outlined in the context files.\n- A breakdown of the project into smaller, manageable components.\n- Complete, covering all required aspects of the project.\n- Modular, allowing for easy implementation and testing of each component in isolation.\n- Cohesive, ensuring that each component has a clear purpose and responsibility.\n- Loosely coupled, minimizing dependencies between components.\n- Testable, with clear guidelines for how to validate each component.\n- Documented, with clear instructions for how to use and interact with each component.\n\n**NOTE**: It is ok if there is only one component if it is a small project.\n\nFor each component, the analysis should include:\n\n- A description of the component's purpose and functionality.\n- A brief overview of why this component is \"right sized\" and does not need to be broken down further.\n- The contract for the component, including:\n  - The inputs and outputs of the component.\n  - The expected behavior of the component.\n  - Any edge cases or special considerations for the component.\n- How to test and validate the component.\n- Any dependencies or interactions with other components.\n- Any implementation details or requirements such as example code, libraries, or frameworks to use.\n\nSave this generated project breakdown analysis as {{target_file|default:'project_component_breakdown_analysis.md'}}.",
         "model": "{{model|default:'openai/gpt-4.1'}}",
-        "artifact": "analysis_result"
+        "output_key": "analysis_result"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "analysis_result",
+        "files_key": "analysis_result",
         "root": "{{output_root|default:'output'}}"
       }
     }

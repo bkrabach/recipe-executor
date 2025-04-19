@@ -1,6 +1,5 @@
 import logging
-import os
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
@@ -10,124 +9,96 @@ from recipe_executor.utils import render_template
 class ReadFilesConfig(StepConfig):
     """
     Configuration for ReadFilesStep.
-
     Fields:
-        path (Union[str, List[str]]): Path, comma-separated string, or list of paths to the file(s) to read (may be templated).
-        artifact (str): Name to store the file contents in context.
-        optional (bool): Whether to continue if a file is not found.
-        merge_mode (str): How to handle multiple files' content. Options:
-            - "concat" (default): Concatenate all files with newlines between filenames + contents
-            - "dict": Store a dictionary with filenames as keys and contents as values
+        path (Union[str, List[str]]): Path(s) to file(s) to read (can be templated, comma-separated, or list).
+        contents_key (str): Name for storing result in context.
+        optional (bool): Whether to continue if any file does not exist.
+        merge_mode (str): How to merge contents: 'concat' (default) or 'dict'.
     """
 
     path: Union[str, List[str]]
-    artifact: str
+    contents_key: str
     optional: bool = False
     merge_mode: str = "concat"
 
 
 class ReadFilesStep(BaseStep[ReadFilesConfig]):
-    def __init__(self, logger: logging.Logger, config: dict):
+    def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:
         super().__init__(logger, ReadFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        """
-        Execute the read files step.
-        Reads one or multiple files, resolves templated paths, and stores the contents in the context.
-        """
-        # Resolve path configuration from the config
-        raw_paths = self.config.path
-        resolved_paths: List[str] = []
+        # Resolve paths (as templates)
+        raw_path: Union[str, List[str]] = self.config.path
+        paths: List[str] = []
 
-        # Determine if raw_paths is a single string or list
-        if isinstance(raw_paths, str):
-            # Render the template first
-            rendered = render_template(raw_paths, context)
-            # Check if comma-separated for multiple
+        if isinstance(raw_path, str):
+            rendered: str = render_template(raw_path, context)
             if "," in rendered:
-                # Split and strip whitespace
-                resolved_paths = [p.strip() for p in rendered.split(",") if p.strip()]
+                split_paths = [p.strip() for p in rendered.split(",") if p.strip()]
+                paths = split_paths
             else:
-                resolved_paths = [rendered.strip()]
-        elif isinstance(raw_paths, list):
-            for path in raw_paths:
-                # Each path may be templated
-                rendered = render_template(path, context).strip()
-                if rendered:
-                    resolved_paths.append(rendered)
+                paths = [rendered.strip()]
+        elif isinstance(raw_path, list):
+            for p in raw_path:
+                rendered = render_template(str(p), context)
+                if "," in rendered:
+                    split_paths = [s.strip() for s in rendered.split(",") if s.strip()]
+                    paths.extend(split_paths)
+                else:
+                    paths.append(rendered.strip())
         else:
-            raise ValueError(f"Invalid type for path: {type(raw_paths)}. Must be str or List[str].")
+            raise ValueError("'path' must be a string or a list of strings")
 
-        self.logger.debug(f"Resolved file paths: {resolved_paths}")
+        # Remove empty/duplicate paths
+        seen = set()
+        deduped_paths: List[str] = []
+        for path in paths:
+            if path and path not in seen:
+                deduped_paths.append(path)
+                seen.add(path)
+        paths = deduped_paths
 
+        contents_key: str = self.config.contents_key
+        optional: bool = self.config.optional
+        merge_mode: str = self.config.merge_mode or "concat"
+
+        is_multiple: bool = len(paths) > 1
         file_contents: Dict[str, str] = {}
-        concat_contents: List[str] = []
+        missing_files: List[str] = []
 
         # Read each file
-        for path in resolved_paths:
-            self.logger.debug(f"Attempting to read file: {path}")
-            if not os.path.exists(path):
-                msg = f"File not found: {path}"
-                if self.config.optional:
-                    self.logger.warning(msg + " (optional, continuing with empty content)")
-                    if self.config.merge_mode == "dict":
-                        # Use base name as key
-                        file_contents[os.path.basename(path)] = ""
-                    # For concat mode, skip adding missing file
-                    continue
-                else:
-                    self.logger.error(msg)
-                    raise FileNotFoundError(msg)
-
+        for path in paths:
+            self.logger.debug(f"ReadFilesStep: Attempting to read file: {path}")
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
-                self.logger.info(f"Successfully read file: {path}")
-            except Exception as e:
-                msg = f"Error reading file {path}: {str(e)}"
-                self.logger.error(msg)
-                if self.config.optional:
-                    self.logger.warning(f"Continuing execution as file is optional: {path}")
-                    content = ""
-                else:
-                    raise RuntimeError(msg) from e
+                file_contents[path] = content
+                self.logger.info(f"ReadFilesStep: Successfully read file: {path}")
+            except FileNotFoundError:
+                self.logger.warning(f"ReadFilesStep: File not found: {path}")
+                missing_files.append(path)
+                if not optional:
+                    raise FileNotFoundError(f"ReadFilesStep: Required file not found: {path}")
+            except Exception as exc:
+                self.logger.error(f"ReadFilesStep: Error reading file '{path}': {exc}")
+                raise
 
-            if self.config.merge_mode == "dict":
-                # Use the base filename as key
-                file_contents[os.path.basename(path)] = content
-            else:
-                # For concat, include a header with the filename
-                header = f"----- {os.path.basename(path)} -----"
-                concat_contents.append(header)
-                concat_contents.append(content)
-
-        # Determine output based on number of files and merge mode
-        result = ""
-        if len(resolved_paths) == 1:
-            # For backwards compatibility, if single file, store its contents directly
-            if self.config.merge_mode == "dict":
-                # Even if a single file but merge_mode dict is desired
-                key = os.path.basename(resolved_paths[0])
-                result = {key: file_contents.get(key, "")}
-            else:
-                # For concat mode, if a single file, directly use its content (or empty string if missing)
-                # If the file was optional and missing, content might not be in our list
-                if concat_contents:
-                    # Remove the header if present
-                    # The expected pattern: header then content
-                    if len(concat_contents) >= 2:
-                        result = concat_contents[1]
-                    else:
-                        result = ""
-                else:
-                    result = ""
-        else:
-            # Multiple files
-            if self.config.merge_mode == "dict":
+        # Store result in context
+        if is_multiple:
+            if merge_mode == "dict":
                 result = file_contents
+            else:  # default: concat
+                concat_list: List[str] = []
+                for path in paths:
+                    if path in file_contents:
+                        concat_list.append(f"# {path}\n{file_contents[path]}")
+                result = "\n\n".join(concat_list)
+        else:
+            path = paths[0] if paths else ""
+            if path and path in file_contents:
+                result = file_contents[path]
             else:
-                result = "\n".join(concat_contents)
+                result = ""
 
-        # Store the result in the context under the specified artifact key
-        context[self.config.artifact] = result
-        self.logger.info(f"Stored file contents under context key '{self.config.artifact}'")
+        context[contents_key] = result
+        self.logger.info(f"ReadFilesStep: Stored file contents under key '{contents_key}' in context.")

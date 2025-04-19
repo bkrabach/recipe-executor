@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm.py",
-        "artifact": "existing_code"
+        "contents_key": "existing_code"
       }
     },
     {

@@ -16,10 +16,11 @@ The purpose of the Steps Base component is to provide a foundational structure f
 ## Implementation Considerations
 
 - **StepConfig (Pydantic Model)**: Define a `StepConfig` class as a subclass of `BaseModel`. This serves as a base for all configurations. By default, it has no predefined fields (each step will define its own fields by extending this model). Using Pydantic ensures that step configurations are validated and parsed (e.g., types are enforced, missing fields are caught) when constructing the step.
-- **Generic ConfigType**: Use a `TypeVar` and generic class definition (`BaseStep[ConfigType]`) so that each step class can specify what config type it expects. For instance, a `PrintStep` could be `BaseStep[PrintConfig]`. This allows the step implementation to access `self.config` with the correct type.
+- **Generic Config Type**: Use a `TypeVar` and generic class definition (`BaseStep[StepConfigType]`) so that each step class can specify what config type it expects. For instance, a `PrintStep` could be `BaseStep[PrintConfig]`. This allows the step implementation to access `self.config` with the correct type.
+  - Example: `StepConfigType = TypeVar("StepConfigType", bound=StepConfig)`.
 - **BaseStep Class**:
-  - Inherit from `Generic[ConfigType]` to support the generic config typing.
-  - Provide an `__init__` that stores the `config` (of type ConfigType) and a logger. This logger is used by steps to log their internal operations.
+  - Inherit from `Generic[StepConfigType]` to support the generic config typing.
+  - Provide an `__init__` that stores the `config` (of type StepConfigType) and a logger. This logger is used by steps to log their internal operations.
   - The `__init__` should log a debug message indicating the class name and config with which the step was initialized. This is useful for tracing execution in logs.
   - Declare a `async execute(context: ContextProtocol) -> None` method. This is the core contract: every step must implement this method as an async method.
   - `BaseStep` should not provide any implementation (aside from possibly a placeholder raise of NotImplementedError, which is a safeguard).

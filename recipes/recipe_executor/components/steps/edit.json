@@ -31,6 +31,12 @@
           {
             "type": "execute_recipe",
             "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/loop/loop_edit.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
               "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_edit.json"
             }
           },

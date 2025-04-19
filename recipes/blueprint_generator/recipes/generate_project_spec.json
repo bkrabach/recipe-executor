@@ -4,7 +4,7 @@
       "type": "read_files",
       "config": {
         "path": "{{project_idea}}",
-        "artifact": "project_idea_content",
+        "contents_key": "project_idea_content",
         "optional": false
       }
     },
@@ -12,7 +12,7 @@
       "type": "read_files",
       "config": {
         "path": "{{context_files}}",
-        "artifact": "context_files_content",
+        "contents_key": "context_files_content",
         "optional": true
       }
     },
@@ -20,7 +20,7 @@
       "type": "read_files",
       "config": {
         "path": "{{reference_files}}",
-        "artifact": "reference_files_content",
+        "contents_key": "reference_files_content",
         "optional": true
       }
     }

@@ -4,14 +4,14 @@
       "type": "read_files",
       "config": {
         "path": "{{input}}",
-        "artifact": "recipe_idea"
+        "contents_key": "recipe_idea"
       }
     },
     {
       "type": "read_files",
       "config": {
         "path": "ai_context/generated/recipe_executor_code_files.md,ai_context/generated/recipe_executor_recipe_files.md",
-        "artifact": "context_files",
+        "contents_key": "context_files",
         "merge_mode": "concat"
       }
     },
@@ -19,7 +19,7 @@
       "type": "read_files",
       "config": {
         "path": "{{files}}",
-        "artifact": "additional_files",
+        "contents_key": "additional_files",
         "optional": true,
         "merge_mode": "concat"
       }
@@ -29,13 +29,13 @@
       "config": {
         "prompt": "Create a new JSON recipe file for use with recipe executor based on the following content:\n\n- Recipe Idea: {{recipe_idea}}\n- Context Files:\n  <CONTEXT_FILES>{{context_files}}</CONTEXT_FILES>\n  {% if additional_files %}\n- Additional Files:\n  <ADDITIONAL_FILES>{{additional_files}}</ADDITIONAL_FILES>\n  {% endif %}\n\nSave the generated recipe file as {{target_file | default:'generated_recipe.json'}} unless a different name is specified in the recipe idea.",
         "model": "{{model | default:'openai/o3-mini'}}",
-        "artifact": "generated_recipe"
+        "output_key": "generated_recipe"
       }
     },
     {
       "type": "write_files",
       "config": {
-        "artifact": "generated_recipe",
+        "files_key": "generated_recipe",
         "root": "{{output_root | default:'output'}}"
       }
     }
