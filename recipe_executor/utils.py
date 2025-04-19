@@ -1,14 +1,7 @@
-"""
-Utils component for template rendering in recipes.
-
-Provides a stateless function to render Liquid templates against ContextProtocol instances.
-"""
-
 from typing import Any
-
-import liquid
-
 from recipe_executor.protocols import ContextProtocol
+from liquid import Template
+from liquid.exceptions import LiquidError
 
 
 def render_template(text: str, context: ContextProtocol) -> str:
@@ -26,27 +19,13 @@ def render_template(text: str, context: ContextProtocol) -> str:
     Raises:
         ValueError: If there is an error during template rendering.
     """
-    # Ensure context provides dict of values for template (keys as strings; values coerced to str)
-    context_dict: dict[str, Any] = context.dict()
-    str_context: dict[str, Any] = {k: _stringify_value(v) for k, v in context_dict.items()}
+    data: dict[str, Any] = context.dict()
+    # Convert all context values to strings
+    string_context: dict[str, str] = {k: str(v) if v is not None else "" for k, v in data.items()}
     try:
-        template = liquid.Template(text)
-        rendered = template.render(**str_context)
-        return rendered
+        template = Template(text)
+        return template.render(**string_context)
+    except LiquidError as exc:
+        raise ValueError(f"Liquid template rendering error: {exc}\nTemplate: {text}\nContext: {string_context}") from exc
     except Exception as exc:
-        raise ValueError(f"Template rendering failed: {exc}\nTemplate: {text}") from exc
-
-
-def _stringify_value(value: Any) -> Any:
-    """
-    Recursively convert basic types and containers to strings, leaves mapping/list structure for Liquid.
-    """
-    if isinstance(value, dict):
-        return {k: _stringify_value(v) for k, v in value.items()}
-    elif isinstance(value, list):
-        return [_stringify_value(v) for v in value]
-    elif isinstance(value, tuple):
-        return tuple(_stringify_value(v) for v in value)
-    elif value is None:
-        return ""
-    return str(value)
+        raise ValueError(f"Template rendering error: {exc}\nTemplate: {text}\nContext: {string_context}") from exc

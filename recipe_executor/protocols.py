@@ -2,65 +2,85 @@
 Protocols Component
 -------------------
 
-Defines the core interface protocols for the Recipe Executor system.
-Provides standard contracts for Context, Step, and Executor components.
-Designed for maximal decoupling and minimalist, structural subtyping via Python's typing.Protocol.
+Defines protocols (interface contracts) for core components of the Recipe Executor system. These
+enable loose coupling and prevent circular import dependencies. For usage and rationale, see
+`protocols_docs.md`.
 """
-
-from __future__ import annotations
-
-from pathlib import Path
 from typing import (
+    Protocol,
+    runtime_checkable,
     Any,
     Dict,
     Iterator,
-    Protocol,
     Union,
-    runtime_checkable,
 )
+import logging
+from pathlib import Path
 
-# Reference to Recipe type as a forward declaration (not imported to avoid dependency cycles)
-Recipe = Any  # Typically a class or struct defined elsewhere
+# We import Recipe only for type hints; to avoid cyclical import issues,
+# it is safe and idiomatic to import in function signatures if needed.
+from recipe_executor.models import Recipe
 
 
 @runtime_checkable
 class ContextProtocol(Protocol):
-    def __getitem__(self, key: str) -> Any: ...
+    def __getitem__(self, key: str) -> Any:
+        ...
 
-    def __setitem__(self, key: str, value: Any) -> None: ...
+    def __setitem__(self, key: str, value: Any) -> None:
+        ...
 
-    def __delitem__(self, key: str) -> None: ...
+    def __delitem__(self, key: str) -> None:
+        ...
 
-    def __contains__(self, key: str) -> bool: ...
+    def __contains__(self, key: str) -> bool:
+        ...
 
-    def __iter__(self) -> Iterator[str]: ...
+    def __iter__(self) -> Iterator[str]:
+        ...
 
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        ...
 
-    def get(self, key: str, default: Any = None) -> Any: ...
+    def get(self, key: str, default: Any = None) -> Any:
+        ...
 
-    def clone(self) -> "ContextProtocol": ...
+    def clone(self) -> "ContextProtocol":
+        ...
 
-    def dict(self) -> Dict[str, Any]: ...
+    def dict(self) -> Dict[str, Any]:
+        ...
 
-    def json(self) -> str: ...
+    def json(self) -> str:
+        ...
 
-    def keys(self) -> Iterator[str]: ...
+    def keys(self) -> Iterator[str]:
+        ...
 
-    def get_config(self) -> Dict[str, Any]: ...
+    def get_config(self) -> Dict[str, Any]:
+        ...
 
-    def set_config(self, config: Dict[str, Any]) -> None: ...
+    def set_config(self, config: Dict[str, Any]) -> None:
+        ...
 
 
 @runtime_checkable
 class StepProtocol(Protocol):
-    async def execute(self, context: ContextProtocol) -> None: ...
+    def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:
+        ...
+
+    async def execute(self, context: ContextProtocol) -> None:
+        ...
 
 
 @runtime_checkable
 class ExecutorProtocol(Protocol):
+    def __init__(self, logger: logging.Logger) -> None:
+        ...
+
     async def execute(
         self,
         recipe: Union[str, Path, Recipe],
         context: ContextProtocol,
-    ) -> None: ...
+    ) -> None:
+        ...
