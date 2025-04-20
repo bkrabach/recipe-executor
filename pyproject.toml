@@ -23,14 +23,19 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.0",
     "ruff>=0.11.2",
+    "python-code-tools>=0.1.0",
 ]
 
 [tool.uv]
 package = true
 
+[tool.uv.sources]
+python-code-tools = { path = "../mcp-servers/python-code-tools", editable = true }
+
 [project.scripts]
 recipe-executor = "recipe_executor.main:main"
 recipe-tool = "recipe_tool:main"
+python-code-tools = "python_code_tools.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -336,6 +336,7 @@ recipe_dict = {
             "type": "llm_generate",
             "prompt": "Write a poem about the sea",
             "model": "openai/gpt-4o",
+            "output_format": "files",
             "output_key": "poem"
         }
     ]
@@ -971,14 +972,14 @@ except Exception as e:
     {
       "type": "read_files",
       "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm.py",
+        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/llm.py",
         "contents_key": "existing_code"
       }
     },
     {
       "type": "execute_recipe",
       "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm/llm_create.json",
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_create.json",
         "context_overrides": {
           "existing_code": "{{existing_code}}"
         }
@@ -1038,7 +1039,7 @@ The LLM component provides a unified interface for interacting with various larg
 ### External Libraries
 
 - **pydantic-ai**: Uses PydanticAI for model initialization, Agent-based request handling, and structured-output processing
-- **pydantic-ai.mcp**: Provides `MCPServerHTTP` and `MCPServerStdio` classes for MCP server transports
+- **pydantic-ai.mcp**: Provides `MCPServer`, `MCPServerHTTP` and `MCPServerStdio` classes for MCP server transports
 
 ### Configuration Dependencies
 
@@ -1115,7 +1116,8 @@ from pydantic_ai import Agent
 agent: Agent[None, Union[str, BaseModel]] = Agent(model=ollama_model, output_type=str, mcp_servers=mcp_servers)
 
 # Call the agent with a prompt
-result = await agent.run("What is the capital of France?")
+async with agent.run_mcp_servers():
+  result = await agent.run("What is the capital of France?")
 
 # Process the result
 print(result.data)  # This will print the structured output
@@ -2923,7 +2925,7 @@ class LLMGenerateConfig(StepConfig):
 
     prompt: str
     model: str = "openai/gpt-4o"
-    mcp_servers: Optional[List[MCPServer]] = None
+    mcp_servers: Optional[List[Dict[str, Any]]] = None
     output_format: "text" | "files" | jsonschema.Schema = "text"
     output_key: str = "llm_output"
 ```
@@ -3029,12 +3031,44 @@ The MCP server configuration can be specified in two formats:
   - `url`: The URL of the MCP server.
   - `headers`: Optional dictionary of headers to include in the requests.
 
+Example:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "url": "http://localhost:3001/sse",
+      "headers": {
+        "Authorization": "{{token}}"
+      }
+    }
+  ]
+}
+```
+
 - **STDIO**: For STDIO-based MCP servers, provide:
 
   - `command`: The command to run the MCP server.
   - `args`: List of arguments for the command.
   - `env`: Optional dictionary of environment variables for the command.
   - `cwd`: Optional working directory for the command.
+
+Example:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "command": "python",
+      "args": ["-m", "/path/to/mcp_server.py"],
+      "env": {
+        "MCP_TOKEN": "{{token}}"
+      },
+      "cwd": "/path/to/mcp"
+    }
+  ]
+}
+```
 
 ## LLM Output Formats
 
@@ -3185,7 +3219,6 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - Support configurable model selection
 - Support MCP server configuration for tool access
 - Support multiple output formats (text, files, JSON)
-- For JSON output, validate against a provided schema
 - Call LLMs to generate content
 - Store generated results in the context with dynamic key support
 - Include appropriate logging for LLM operations
@@ -3195,18 +3228,19 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - Use `render_template` for templating prompts, model identifiers, mcp server configs, and output key
 - Convert any MCP Server configurations to `MCPServer` instances (via `get_mcp_server`) to pass as `mcp_servers` to the LLM component
 - If `output_format` is an object (JSON schema):
-  - Validate via `jsonschema.validate` against the provided schema
-  - Pass the JSON schema to the LLM call as the `output_type` parameter
+  - Use Pydantic to create a `BaseModel` for the schema
+  - Pass the dynamic model to the LLM call as the `output_type` parameter
 - If `output_format` is "files":
-  - Use `FileSpecCollection` model to pass the schema to the LLM call:
+  - Pass the following `FileSpecCollection` model to the LLM call:
     ```python
     class FileSpecCollection(BaseModel):
         files: List[FileSpec]
     ```
-  - Store the `files` value (not the entire `FileSpecCollection`) in the context
+  - After receiving the results, store the `files` value (not the entire `FileSpecCollection`) in the context
 - Instantiate the `LLM` component with optional MCP servers from context config:
   ```python
-  mcp_servers = context.get_config().get("mcp_servers", [])
+  mcp_server_configs = context.get_config().get("mcp_servers", [])
+  mcp_servers = [get_mcp_server(logger=self.logger, config=mcp_server_config) for mcp_server_config in mcp_server_configs]
   llm = LLM(logger, model=config.model, mcp_servers=mcp_servers)
   ```
 - Use `await llm.generate(prompt, output_type=...)` to perform the generation call
@@ -3230,7 +3264,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 
 ### External Libraries
 
-- **jsonschema** – (Installed) For JSON schema validation
+- **Pydantic**: For BaseModel creation
 
 ### Configuration Dependencies
 
@@ -3370,6 +3404,7 @@ The LoopStep allows you to run multiple steps for each item in a collection. Sub
             "config": {
               "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
               "model": "{{model}}",
+              "output_format": "files",
               "output_key": "component_questions"
             }
           },
@@ -3423,6 +3458,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "component_questions"
         }
       },
@@ -3460,6 +3496,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Analyze this code file:\n{{file_content}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "file_analysis"
         }
       }
@@ -3483,6 +3520,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "transformed_item"
         }
       }
@@ -4618,7 +4656,7 @@ None
 ## Output Files
 
 - `steps/registry.py`
-- `steps/__init__.py` (details below)
+- `steps/__init__.py` (details below, write this file in addition to the registry.py file)
 
 Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
 
@@ -4644,11 +4682,6 @@ STEP_REGISTRY.update({
     "write_files": WriteFilesStep,
 })
 ```
-
-## Future Considerations
-
-- Dynamic loading of external step implementations
-- Step metadata and documentation
 
 
 === File: recipes/recipe_executor/components/steps/write_files/write_files_create.json ===
@@ -5242,17 +5275,18 @@ None
     {
       "type": "execute_recipe",
       "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/create.json"
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/edit.json"
       }
     },
     {
       "type": "execute_recipe",
       "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/create.json"
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/edit.json"
       }
     }
   ]
 }
+
 
 === File: recipes/recipe_executor/fast_create.json ===
 {
@@ -5535,6 +5569,7 @@ None
       "config": {
         "prompt": "You are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n{{spec}}\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}Ensure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\nGenerate the appropriate file(s): {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, etc.\n\n",
         "model": "{{model|default:'openai/gpt-4.1'}}",
+        "output_format": "files",
         "output_key": "generated_files"
       }
     },

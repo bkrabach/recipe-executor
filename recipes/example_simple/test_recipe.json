@@ -12,6 +12,7 @@
       "config": {
         "prompt": "Using the following specification, generate a Python script:\n\n{{spec_text}}",
         "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": "files",
         "output_key": "generated_files"
       }
     },

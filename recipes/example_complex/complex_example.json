@@ -1,0 +1,75 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "ai_context/PYDANTIC_AI_DOCS.md",
+        "contents_key": "pydantic_ai_docs"
+      }
+    },
+    {
+      "type": "parallel",
+      "config": {
+        "substeps": [
+          {
+            "type": "llm_generate",
+            "config": {
+              "prompt": "You are an expert Python developer. Using the PydanticAI documentation below:\n\n{{pydantic_ai_docs}}\n\nGenerate a module named 'chat_client.py' that implements a simple chat client which connects to an LLM for conversation. The code should be well-structured and include error handling.",
+              "model": "openai/gpt-4o",
+              "mcp_servers": [
+                { "command": "python-code-tools", "args": ["stdio"] }
+              ],
+              "output_format": "files",
+              "output_key": "chat_client_file"
+            }
+          },
+          {
+            "type": "llm_generate",
+            "config": {
+              "prompt": "You are an expert Python developer. Using the PydanticAI documentation below:\n\n{{pydantic_ai_docs}}\n\nGenerate a module named 'chat_server.py' that implements a simple chat server which interacts with an LLM for handling conversations. Ensure the code structure is clear. IMPORTANT: Intentionally include a couple of deliberate syntax errors in the code to test error detection (for example, missing colon, unbalanced parentheses).",
+              "model": "openai/gpt-4o",
+              "mcp_servers": [
+                { "command": "python-code-tools", "args": ["stdio"] }
+              ],
+              "output_format": "files",
+              "output_key": "chat_server_file"
+            }
+          },
+          {
+            "type": "llm_generate",
+            "config": {
+              "prompt": "You are an expert Python developer. Using the PydanticAI documentation below:\n\n{{pydantic_ai_docs}}\n\nGenerate a module named 'linting_tool.py' that creates a function to lint Python code. The module should call an external linting tool, capture its output (lint report), and return both the possibly corrected code files and the lint report. Make sure the output is structured as a list of file specifications.\n",
+              "model": "openai/gpt-4o",
+              "mcp_servers": [
+                { "command": "python-code-tools", "args": ["stdio"] }
+              ],
+              "output_format": "files",
+              "output_key": "linting_result"
+            }
+          }
+        ],
+        "max_concurrency": 3,
+        "delay": 0
+      }
+    },
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "You are given three JSON arrays representing file specifications from previous steps:\n\nChat Client Files: {{chat_client_file}}\n\nChat Server Files: {{chat_server_file}}\n\nLinting Result Files: {{linting_result}}\n\nCombine these arrays into a single JSON array of file specifications without modifying the content of the files. Return the result as a JSON array.",
+        "model": "openai/gpt-4o",
+        "mcp_servers": [
+          { "command": "python-code-tools", "args": ["stdio"] }
+        ],
+        "output_format": "files",
+        "output_key": "final_files"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "files_key": "final_files",
+        "root": "output/complex_example"
+      }
+    }
+  ]
+}

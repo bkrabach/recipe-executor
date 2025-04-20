@@ -21,6 +21,7 @@
       "config": {
         "prompt": "Create a summary report of all generated blueprints:\n\n{{blueprint_results}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
+        "output_format": "files",
         "output_key": "blueprint_summary"
       }
     },

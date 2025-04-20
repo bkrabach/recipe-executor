@@ -1,1 +1,0 @@
-This is the primary specification for the main module. It should describe the core functionality, including a function that prints "Hello from Main!".

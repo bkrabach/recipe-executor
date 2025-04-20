@@ -28,7 +28,7 @@ class LLMGenerateConfig(StepConfig):
 
     prompt: str
     model: str = "openai/gpt-4o"
-    mcp_servers: Optional[List[MCPServer]] = None
+    mcp_servers: Optional[List[Dict[str, Any]]] = None
     output_format: "text" | "files" | jsonschema.Schema = "text"
     output_key: str = "llm_output"
 ```
@@ -134,12 +134,44 @@ The MCP server configuration can be specified in two formats:
   - `url`: The URL of the MCP server.
   - `headers`: Optional dictionary of headers to include in the requests.
 
+Example:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "url": "http://localhost:3001/sse",
+      "headers": {
+        "Authorization": "{{token}}"
+      }
+    }
+  ]
+}
+```
+
 - **STDIO**: For STDIO-based MCP servers, provide:
 
   - `command`: The command to run the MCP server.
   - `args`: List of arguments for the command.
   - `env`: Optional dictionary of environment variables for the command.
   - `cwd`: Optional working directory for the command.
+
+Example:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "command": "python",
+      "args": ["-m", "/path/to/mcp_server.py"],
+      "env": {
+        "MCP_TOKEN": "{{token}}"
+      },
+      "cwd": "/path/to/mcp"
+    }
+  ]
+}
+```
 
 ## LLM Output Formats
 

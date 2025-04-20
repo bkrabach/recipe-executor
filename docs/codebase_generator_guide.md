@@ -57,6 +57,7 @@ The core recipe for generating code is defined in `recipes/codebase_generator/ge
       "config": {
         "prompt": "You are an expert developer...",
         "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": "files",
         "output_key": "generated_files"
       }
     },

@@ -12,6 +12,7 @@
       "config": {
         "prompt": "Extract the components array from this manifest:\n\n{{components_manifest}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
+        "output_format": "files",
         "output_key": "components_list"
       }
     },
@@ -29,6 +30,7 @@
       "config": {
         "prompt": "Based on these analysis results, create two lists:\n1. components_to_split - components that need further splitting\n2. final_components - components that don't need further splitting\n\n{{component_analyses}}",
         "model": "{{model|default:'openai/gpt-4.1'}}",
+        "output_format": "files",
         "output_key": "component_lists"
       }
     },

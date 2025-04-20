@@ -40,7 +40,7 @@ None
 ## Output Files
 
 - `steps/registry.py`
-- `steps/__init__.py` (details below)
+- `steps/__init__.py` (details below, write this file in addition to the registry.py file)
 
 Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
 
@@ -66,8 +66,3 @@ STEP_REGISTRY.update({
     "write_files": WriteFilesStep,
 })
 ```
-
-## Future Considerations
-
-- Dynamic loading of external step implementations
-- Step metadata and documentation

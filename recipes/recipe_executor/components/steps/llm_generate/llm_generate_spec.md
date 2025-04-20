@@ -10,7 +10,6 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - Support configurable model selection
 - Support MCP server configuration for tool access
 - Support multiple output formats (text, files, JSON)
-- For JSON output, validate against a provided schema
 - Call LLMs to generate content
 - Store generated results in the context with dynamic key support
 - Include appropriate logging for LLM operations
@@ -20,18 +19,19 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - Use `render_template` for templating prompts, model identifiers, mcp server configs, and output key
 - Convert any MCP Server configurations to `MCPServer` instances (via `get_mcp_server`) to pass as `mcp_servers` to the LLM component
 - If `output_format` is an object (JSON schema):
-  - Validate via `jsonschema.validate` against the provided schema
-  - Pass the JSON schema to the LLM call as the `output_type` parameter
+  - Use Pydantic to create a `BaseModel` for the schema
+  - Pass the dynamic model to the LLM call as the `output_type` parameter
 - If `output_format` is "files":
-  - Use `FileSpecCollection` model to pass the schema to the LLM call:
+  - Pass the following `FileSpecCollection` model to the LLM call:
     ```python
     class FileSpecCollection(BaseModel):
         files: List[FileSpec]
     ```
-  - Store the `files` value (not the entire `FileSpecCollection`) in the context
+  - After receiving the results, store the `files` value (not the entire `FileSpecCollection`) in the context
 - Instantiate the `LLM` component with optional MCP servers from context config:
   ```python
-  mcp_servers = context.get_config().get("mcp_servers", [])
+  mcp_server_configs = context.get_config().get("mcp_servers", [])
+  mcp_servers = [get_mcp_server(logger=self.logger, config=mcp_server_config) for mcp_server_config in mcp_server_configs]
   llm = LLM(logger, model=config.model, mcp_servers=mcp_servers)
   ```
 - Use `await llm.generate(prompt, output_type=...)` to perform the generation call
@@ -55,7 +55,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 
 ### External Libraries
 
-- **jsonschema** – (Installed) For JSON schema validation
+- **Pydantic**: For BaseModel creation
 
 ### Configuration Dependencies
 

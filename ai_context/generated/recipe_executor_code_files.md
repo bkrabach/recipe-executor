@@ -235,14 +235,19 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.0",
     "ruff>=0.11.2",
+    "python-code-tools>=0.1.0",
 ]
 
 [tool.uv]
 package = true
 
+[tool.uv.sources]
+python-code-tools = { path = "../mcp-servers/python-code-tools", editable = true }
+
 [project.scripts]
 recipe-executor = "recipe_executor.main:main"
 recipe-tool = "recipe_tool:main"
+python-code-tools = "python_code_tools.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -539,7 +544,7 @@ def get_azure_openai_model(
 import logging
 import os
 import time
-from typing import Any, List, Optional, Type, Union
+from typing import List, Optional, Type, Union
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -548,62 +553,40 @@ from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from recipe_executor.llm_utils.azure_openai import get_azure_openai_model
+from recipe_executor.llm_utils.mcp import MCPServer
 
 
-# MCP integration
-def _get_default_ollama_url() -> str:
-    return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-
-
-def get_model(model_id: Optional[str], logger: Optional[logging.Logger] = None) -> Any:
+def get_model(model_id: str, logger: logging.Logger) -> Union[OpenAIModel, AnthropicModel]:
     """
     Initialize an LLM model based on a standardized model_id string.
-    Format: 'provider/model_name' or 'provider/model_name/deployment_name'.
+    Expected format: 'provider/model_name' or 'provider/model_name/deployment_name'.
     """
-    if not model_id or not isinstance(model_id, str):
-        model_id = os.getenv("DEFAULT_MODEL", "openai/gpt-4o")
-
-    if "/" not in model_id:
-        raise ValueError(f"Invalid model_id format: '{model_id}'. Expected 'provider/model_name'.")
-
-    parts = model_id.split("/")
-    provider = parts[0].strip().lower()
-    if provider == "openai":
-        if len(parts) != 2:
-            raise ValueError(f"Invalid openai model_id: '{model_id}'. Format is 'openai/model_name'.")
-        model_name = parts[1]
-        return OpenAIModel(model_name)
-    elif provider == "azure":
-        if len(parts) == 2:
-            model_name = parts[1]
-            deployment_name = None
-        elif len(parts) == 3:
-            model_name, deployment_name = parts[1], parts[2]
-        else:
-            raise ValueError(
-                f"Invalid azure model_id: '{model_id}'. Format is 'azure/model_name' or 'azure/model_name/deployment_name'."
-            )
-        if logger is None:
-            import logging as _logging
-
-            logger = _logging.getLogger("llm")
-        return get_azure_openai_model(logger=logger, model_name=model_name, deployment_name=deployment_name)
-    elif provider == "anthropic":
-        if len(parts) != 2:
-            raise ValueError(f"Invalid anthropic model_id: '{model_id}'. Format is 'anthropic/model_name'.")
-        model_name = parts[1]
-        return AnthropicModel(model_name)
-    elif provider == "ollama":
-        if len(parts) != 2:
-            raise ValueError(f"Invalid ollama model_id: '{model_id}'. Format is 'ollama/model_name'.")
-        model_name = parts[1]
-        endpoint = _get_default_ollama_url()
-        return OpenAIModel(
-            model_name=model_name,
-            provider=OpenAIProvider(base_url=f"{endpoint}/v1"),
+    if not isinstance(model_id, str):
+        raise ValueError(
+            "model_id must be a string of format 'provider/model_name' or 'provider/model_name/deployment_name'"
         )
-    else:
-        raise ValueError(f"Unsupported provider: '{provider}'. Allowed: openai, azure, anthropic, ollama.")
+    segments = model_id.split("/")
+    if len(segments) < 2:
+        raise ValueError(
+            f"Invalid model_id: '{model_id}'. Expected format 'provider/model_name' or 'provider/model_name/deployment_name'."
+        )
+
+    provider: str = segments[0].lower()
+    model_name: str = segments[1]
+    deployment_name: Optional[str] = segments[2] if len(segments) > 2 else None
+
+    if provider == "openai":
+        return OpenAIModel(model_name=model_name)
+    if provider == "azure":
+        return get_azure_openai_model(logger=logger, model_name=model_name, deployment_name=deployment_name)
+    if provider == "anthropic":
+        return AnthropicModel(model_name=model_name)
+    if provider == "ollama":
+        ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        provider_obj: OpenAIProvider = OpenAIProvider(base_url=f"{ollama_base_url}/v1")
+        return OpenAIModel(model_name=model_name, provider=provider_obj)
+
+    raise ValueError(f"Unsupported provider: '{provider}'. Must be one of 'openai', 'azure', 'anthropic', 'ollama'.")
 
 
 class LLM:
@@ -611,66 +594,70 @@ class LLM:
         self,
         logger: logging.Logger,
         model: str = "openai/gpt-4o",
-        mcp_servers: Optional[List[Any]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
     ):
         """
         Initialize the LLM component.
         Args:
             logger (logging.Logger): Logger for logging messages.
             model (str): Model identifier.
-            mcp_servers (Optional[List[MCPServer]]): List of MCP servers.
+            mcp_servers (Optional[List[MCPServer]]): MCP servers list.
         """
         self.logger: logging.Logger = logger
         self.model: str = model
-        self.mcp_servers: Optional[List[Any]] = mcp_servers if mcp_servers is not None else []
+        self.mcp_servers: List[MCPServer] = mcp_servers or []
 
     async def generate(
         self,
         prompt: str,
         model: Optional[str] = None,
         output_type: Type[Union[str, BaseModel]] = str,
-        mcp_servers: Optional[List[Any]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
     ) -> Union[str, BaseModel]:
         """
         Generate an output from the LLM based on the provided prompt.
         """
-        # Determine model_id and mcp_servers
-        model_id: str = model if model is not None else self.model
-        servers: List[Any] = mcp_servers if mcp_servers is not None else self.mcp_servers or []
-        logger = self.logger
-        # Prepare model and agent
+        actual_model_id: str = model if model is not None else self.model
+        mcp_servers_to_use: List[MCPServer] = mcp_servers if mcp_servers is not None else self.mcp_servers
+        # Info log: provider and model name
+        provider = actual_model_id.split("/")[0] if "/" in actual_model_id else actual_model_id
+        self.logger.info(f"LLM call with provider='{provider}' model='{actual_model_id}'")
         try:
-            start_time = time.time()
-            mdl = get_model(model_id, logger=logger)
-            logger.info(f"LLM Call - provider/model: {model_id}")
-            logger.debug(
-                f"LLM request payload: prompt={repr(prompt)}, mcp_servers={[str(s) for s in servers]}, output_type={output_type}"
-            )
-            agent = Agent(
-                model=mdl,
+            model_obj = get_model(actual_model_id, self.logger)
+            agent: Agent[None, Union[str, BaseModel]] = Agent(
+                model=model_obj,
+                mcp_servers=mcp_servers_to_use,
                 output_type=output_type,
-                mcp_servers=servers,
             )
-            result = await agent.run(prompt)
-            elapsed = time.time() - start_time
-            # Try to fetch usage if possible
-            usage = None
-            tokens_used = None
+            self.logger.debug({
+                "prompt": prompt,
+                "model": actual_model_id,
+                "output_type": output_type.__name__ if hasattr(output_type, "__name__") else str(output_type),
+                "mcp_servers": [str(s) for s in mcp_servers_to_use],
+            })
+            start_time = time.monotonic()
+            async with agent.run_mcp_servers():
+                result = await agent.run(prompt)
+            elapsed = time.monotonic() - start_time
+            tokens_info = {}
             try:
-                if hasattr(result, "usage"):
-                    usage = result.usage()
-                    if usage:
-                        tokens_used = usage.total_tokens if hasattr(usage, "total_tokens") else None
+                usage = result.usage()
+                tokens_info = {
+                    "requests": getattr(usage, "requests", None),
+                    "request_tokens": getattr(usage, "request_tokens", None),
+                    "response_tokens": getattr(usage, "response_tokens", None),
+                    "total_tokens": getattr(usage, "total_tokens", None),
+                }
             except Exception:
-                tokens_used = None
-            logger.info(
-                f"LLM call finished (model: {model_id}) in {elapsed:.2f}s"
-                + (f", tokens used: {tokens_used}" if tokens_used is not None else "")
-            )
-            logger.debug(f"LLM result payload: {result}")
+                pass
+            self.logger.info({
+                "elapsed_seconds": elapsed,
+                **tokens_info,
+            })
+            self.logger.debug({"output": repr(result.output)})
             return result.output
         except Exception as exc:
-            logger.error(f"LLM call failed with error: {str(exc)}", exc_info=True)
+            self.logger.error(f"LLM call failed: {exc}", exc_info=True)
             raise
 
 
@@ -785,7 +772,7 @@ def init_logger(log_dir: str = "logs", stdio_log_level: str = "INFO") -> logging
     """
     logger_name: str = "recipe_executor"
     logger: logging.Logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Remove all previous handlers for full reset
     while logger.handlers:
@@ -1064,6 +1051,7 @@ class ExecutorProtocol(Protocol):
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.llm_generate import LLMGenerateStep
 from recipe_executor.steps.loop import LoopStep
+from recipe_executor.steps.mcp import McpStep
 from recipe_executor.steps.parallel import ParallelStep
 from recipe_executor.steps.read_files import ReadFilesStep
 from recipe_executor.steps.registry import STEP_REGISTRY
@@ -1074,6 +1062,7 @@ STEP_REGISTRY.update({
     "execute_recipe": ExecuteRecipeStep,
     "llm_generate": LLMGenerateStep,
     "loop": LoopStep,
+    "mcp": McpStep,
     "parallel": ParallelStep,
     "read_files": ReadFilesStep,
     "write_files": WriteFilesStep,
@@ -1084,6 +1073,7 @@ __all__ = [
     "ExecuteRecipeStep",
     "LLMGenerateStep",
     "LoopStep",
+    "McpStep",
     "ParallelStep",
     "ReadFilesStep",
     "WriteFilesStep",
@@ -1202,11 +1192,12 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
 
 === File: recipe_executor/steps/llm_generate.py ===
 import logging
-from typing import List
+from typing import Any, Dict, List, Optional, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 
 from recipe_executor.llm_utils.llm import LLM
+from recipe_executor.llm_utils.mcp import get_mcp_server
 from recipe_executor.models import FileSpec
 from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
@@ -1214,68 +1205,124 @@ from recipe_executor.utils import render_template
 
 
 class LLMGenerateConfig(StepConfig):
-    """
-    Config for LLMGenerateStep.
-
-    Fields:
-        prompt: The prompt to send to the LLM (templated beforehand).
-        model: The model identifier to use (provider/model_name format).
-        artifact: The name under which to store the LLM response in context.
-    """
-
     prompt: str
-    model: str
-    output_key: str
+    model: str = "openai/gpt-4o"
+    mcp_servers: Optional[List[Dict[str, Any]]] = None
+    output_format: Union[str, Dict[str, Any]] = "text"
+    output_key: str = "llm_output"
+
+
+class FileSpecCollection(BaseModel):
+    files: List[FileSpec]
 
 
 class LLMGenerateStep(BaseStep[LLMGenerateConfig]):
-    """
-    LLMGenerateStep enables recipes to generate content using large language models (LLMs).
-    It processes prompt templates using context data, handles model selection, makes LLM calls,
-    and stores the generated result in the execution context under a dynamic artifact key.
-    """
-
-    def __init__(self, logger: logging.Logger, config: dict) -> None:
+    def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:
         super().__init__(logger, LLMGenerateConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        """
-        Execute the LLM generation step:
-          1. Render the prompt using context data.
-          2. Render the model identifier using context data.
-          3. Log a debug message with call details.
-          4. Call the LLM with the rendered prompt and model.
-          5. Render the artifact key using context data and store the response.
+        prompt: str = render_template(self.config.prompt, context)
+        model: str = render_template(self.config.model, context)
+        output_key: str = render_template(self.config.output_key, context)
+        mcp_servers: List[Any] = []
+        mcp_server_configs: List[Dict[str, Any]] = []
 
-        Args:
-            context (ContextProtocol): Execution context implementing artifact storage.
+        if self.config.mcp_servers is not None:
+            mcp_server_configs.extend(self.config.mcp_servers)
+        context_config: Dict[str, Any] = context.get_config()
+        mcp_servers_from_context: Optional[List[Dict[str, Any]]] = context_config.get("mcp_servers", None)
+        if mcp_servers_from_context is not None:
+            mcp_server_configs.extend(mcp_servers_from_context)
+        if mcp_server_configs:
+            for mcp_server_config in mcp_server_configs:
+                mcp_servers.append(get_mcp_server(self.logger, mcp_server_config))
 
-        Raises:
-            Exception: Propagates any exceptions from the LLM call for upstream handling.
-        """
-        rendered_prompt = ""  # Initialize before try block to avoid "possibly unbound" error
+        output_format: Union[str, Dict[str, Any]] = self.config.output_format
+        rendered_output_format: Union[str, Dict[str, Any]] = output_format
+        if isinstance(output_format, str):
+            rendered_output_format = render_template(output_format, context)
+        elif isinstance(output_format, dict):
+
+            def render_schema(data: Any) -> Any:
+                if isinstance(data, str):
+                    return render_template(data, context)
+                if isinstance(data, dict):
+                    return {k: render_schema(v) for k, v in data.items()}
+                if isinstance(data, list):
+                    return [render_schema(x) for x in data]
+                return data
+
+            rendered_output_format = render_schema(output_format)
+
+        output_type: Type[Union[str, BaseModel]] = str
         try:
-            # Render prompt, model, and artifact key using the provided context
-            rendered_prompt = render_template(self.config.prompt, context)
-            rendered_model: str = render_template(self.config.model, context)
-            output_key: str = render_template(self.config.output_key, context)
+            if rendered_output_format == "text":
+                output_type = str
+            elif rendered_output_format == "files":
+                output_type = FileSpecCollection
+            elif isinstance(rendered_output_format, dict):
+                output_type = self._json_schema_to_pydantic_model(rendered_output_format)
+            else:
+                raise ValueError(f"Invalid output_format: {rendered_output_format}")
 
-            # Log debug message about the LLM call details
-            self.logger.debug(f"Calling LLM with prompt: {rendered_prompt[:50]}... and model: {rendered_model}")
-
-            class FileSpecCollection(BaseModel):
-                files: List[FileSpec]
-
-            # Call the LLM asynchronously
-            llm = LLM(self.logger, model=rendered_model)
-            response = await llm.generate(prompt=rendered_prompt, output_type=FileSpecCollection)
-
-            # Store the generated result in the execution context
-            context[output_key] = response.files if isinstance(response, FileSpecCollection) else response
-
-        except Exception as error:
-            self.logger.error(f"LLM call failed for prompt: {rendered_prompt[:50]}... with error: {error}")
+            self.logger.debug(
+                f"Calling LLM: model={model} output_type={output_type} MCP_servers={'yes' if mcp_servers else 'no'}"
+            )
+            llm = LLM(
+                logger=self.logger,
+                model=model,
+                mcp_servers=mcp_servers if mcp_servers else None,
+            )
+            result: Any = await llm.generate(prompt, output_type=output_type)
+            if output_type is FileSpecCollection and isinstance(result, FileSpecCollection):
+                context[output_key] = result.files
+            else:
+                context[output_key] = result
+        except Exception as e:
+            self.logger.error(f"LLM call failed for output_key '{output_key}': {e}", exc_info=True)
             raise
+
+    def _json_schema_to_pydantic_model(self, schema: Dict[str, Any]) -> Type[BaseModel]:
+        def build_type(subschema: Dict[str, Any]) -> Any:
+            schema_type = subschema.get("type")
+            if schema_type == "string":
+                return (str, ...)
+            if schema_type == "integer":
+                return (int, ...)
+            if schema_type == "number":
+                return (float, ...)
+            if schema_type == "boolean":
+                return (bool, ...)
+            if schema_type == "object":
+                props = subschema.get("properties", {})
+                required = set(subschema.get("required", []))
+                fields = {}
+                for pname, pschema in props.items():
+                    ptype, _ = build_type(pschema)
+                    default = ... if pname in required else None
+                    fields[pname] = (ptype, default)
+                model = create_model("JsonSchemaObj", **fields)  # type: ignore
+                return (model, ...)
+            if schema_type == "array" or schema_type == "list":
+                items_schema = subschema.get("items", {})
+                item_type, _ = build_type(items_schema)
+                return (List[item_type], ...)
+            return (Any, ...)
+
+        if schema.get("type") == "array" or schema.get("type") == "list":
+            item_schema = schema.get("items", {})
+            item_type, _ = build_type(item_schema)
+            return create_model("RootListModel", __root__=(List[item_type], ...))  # type: ignore
+        if schema.get("type") == "object":
+            props = schema.get("properties", {})
+            required = set(schema.get("required", []))
+            fields = {}
+            for fname, fschema in props.items():
+                ftype, _ = build_type(fschema)
+                default = ... if fname in required else None
+                fields[fname] = (ftype, default)
+            return create_model("RootObjModel", **fields)  # type: ignore
+        return create_model("AnyModel", __root__=(Any, ...))
 
 
 === File: recipe_executor/steps/loop.py ===
@@ -1499,8 +1546,7 @@ class McpStep(BaseStep[McpConfig], StepProtocol):
 === File: recipe_executor/steps/parallel.py ===
 import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional
 
 from recipe_executor.protocols import ContextProtocol, StepProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
@@ -1511,149 +1557,120 @@ from recipe_executor.utils import render_template
 class ParallelConfig(StepConfig):
     substeps: List[Dict[str, Any]]
     max_concurrency: int = 0
-    delay: float = 0.0
+    delay: float = 0
 
 
 class ParallelStep(BaseStep[ParallelConfig]):
-    def __init__(
-        self,
-        logger: logging.Logger,
-        config: Dict[str, Any],
-    ) -> None:
+    def __init__(self, logger: logging.Logger, config: Dict[str, Any]) -> None:
         super().__init__(logger, ParallelConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
         substep_defs: List[Dict[str, Any]] = self.config.substeps
         max_concurrency: int = self.config.max_concurrency
-        delay: float = self.config.delay or 0.0
+        delay: float = self.config.delay
 
         if not substep_defs:
-            self.logger.info("No substeps to execute in ParallelStep")
+            self.logger.info("No substeps specified; skipping parallel block.")
             return
 
-        step_count: int = len(substep_defs)
-        self.logger.info(
-            f"ParallelStep starting: {step_count} substeps, max_concurrency={max_concurrency}, delay={delay}"
-        )
-        errors: List[Tuple[int, Exception]] = []
-
+        # Concurrency control
         semaphore: Optional[asyncio.Semaphore] = None
-        if max_concurrency and max_concurrency > 0:
+        if max_concurrency > 0:
             semaphore = asyncio.Semaphore(max_concurrency)
 
-        # Avoid creating nested thread pools: always execute steps with their own await/sync rules, don't wrap in ThreadPoolExecutor.
-        thread_pool: Optional[ThreadPoolExecutor] = None
+        tasks: List[asyncio.Task] = []
 
-        async def run_substep(idx: int, substep_def: Dict[str, Any]) -> Optional[Exception]:
-            nonlocal errors
-            if semaphore:
-                async with semaphore:
-                    return await _run_step(idx, substep_def)
-            else:
-                return await _run_step(idx, substep_def)
+        # Store for cancellation support
+        start_exception: Optional[BaseException] = None
+        finished_count = 0
+        step_count = len(substep_defs)
 
-        async def _run_step(idx: int, substep_def: Dict[str, Any]) -> Optional[Exception]:
-            context_clone = context.clone()
-            # Deeply render all string values in substep_def with template
-            rendered_def = _render_deep(substep_def, context_clone)
-            step_type = rendered_def.get("type")
-            step_cfg = rendered_def.get("config", {})
-            if not step_type or step_type not in STEP_REGISTRY:
-                self.logger.error(f"Substep {idx} missing or unknown type: {step_type}")
-                return ValueError(f"Substep {idx}: unknown step type: {step_type}")
-            StepCls: Type[StepProtocol] = STEP_REGISTRY[step_type]
-            step: StepProtocol = StepCls(self.logger, step_cfg)
-            self.logger.debug(f"Substep {idx} ({step_type}) starting")
+        async def run_substep(i: int, step_def: Dict[str, Any]) -> None:
+            nonlocal finished_count, start_exception
+            step_type: str = step_def["type"]
+            step_config = step_def.get("config", {})
+
+            # Render config templates using context
+            rendered_config: Dict[str, Any] = {}
+            for k, v in step_config.items():
+                if isinstance(v, str):
+                    rendered_config[k] = render_template(v, context)
+                else:
+                    rendered_config[k] = v
+
+            # Clone context
+            sub_context = context.clone()
+            # Re-marshal config as per step expectations
+            self.logger.debug(
+                f"Launching substep {i + 1}/{step_count} of type '{step_type}' with config: {rendered_config}"
+            )
             try:
-                res = step.execute(context_clone)
-                if asyncio.iscoroutine(res):
-                    await res
-                self.logger.debug(f"Substep {idx} ({step_type}) completed successfully")
-                return None
-            except Exception as e:
-                self.logger.error(f"Substep {idx} ({step_type}) failed: {e}")
-                return e
+                step_class = STEP_REGISTRY[step_type]
+                step: StepProtocol = step_class(self.logger, rendered_config)
+                if asyncio.iscoroutinefunction(step.execute):
+                    await step.execute(sub_context)
+                else:
+                    await asyncio.get_running_loop().run_in_executor(None, step.execute, sub_context)
+                self.logger.debug(f"Completed substep {i + 1}/{step_count} of type '{step_type}'")
+            except Exception as ex:
+                self.logger.error(f"Substep {i + 1}/{step_count} failed: {ex}", exc_info=True)
+                start_exception = ex
+                raise
+            finally:
+                finished_count += 1
 
-        all_tasks: List[asyncio.Task] = []
-        results: List[Optional[Exception]] = [None] * step_count
-        pending_idx: int = 0
+        async def task_runner():
+            # Fail-fast logic: launch in order, with concurrency control, and delay
+            try:
+                for i, step_def in enumerate(substep_defs):
+                    if start_exception is not None:
+                        self.logger.debug(
+                            f"Fail-fast abort: skipping launch of substep {i + 1}/{step_count} after error."
+                        )
+                        break
+                    if semaphore is not None:
+                        await semaphore.acquire()
+                    # Staggered launch for delay
+                    if i > 0 and delay > 0:
+                        await asyncio.sleep(delay)
 
-        stop_launching: bool = False
-        asyncio.Event()  # Used to wake up waiters on fail-fast
+                    async def step_task(idx=i, sdef=step_def):
+                        try:
+                            await run_substep(idx, sdef)
+                        finally:
+                            if semaphore is not None:
+                                semaphore.release()
 
-        async def substep_launcher():
-            nonlocal pending_idx, all_tasks, stop_launching
-            while pending_idx < step_count:
-                if stop_launching:
-                    break
-                substep_def = substep_defs[pending_idx]
-                idx = pending_idx
-                task = asyncio.create_task(run_substep(idx, substep_def))
-                all_tasks.append(task)
-                pending_idx += 1
-                await asyncio.sleep(delay)
+                    task = asyncio.create_task(step_task())
+                    tasks.append(task)
+                # Wait for all launched tasks to finish
+                if tasks:
+                    await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            finally:
+                # Cancel others if failed
+                if start_exception is not None:
+                    for t in tasks:
+                        if not t.done():
+                            t.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
 
-        launcher_task = asyncio.create_task(substep_launcher())
-
+        self.logger.info(
+            f"Starting parallel block: {step_count} substeps, max_concurrency={max_concurrency}, delay={delay}"
+        )
         try:
-            for idx in range(step_count):
-                if stop_launching:
-                    break
-                if idx >= len(all_tasks):
-                    await asyncio.sleep(0.01)  # Give scheduler a chance
-                task: Optional[asyncio.Task] = all_tasks[idx] if idx < len(all_tasks) else None
-                if task is None:
-                    continue
-                try:
-                    result = await task
-                    results[idx] = result
-                    if result is not None:
-                        # Fail-fast: stop launching; cancel pending tasks
-                        stop_launching = True
-                        launcher_task.cancel()
-                        for extra_task in all_tasks[idx + 1 :]:
-                            extra_task.cancel()
-                        raise result
-                except asyncio.CancelledError:
-                    self.logger.debug(f"Substep {idx} was cancelled")
-                    continue
-            # Wait for any straggler tasks
-            await asyncio.gather(*all_tasks, return_exceptions=True)
-        except Exception as e:
-            self.logger.error(f"ParallelStep failed: {e}")
-            raise
-        finally:
-            if launcher_task:
-                launcher_task.cancel()
-                try:
-                    await launcher_task
-                except Exception:
-                    pass
-            if thread_pool is not None:
-                thread_pool.shutdown(wait=False)
-
-        success_count = sum(1 for r in results if r is None)
-        fail_count = step_count - success_count
-        if fail_count > 0:
-            self.logger.info(f"ParallelStep completed: {success_count} succeeded, {fail_count} failed")
-        else:
-            self.logger.info(f"ParallelStep completed: all {step_count} substeps succeeded")
-        return
-
-
-def _render_deep(obj: Any, context: ContextProtocol) -> Any:
-    # Recursively render all strings using render_template
-    if isinstance(obj, dict):
-        return {k: _render_deep(v, context) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_render_deep(v, context) for v in obj]
-    if isinstance(obj, str):
-        return render_template(obj, context)
-    return obj
+            await task_runner()
+        except Exception as exc:
+            error_msg = f"Parallel block failed after {finished_count} completed steps: {exc}"
+            self.logger.error(error_msg, exc_info=True)
+            raise RuntimeError(error_msg) from exc
+        success_count = sum(1 for t in tasks if t.done() and not t.cancelled() and t.exception() is None)
+        fail_count = sum(1 for t in tasks if t.done() and t.exception() is not None)
+        self.logger.info(f"Parallel block complete: {success_count} succeeded, {fail_count} failed, total={step_count}")
 
 
 === File: recipe_executor/steps/read_files.py ===
 import logging
+import os
 from typing import Any, Dict, List, Union
 
 from recipe_executor.protocols import ContextProtocol
@@ -1685,96 +1702,90 @@ class ReadFilesStep(BaseStep[ReadFilesConfig]):
         super().__init__(logger, ReadFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        config: ReadFilesConfig = self.config
-        # Resolve and normalize paths
-        paths: List[str] = self._resolve_paths(config.path, context)
+        rendered_path: Union[str, List[str]] = self._render_paths(self.config.path, context)
+        paths: List[str] = self._parse_paths(rendered_path)
 
-        contents_key: str = config.contents_key
-        optional: bool = config.optional
-        merge_mode: str = config.merge_mode or "concat"
+        if not paths:
+            self.logger.info(f"No files to read for key '{self.config.contents_key}' (path: {self.config.path})")
+            if self.config.merge_mode == "dict":
+                context[self.config.contents_key] = {}
+            else:
+                context[self.config.contents_key] = ""
+            return
 
-        file_contents: List[str] = []
+        self.logger.debug(f"Resolved paths for reading: {paths}")
+
+        contents_list: List[str] = []
         contents_dict: Dict[str, str] = {}
-        files_read: List[str] = []
         missing_files: List[str] = []
 
         for path in paths:
-            rendered_path = render_template(path, context)
-            self.logger.debug(f"ReadFilesStep: Attempting to read file: '{rendered_path}'")
+            path_stripped: str = path.strip()
+            self.logger.debug(f"Attempting to read file: {path_stripped}")
+            if not os.path.isfile(path_stripped):
+                if self.config.optional:
+                    self.logger.warning(f"Optional file not found: {path_stripped} (step continues)")
+                    missing_files.append(path_stripped)
+                    continue
+                else:
+                    error_msg: str = f"File not found: {path_stripped} (required by read_files step)"
+                    self.logger.error(error_msg)
+                    raise FileNotFoundError(error_msg)
             try:
-                with open(rendered_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.logger.info(f"ReadFilesStep: Successfully read file: '{rendered_path}'")
-                files_read.append(rendered_path)
-                if merge_mode == "dict":
-                    contents_dict[rendered_path] = content
+                with open(path_stripped, encoding="utf-8") as file:
+                    content: str = file.read()
+                self.logger.info(f"Read file successfully: {path_stripped}")
+                if self.config.merge_mode == "dict":
+                    contents_dict[path_stripped] = content
                 else:
-                    file_contents.append(f"# ===== {rendered_path} =====\n{content}")
-            except FileNotFoundError:
-                self.logger.warning(f"ReadFilesStep: File not found: '{rendered_path}'")
-                missing_files.append(rendered_path)
-                if not optional:
-                    raise FileNotFoundError(
-                        f"ReadFilesStep: Required file not found: '{rendered_path}' (contents_key: '{contents_key}')"
-                    )
-                # optional: proceed
-                if merge_mode == "dict":
-                    # Omit missing file in dict mode
-                    pass
-                # In concat mode, skip missing file
-
-        # Backwards compatibility: if only one file, keep old behavior for both modes
-        if len(paths) == 1:
-            if files_read:
-                val: Union[str, Dict[str, str]]
-                if merge_mode == "dict":
-                    val = {files_read[0]: contents_dict[files_read[0]]}
+                    contents_list.append(content)
+            except Exception as exc:
+                error_msg: str = f"Failed to read file {path_stripped}: {str(exc)}"
+                if self.config.optional:
+                    self.logger.warning(error_msg)
+                    missing_files.append(path_stripped)
+                    continue
                 else:
-                    val = file_contents[0]
-                context[contents_key] = val
-                self.logger.info(f"ReadFilesStep: Stored contents of '{files_read[0]}' under key '{contents_key}'")
-            else:
-                # Single file missing
-                context[contents_key] = ""
-                self.logger.info(
-                    f"ReadFilesStep: Stored empty contents for missing file under key '{contents_key}' (file: '{paths[0]}')"
-                )
-            return
+                    self.logger.error(error_msg)
+                    raise
 
-        # Multiple files:
-        if merge_mode == "dict":
-            context[contents_key] = contents_dict
-            self.logger.info(
-                f"ReadFilesStep: Stored contents of {len(contents_dict)} files as a dictionary under key '{contents_key}'"
-            )
+        result: Union[str, Dict[str, str]]
+        if self.config.merge_mode == "dict":
+            result = contents_dict
         else:
-            # default/"concat": join all non-missing contents
-            concat = "\n\n".join(file_contents)
-            context[contents_key] = concat
-            self.logger.info(
-                f"ReadFilesStep: Stored concatenated contents of {len(files_read)} files under key '{contents_key}'"
-            )
+            result = "\n".join(contents_list)
 
-    def _resolve_paths(self, path_param: Union[str, List[str]], context: ContextProtocol) -> List[str]:
-        """
-        Resolve template(s) and normalize input to a list of file paths.
-        """
-        if isinstance(path_param, str):
-            rendered = render_template(path_param, context)
-            if "," in rendered:
-                paths = [x.strip() for x in rendered.split(",") if x.strip()]
-            else:
-                paths = [rendered.strip()]
-        elif isinstance(path_param, list):
-            paths: List[str] = []
-            for p in path_param:
-                rendered = render_template(str(p), context)
-                if "," in rendered:
-                    paths.extend([x.strip() for x in rendered.split(",") if x.strip()])
-                else:
-                    paths.append(rendered.strip())
-        else:
-            raise ValueError("ReadFilesStep: Invalid path parameter. Must be a string or a list of strings.")
+        # Backwards compatibility: optional + single file
+        if len(paths) == 1 and self.config.merge_mode != "dict" and self.config.optional and not contents_list:
+            result = ""
+
+        context[self.config.contents_key] = result
+        self.logger.info(
+            f"Stored contents under key '{self.config.contents_key}' (mode: {self.config.merge_mode}, files read: {len(contents_list)})"
+        )
+
+    def _render_paths(self, path: Union[str, List[str]], context: ContextProtocol) -> Union[str, List[str]]:
+        if isinstance(path, str):
+            return render_template(path, context)
+        if isinstance(path, list):
+            return [render_template(single_path, context) for single_path in path]
+        return path
+
+    def _parse_paths(self, rendered_path: Union[str, List[str]]) -> List[str]:
+        paths: List[str] = []
+        if isinstance(rendered_path, str):
+            if "," in rendered_path:
+                parts: List[str] = [part.strip() for part in rendered_path.split(",") if part.strip()]
+                paths.extend(parts)
+            elif rendered_path.strip():
+                paths.append(rendered_path.strip())
+        elif isinstance(rendered_path, list):
+            for element in rendered_path:
+                if "," in element:
+                    parts: List[str] = [part.strip() for part in element.split(",") if part.strip()]
+                    paths.extend(parts)
+                elif element.strip():
+                    paths.append(element.strip())
         return paths
 
 

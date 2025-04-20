@@ -14,6 +14,7 @@
       "config": {
         "prompt": "{% if combined_input != '' %}{{combined_input}}{% else %}A request was made to generate an output based upon some files that were read in, but no files were received, please respond with an `error.md` file that contains a message indicating that no files were read and that 'context.path' must contain a valid list of files.{% endif %}",
         "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": "files",
         "output_key": "llm_output"
       }
     },

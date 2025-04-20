@@ -47,7 +47,7 @@ The LLM component provides a unified interface for interacting with various larg
 ### External Libraries
 
 - **pydantic-ai**: Uses PydanticAI for model initialization, Agent-based request handling, and structured-output processing
-- **pydantic-ai.mcp**: Provides `MCPServerHTTP` and `MCPServerStdio` classes for MCP server transports
+- **pydantic-ai.mcp**: Provides `MCPServer`, `MCPServerHTTP` and `MCPServerStdio` classes for MCP server transports
 
 ### Configuration Dependencies
 
@@ -124,7 +124,8 @@ from pydantic_ai import Agent
 agent: Agent[None, Union[str, BaseModel]] = Agent(model=ollama_model, output_type=str, mcp_servers=mcp_servers)
 
 # Call the agent with a prompt
-result = await agent.run("What is the capital of France?")
+async with agent.run_mcp_servers():
+  result = await agent.run("What is the capital of France?")
 
 # Process the result
 print(result.data)  # This will print the structured output

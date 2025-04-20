@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, List, Union
 
 from recipe_executor.protocols import ContextProtocol
@@ -30,94 +31,88 @@ class ReadFilesStep(BaseStep[ReadFilesConfig]):
         super().__init__(logger, ReadFilesConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        config: ReadFilesConfig = self.config
-        # Resolve and normalize paths
-        paths: List[str] = self._resolve_paths(config.path, context)
+        rendered_path: Union[str, List[str]] = self._render_paths(self.config.path, context)
+        paths: List[str] = self._parse_paths(rendered_path)
 
-        contents_key: str = config.contents_key
-        optional: bool = config.optional
-        merge_mode: str = config.merge_mode or "concat"
+        if not paths:
+            self.logger.info(f"No files to read for key '{self.config.contents_key}' (path: {self.config.path})")
+            if self.config.merge_mode == "dict":
+                context[self.config.contents_key] = {}
+            else:
+                context[self.config.contents_key] = ""
+            return
 
-        file_contents: List[str] = []
+        self.logger.debug(f"Resolved paths for reading: {paths}")
+
+        contents_list: List[str] = []
         contents_dict: Dict[str, str] = {}
-        files_read: List[str] = []
         missing_files: List[str] = []
 
         for path in paths:
-            rendered_path = render_template(path, context)
-            self.logger.debug(f"ReadFilesStep: Attempting to read file: '{rendered_path}'")
+            path_stripped: str = path.strip()
+            self.logger.debug(f"Attempting to read file: {path_stripped}")
+            if not os.path.isfile(path_stripped):
+                if self.config.optional:
+                    self.logger.warning(f"Optional file not found: {path_stripped} (step continues)")
+                    missing_files.append(path_stripped)
+                    continue
+                else:
+                    error_msg: str = f"File not found: {path_stripped} (required by read_files step)"
+                    self.logger.error(error_msg)
+                    raise FileNotFoundError(error_msg)
             try:
-                with open(rendered_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.logger.info(f"ReadFilesStep: Successfully read file: '{rendered_path}'")
-                files_read.append(rendered_path)
-                if merge_mode == "dict":
-                    contents_dict[rendered_path] = content
+                with open(path_stripped, encoding="utf-8") as file:
+                    content: str = file.read()
+                self.logger.info(f"Read file successfully: {path_stripped}")
+                if self.config.merge_mode == "dict":
+                    contents_dict[path_stripped] = content
                 else:
-                    file_contents.append(f"# ===== {rendered_path} =====\n{content}")
-            except FileNotFoundError:
-                self.logger.warning(f"ReadFilesStep: File not found: '{rendered_path}'")
-                missing_files.append(rendered_path)
-                if not optional:
-                    raise FileNotFoundError(
-                        f"ReadFilesStep: Required file not found: '{rendered_path}' (contents_key: '{contents_key}')"
-                    )
-                # optional: proceed
-                if merge_mode == "dict":
-                    # Omit missing file in dict mode
-                    pass
-                # In concat mode, skip missing file
-
-        # Backwards compatibility: if only one file, keep old behavior for both modes
-        if len(paths) == 1:
-            if files_read:
-                val: Union[str, Dict[str, str]]
-                if merge_mode == "dict":
-                    val = {files_read[0]: contents_dict[files_read[0]]}
+                    contents_list.append(content)
+            except Exception as exc:
+                error_msg: str = f"Failed to read file {path_stripped}: {str(exc)}"
+                if self.config.optional:
+                    self.logger.warning(error_msg)
+                    missing_files.append(path_stripped)
+                    continue
                 else:
-                    val = file_contents[0]
-                context[contents_key] = val
-                self.logger.info(f"ReadFilesStep: Stored contents of '{files_read[0]}' under key '{contents_key}'")
-            else:
-                # Single file missing
-                context[contents_key] = ""
-                self.logger.info(
-                    f"ReadFilesStep: Stored empty contents for missing file under key '{contents_key}' (file: '{paths[0]}')"
-                )
-            return
+                    self.logger.error(error_msg)
+                    raise
 
-        # Multiple files:
-        if merge_mode == "dict":
-            context[contents_key] = contents_dict
-            self.logger.info(
-                f"ReadFilesStep: Stored contents of {len(contents_dict)} files as a dictionary under key '{contents_key}'"
-            )
+        result: Union[str, Dict[str, str]]
+        if self.config.merge_mode == "dict":
+            result = contents_dict
         else:
-            # default/"concat": join all non-missing contents
-            concat = "\n\n".join(file_contents)
-            context[contents_key] = concat
-            self.logger.info(
-                f"ReadFilesStep: Stored concatenated contents of {len(files_read)} files under key '{contents_key}'"
-            )
+            result = "\n".join(contents_list)
 
-    def _resolve_paths(self, path_param: Union[str, List[str]], context: ContextProtocol) -> List[str]:
-        """
-        Resolve template(s) and normalize input to a list of file paths.
-        """
-        if isinstance(path_param, str):
-            rendered = render_template(path_param, context)
-            if "," in rendered:
-                paths = [x.strip() for x in rendered.split(",") if x.strip()]
-            else:
-                paths = [rendered.strip()]
-        elif isinstance(path_param, list):
-            paths: List[str] = []
-            for p in path_param:
-                rendered = render_template(str(p), context)
-                if "," in rendered:
-                    paths.extend([x.strip() for x in rendered.split(",") if x.strip()])
-                else:
-                    paths.append(rendered.strip())
-        else:
-            raise ValueError("ReadFilesStep: Invalid path parameter. Must be a string or a list of strings.")
+        # Backwards compatibility: optional + single file
+        if len(paths) == 1 and self.config.merge_mode != "dict" and self.config.optional and not contents_list:
+            result = ""
+
+        context[self.config.contents_key] = result
+        self.logger.info(
+            f"Stored contents under key '{self.config.contents_key}' (mode: {self.config.merge_mode}, files read: {len(contents_list)})"
+        )
+
+    def _render_paths(self, path: Union[str, List[str]], context: ContextProtocol) -> Union[str, List[str]]:
+        if isinstance(path, str):
+            return render_template(path, context)
+        if isinstance(path, list):
+            return [render_template(single_path, context) for single_path in path]
+        return path
+
+    def _parse_paths(self, rendered_path: Union[str, List[str]]) -> List[str]:
+        paths: List[str] = []
+        if isinstance(rendered_path, str):
+            if "," in rendered_path:
+                parts: List[str] = [part.strip() for part in rendered_path.split(",") if part.strip()]
+                paths.extend(parts)
+            elif rendered_path.strip():
+                paths.append(rendered_path.strip())
+        elif isinstance(rendered_path, list):
+            for element in rendered_path:
+                if "," in element:
+                    parts: List[str] = [part.strip() for part in element.split(",") if part.strip()]
+                    paths.extend(parts)
+                elif element.strip():
+                    paths.append(element.strip())
         return paths

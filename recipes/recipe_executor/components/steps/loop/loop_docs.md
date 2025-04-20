@@ -65,6 +65,7 @@ The LoopStep allows you to run multiple steps for each item in a collection. Sub
             "config": {
               "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
               "model": "{{model}}",
+              "output_format": "files",
               "output_key": "component_questions"
             }
           },
@@ -118,6 +119,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Generate questions for component: {{component.name}}\n\nDescription: {{component.description}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "component_questions"
         }
       },
@@ -155,6 +157,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Analyze this code file:\n{{file_content}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "file_analysis"
         }
       }
@@ -178,6 +181,7 @@ Within each iteration, you can reference:
         "config": {
           "prompt": "Transform this data item: {{item}}\nIndex: {{__index}}",
           "model": "{{model}}",
+          "output_format": "files",
           "output_key": "transformed_item"
         }
       }

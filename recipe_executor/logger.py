@@ -20,7 +20,7 @@ def init_logger(log_dir: str = "logs", stdio_log_level: str = "INFO") -> logging
     """
     logger_name: str = "recipe_executor"
     logger: logging.Logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Remove all previous handlers for full reset
     while logger.handlers:

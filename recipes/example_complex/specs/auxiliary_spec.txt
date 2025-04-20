@@ -1,1 +1,0 @@
-This auxiliary specification provides additional details for extra features. Include a helper function that returns a greeting string.
