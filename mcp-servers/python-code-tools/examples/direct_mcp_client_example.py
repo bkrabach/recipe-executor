@@ -15,6 +15,7 @@ import time  # unused import
 
 def calculate_sum(a, b):
     result = a + b
+    unused_variable = 42  # unused variable
     return result
 
 # Line too long - will be flagged by ruff
@@ -56,19 +57,47 @@ async def main():
                 # Check if the content is TextContent (which has a text attribute)
                 if hasattr(first_content, "type") and first_content.type == "text":
                     lint_result_text = first_content.text
+
+                    # Print the raw response for debugging
+                    print(f"Response debug: {lint_result_text}")
+
                     lint_result = json.loads(lint_result_text)
 
-                    print(f"Fixed code:\n{lint_result['fixed_code']}")
-                    print(f"\nIssues found: {len(lint_result['issues'])}")
+                    # Calculate total issues
+                    fixed_count = lint_result.get("fixed_count", 0)
+                    remaining_count = lint_result.get("remaining_count", 0)
+                    total_issues = fixed_count + remaining_count
 
-                    for issue in lint_result["issues"]:
-                        print(
-                            f"- Line {issue['line']}, Col {issue['column']}: "
-                            f"{issue['code']} - {issue['message']}"
-                        )
+                    print(f"Total issues found: {total_issues}")
+                    print(f"Fixed issues: {fixed_count}")
+                    print(f"Remaining issues: {remaining_count}")
 
-                    print(f"\nFixed issues: {lint_result['fixed_count']}")
-                    print(f"Remaining issues: {lint_result['remaining_count']}")
+                    print("\nFixed code:")
+                    print("------------")
+                    print(lint_result["fixed_code"])
+                    print("------------")
+
+                    # Show remaining issues if any
+                    if remaining_count > 0:
+                        print("\nRemaining issues:")
+                        for issue in lint_result["issues"]:
+                            print(
+                                f"- Line {issue['line']}, Col {issue['column']}: {issue['code']} - {issue['message']}"
+                            )
+                    else:
+                        print("\nAll issues were fixed!")
+
+                    # Compare with original code
+                    if fixed_count > 0:
+                        print("\nChanges made:")
+                        # A simple diff would be ideal here, but for simplicity we'll just highlight
+                        # that changes were made
+                        print(f"- Fixed {fixed_count} issues with the code")
+
+                        if lint_result["fixed_code"] != SAMPLE_CODE:
+                            print("- Code was modified during fixing")
+                        else:
+                            print("- NOTE: Code appears unchanged despite fixes")
                 else:
                     print(
                         "Unexpected content type: "

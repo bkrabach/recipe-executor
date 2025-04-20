@@ -13,11 +13,12 @@ import time  # unused import
 
 def calculate_sum(a, b):
     result = a + b
+    unused_variable = 42  # unused variable
     return result
 
 # Line too long - will be flagged by ruff
-long_text = "This is a very long line of text that exceeds the default line length limit in most Python style guides like PEP 8 which recommends 79 characters."
-"""  # noqa: E501
+long_text = "This is a very long line of text that exceeds the default line length limit in most Python style guides like PEP 8 which recommends 79 characters, but if the configuration is set to 120, it will be ignored unless the line continues for more than 120 characters like this one now does at over 300 characters."
+"""
 
 
 async def main():
@@ -40,7 +41,15 @@ async def main():
             {SAMPLE_CODE}
             ```
 
-            Explain what issues were found and what was fixed.
+            After running the lint_code tool, provide a detailed analysis that includes:
+            1. How many total issues were found (fixed + remaining)
+            2. What types of issues were fixed automatically
+            3. What issues remain and need manual attention
+            4. Show the fixed code and explain what was changed
+
+            Please be specific about the exact issues found and fixed.
+
+            Show the updated code with comments explaining the changes made.
             """
         )
 
