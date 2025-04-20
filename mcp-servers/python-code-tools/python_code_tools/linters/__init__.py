@@ -8,8 +8,7 @@ from python_code_tools.linters.base import (
     ProjectLinter,
     ProjectLintResult,
 )
-from python_code_tools.linters.project import RuffProjectLinter
-from python_code_tools.linters.ruff import RuffLinter
+from python_code_tools.linters.ruff import RuffLinter, RuffProjectLinter
 
 __all__ = [
     # Base classes

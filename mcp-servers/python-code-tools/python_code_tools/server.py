@@ -6,8 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from python_code_tools.linters.project import RuffProjectLinter
-from python_code_tools.linters.ruff import RuffLinter
+from python_code_tools.linters import RuffLinter, RuffProjectLinter
 
 
 def create_mcp_server(host: str = "localhost", port: int = 3001) -> FastMCP:
@@ -60,8 +59,20 @@ def create_mcp_server(host: str = "localhost", port: int = 3001) -> FastMCP:
         Returns:
             A dictionary containing issues found, fix counts, and modified files
         """
-        result = await project_linter.lint_project(project_path, file_patterns, fix, config)
-        return result.model_dump()
+        try:
+            result = await project_linter.lint_project(project_path, file_patterns, fix, config)
+            # Explicitly convert to dict to ensure proper serialization
+            return result.model_dump()
+        except Exception as e:
+            # Return a structured error response instead of letting the exception bubble up
+            return {
+                "error": str(e),
+                "project_path": project_path,
+                "issues": [],
+                "fixed_count": 0,
+                "remaining_count": 0,
+                "modified_files": [],
+            }
 
     return mcp
 

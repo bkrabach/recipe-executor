@@ -11,7 +11,7 @@ from python_code_tools.utils.temp_file import cleanup_temp_file, create_temp_fil
 class RuffLinter(CodeLinter):
     """Code linter implementation using Ruff."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """Initialize the Ruff linter.
 
         Args:
@@ -19,9 +19,7 @@ class RuffLinter(CodeLinter):
         """
         super().__init__(name="ruff", **kwargs)
 
-    async def lint_code(
-        self, code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None
-    ) -> CodeLintResult:
+    async def lint_code(self, code: str, fix: bool = True, config: Optional[Dict[str, Any]] = None) -> CodeLintResult:
         """Lint code using Ruff and return the results.
 
         Args:
@@ -48,9 +46,7 @@ class RuffLinter(CodeLinter):
                     cmd.extend(["--config", f"{key}={value}"])
 
             # Run ruff to get issues
-            issues_proc = await asyncio.create_subprocess_exec(
-                *cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+            issues_proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             stdout, stderr = await issues_proc.communicate()
             issues_output = stdout.decode()
@@ -109,14 +105,12 @@ class RuffLinter(CodeLinter):
                     if len(message_parts) == 2:
                         code, description = message_parts
 
-                        issues.append(
-                            {
-                                "line": int(line_num),
-                                "column": int(col_num),
-                                "code": code,
-                                "message": description,
-                            }
-                        )
+                        issues.append({
+                            "line": int(line_num),
+                            "column": int(col_num),
+                            "code": code,
+                            "message": description,
+                        })
             except Exception:
                 # Skip lines that don't match the expected format
                 continue
@@ -136,9 +130,7 @@ class RuffLinter(CodeLinter):
 
         try:
             # Run ruff without fixing to get original issue count
-            result = await asyncio.create_subprocess_exec(
-                "ruff", "check", str(file_path), stdout=subprocess.PIPE
-            )
+            result = await asyncio.create_subprocess_exec("ruff", "check", str(file_path), stdout=subprocess.PIPE)
 
             stdout, _ = await result.communicate()
             output = stdout.decode()
