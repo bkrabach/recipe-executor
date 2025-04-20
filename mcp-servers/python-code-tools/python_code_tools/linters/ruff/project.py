@@ -4,7 +4,12 @@ from python_code_tools.linters.base import ProjectLinter, ProjectLintResult
 from python_code_tools.linters.ruff.config import get_config
 from python_code_tools.linters.ruff.reporter import create_issues_summary, identify_fixed_issues, print_final_report
 from python_code_tools.linters.ruff.runner import get_python_files, run_ruff_check, run_ruff_fix
-from python_code_tools.linters.ruff.utils import get_file_hashes, get_modified_files
+from python_code_tools.linters.ruff.utils import (
+    convert_issue_paths_to_relative,
+    convert_summary_paths_to_relative,
+    get_file_hashes,
+    get_modified_files,
+)
 
 
 class RuffProjectLinter(ProjectLinter):
@@ -85,24 +90,33 @@ class RuffProjectLinter(ProjectLinter):
                 total_issues_count = expected_total
                 print(f"Adjusted total issues count to {total_issues_count}")
 
-        # Create summaries
-        fixed_summary = create_issues_summary(fixed_issues_list, "fixed_types", "total_fixed")
-        files_summary = create_issues_summary(remaining_issues_list, "issue_types", "total_issues")
+        # Convert all paths to relative
+        str_project_path = str(path)
+        relative_remaining_issues = convert_issue_paths_to_relative(remaining_issues_list, str_project_path)
+        relative_fixed_issues = convert_issue_paths_to_relative(fixed_issues_list, str_project_path)
+
+        # Create summaries with relative paths
+        fixed_summary = create_issues_summary(relative_fixed_issues, "fixed_types", "total_fixed")
+        files_summary = create_issues_summary(relative_remaining_issues, "issue_types", "total_issues")
+
+        # Convert all paths in summaries to relative
+        relative_fixed_summary = convert_summary_paths_to_relative(fixed_summary, str_project_path)
+        relative_files_summary = convert_summary_paths_to_relative(files_summary, str_project_path)
 
         print_final_report(
             total_issues_count,
             fixed_issues_count,
             remaining_issues_count,
             modified_files,
-            fixed_issues_list,
-            remaining_issues_list,
-            files_summary,
-            fixed_summary,
+            relative_fixed_issues,
+            relative_remaining_issues,
+            relative_files_summary,
+            relative_fixed_summary,
         )
 
-        # Return the results with the correct counts
+        # Return the results with the correct counts and relative paths
         return ProjectLintResult(
-            issues=remaining_issues_list,
+            issues=relative_remaining_issues,
             fixed_count=fixed_issues_count,
             remaining_count=remaining_issues_count,
             modified_files=modified_files,
@@ -110,7 +124,7 @@ class RuffProjectLinter(ProjectLinter):
             has_ruff_config=has_ruff_config,
             config_source=config_source,
             config_summary=config_summary,
-            files_summary=files_summary,
-            fixed_issues=fixed_issues_list,
-            fixed_issues_summary=fixed_summary,
+            files_summary=relative_files_summary,
+            fixed_issues=relative_fixed_issues,
+            fixed_issues_summary=relative_fixed_summary,
         )

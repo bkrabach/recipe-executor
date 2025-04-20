@@ -12,34 +12,6 @@ from mcp.client.stdio import stdio_client
 PROJECT_PATH = os.getcwd()
 
 
-def normalize_path(file_path, project_path):
-    """Convert absolute paths to project-relative paths for better display.
-
-    Args:
-        file_path: Absolute or relative file path
-        project_path: Base project path
-
-    Returns:
-        Simplified path for display
-    """
-    try:
-        # If it's already a relative path, return it
-        if not os.path.isabs(file_path):
-            return file_path
-
-        # Convert absolute path to relative path
-        rel_path = os.path.relpath(file_path, project_path)
-
-        # Remove leading ./ if present
-        if rel_path.startswith("./"):
-            rel_path = rel_path[2:]
-
-        return rel_path
-    except Exception:
-        # If any error occurs, return the original path
-        return file_path
-
-
 async def main():
     print(f"Using project path: {PROJECT_PATH}")
 
@@ -140,10 +112,9 @@ async def main():
                         fixed_issues_by_file = {}
                         for issue in lint_result.get("fixed_issues", []):
                             file_path = issue.get("file", "unknown")
-                            normalized_path = normalize_path(file_path, project_path)
-                            if normalized_path not in fixed_issues_by_file:
-                                fixed_issues_by_file[normalized_path] = []
-                            fixed_issues_by_file[normalized_path].append(issue)
+                            if file_path not in fixed_issues_by_file:
+                                fixed_issues_by_file[file_path] = []
+                            fixed_issues_by_file[file_path].append(issue)
 
                         # Print fixed issues grouped by file
                         for file_path, issues in fixed_issues_by_file.items():
@@ -160,10 +131,9 @@ async def main():
                         issues_by_file = {}
                         for issue in lint_result.get("issues", []):
                             file_path = issue.get("file", "unknown")
-                            normalized_path = normalize_path(file_path, project_path)
-                            if normalized_path not in issues_by_file:
-                                issues_by_file[normalized_path] = []
-                            issues_by_file[normalized_path].append(issue)
+                            if file_path not in issues_by_file:
+                                issues_by_file[file_path] = []
+                            issues_by_file[file_path].append(issue)
 
                         # Print issues grouped by file
                         for file_path, issues in issues_by_file.items():
@@ -178,8 +148,7 @@ async def main():
                     if "files_summary" in lint_result and lint_result["files_summary"]:
                         print("\nFiles Summary:")
                         for file_path, summary in lint_result["files_summary"].items():
-                            normalized_path = normalize_path(file_path, project_path)
-                            print(f"- {normalized_path}: {summary.get('total_issues', 0)} remaining issues")
+                            print(f"- {file_path}: {summary.get('total_issues', 0)} remaining issues")
                             if "issue_types" in summary:
                                 print("  Issue types:")
                                 for code, count in summary["issue_types"].items():
