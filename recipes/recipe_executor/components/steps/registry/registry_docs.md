@@ -44,12 +44,9 @@ The executor uses the registry to look up step classes by type:
 
 ```python
 # Example of registry usage in executor
-from typing import Dict, Any
-import logging
-from recipe_executor.context import Context
 from recipe_executor.steps.registry import STEP_REGISTRY
 
-async def execute_step(logger: logging.Logger, step: Dict[str, Any], context: Context) -> None:
+... code ...
     step_type = step["type"]
     if step_type not in STEP_REGISTRY:
         raise ValueError(f"Unknown step type '{step_type}'")
