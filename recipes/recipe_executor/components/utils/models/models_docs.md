@@ -3,28 +3,28 @@
 ## Importing
 
 ```python
-from recipe_executor.utils.models import json_schema_to_pydantic_model
+from recipe_executor.utils.models import json_schema_object_to_pydantic_model
 ```
 
-## Conversion from JSON-Schema to Pydantic
+## Conversion from JSON Object to Pydantic
 
-This utility function converts a JSON-Schema definition into a Pydantic model. It
-allows you to define a schema in JSON format and then generate a strongly-typed
+This utility function converts a JSON object definition into a Pydantic model. It
+allows you to define an object as a JSON-Schema fragment and then generate a strongly-typed
 Pydantic model that can be used for data validation and serialization.
 
 The generated model will have fields corresponding to the properties defined in the
 JSON-Schema. The types of the fields will be inferred from the JSON-Schema types.
 
 ```python
-def json_schema_to_pydantic_model(
-    schema: Dict[str, Any],
+def json_object_to_pydantic_model(
+    object_schema: Dict[str, Any],
     model_name: str = "SchemaModel"
 ) -> Type[pydantic.BaseModel]:
     """
-    Convert a JSON-Schema dictionary into a dynamic Pydantic model.
+    Convert a JSON object dictionary into a dynamic Pydantic model.
 
     Args:
-        schema: A valid JSON-Schema fragment describing either an object or list.
+        object_schema: A valid JSON-Schema fragment describing an object.
         model_name: Name given to the generated model class.
 
     Returns:
@@ -38,7 +38,7 @@ def json_schema_to_pydantic_model(
 Basic usage example:
 
 ```python
-from recipe_executor.utils.models import json_schema_to_pydantic_model
+from recipe_executor.utils.models import json_object_to_pydantic_model
 
 user_schema = {
     "type": "object",
@@ -50,8 +50,10 @@ user_schema = {
     "required": ["name", "age"]
 }
 
-User = json_schema_to_pydantic_model(user_schema, model_name="User")
+User = json_object_to_pydantic_model(user_schema, model_name="User")
 
 instance = User(name="Alice", age=30, email="alice@example.com")
 print(instance.model_dump())      # {'name': 'Alice', 'age': 30, 'email': 'alice@example.com'}
 ```
+
+NOTE: An **object** is required at the root level of the schema. If the root type is not an object, a `ValueError` will be raised.

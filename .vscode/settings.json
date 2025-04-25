@@ -71,6 +71,7 @@
     "PYDANTIC",
     "setrecursionlimit",
     "stype",
+    "subschema",
     "substep",
     "substeps",
     "toplevel"

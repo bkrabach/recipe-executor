@@ -3,66 +3,56 @@
     {
       "type": "read_files",
       "config": {
-        "path": "{{project_spec_path}}",
-        "content_key": "project_spec"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "analyze_project.json"
+        "path": "{{raw_idea_path}}",
+        "content_key": "raw_idea"
       }
     },
     {
       "type": "read_files",
       "config": {
-        "path": "{{output_dir}}/analysis/analysis_result.json",
-        "content_key": "analysis_result"
+        "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md,ai_context/MODULAR_DESIGN_PHILOSOPHY.md",
+        "content_key": "guidance_docs",
+        "merge_mode": "concat"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{context_files}}",
+        "content_key": "context_files",
+        "optional": true,
+        "merge_mode": "concat"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{reference_docs}}",
+        "content_key": "reference_docs",
+        "optional": true,
+        "merge_mode": "concat"
       }
     },
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Parse this analysis result and output only 'true' if needs_splitting is true, otherwise 'false':\n\n{{analysis_result}}",
-        "model": "{{model|default:'openai/gpt-4.1'}}",
+        "prompt": "Transform this raw idea into a structured project specification. Consider the guidance docs and reference materials.\n\nRaw Idea:\n{{raw_idea}}\n\nGuidance Documents:\n{{guidance_docs}}\n\nContext Files:\n{{context_files}}\n\nReference Docs:\n{{reference_docs}}\n\nCreate a comprehensive, structured specification that includes project overview, requirements, technical constraints, and implementation guidelines. The specification should be detailed enough to analyze for component splitting.\n\nName the output file 'initial_project_spec.md'.",
+        "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": "files",
-        "output_key": "needs_splitting"
+        "output_key": "initial_project_spec"
       }
     },
     {
-      "type": "llm_generate",
+      "type": "write_files",
       "config": {
-        "prompt": "Determine which recipe to run next. If {{needs_splitting.files[0].content|trim}} is 'true', output 'split_project.json'. Otherwise output 'process_single_component.json'.",
-        "model": "{{model|default:'openai/gpt-4.1'}}",
-        "output_format": "files",
-        "output_key": "next_recipe"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{next_recipe.files[0].content|trim}}"
+        "files_key": "initial_project_spec",
+        "root": "{{output_dir}}/specs"
       }
     },
     {
       "type": "execute_recipe",
       "config": {
-        "recipe_path": "recursive_process.json",
-        "context_overrides": {
-          "depth": "0"
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "process_final_components.json"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "generate_blueprints.json"
+        "recipe_path": "recipes/blueprint_generator/recipes/analyze_project.json"
       }
     }
   ]

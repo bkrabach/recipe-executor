@@ -9,7 +9,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - Process prompt templates using context data
 - Support configurable model selection
 - Support MCP server configuration for tool access
-- Support multiple output formats (text, files, JSON)
+- Support multiple output formats (text, files, object, list)
 - Call LLMs to generate content
 - Store generated results in the context with dynamic key support
 - Include appropriate logging for LLM operations
@@ -18,10 +18,29 @@ The LLMGenerateStep component enables recipes to generate content using large la
 
 - Use `render_template` for templating prompts, model identifiers, mcp server configs, and output key
 - Convert any MCP Server configurations to `MCPServer` instances (via `get_mcp_server`) to pass as `mcp_servers` to the LLM component
-- If `output_format` is an object (JSON schema):
-  - Use `json_schema_to_pydantic_model` to create a dynamic Pydantic model from the JSON schema
+- If `output_format` is an object (JSON schema) or list:
+  - Use `json_object_to_pydantic_model` to create a dynamic Pydantic model from the JSON schema
   - Pass the dynamic model to the LLM call as the `output_type` parameter
   - After receiving the results, convert the output to a Dict[str, Any] and store it in the context
+- If `output_format` is a list:
+  - Wrap the list in an object with a root key `items`:
+    ```python
+    object_schema = {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        }
+    }
+    ```
+  - Use `json_object_to_pydantic_model` to create a dynamic Pydantic model from the JSON schema
+  - Pass the dynamic model to the LLM call as the `output_type` parameter
+  - After receiving the results, retrieve the list from the output and store it in the context:
+    ```python
+    context.set_value(output_key, result["items"])
+    ```
 - If `output_format` is "files":
   - Pass the following `FileSpecCollection` model to the LLM call:
     ```python
@@ -52,7 +71,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - **Models**: Uses the `FileSpec` model for file generation output
 - **LLM**: Uses the LLM component class `LLM` from `llm_utils.llm` to interact with language models and optional MCP servers
 - **MCP**: Uses the `get_mcp_server` function to convert MCP server configurations to `MCPServer` instances
-- **Utils/Models**: Uses `json_schema_to_pydantic_model` to create dynamic Pydantic models from JSON schemas
+- **Utils/Models**: Uses `json_object_to_pydantic_model` to create dynamic Pydantic models from JSON objects
 - **Utils/Templates**: Uses `render_template` for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries

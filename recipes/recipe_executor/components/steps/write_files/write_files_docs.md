@@ -125,6 +125,50 @@ files = [
 context["generated_files"] = files
 ```
 
+## Automatic JSON Serialization
+
+When the content to be written is a Python dictionary or list, WriteFilesStep automatically serializes it to properly formatted JSON:
+
+```json
+{
+  "steps": [
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Generate configuration data for a project.",
+        "model": "openai/o3-mini",
+        "output_format": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "dependencies": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "output_key": "project_config"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "files": [
+          {
+            "path": "config.json",
+            "content_key": "project_config"
+          }
+        ],
+        "root": "output"
+      }
+    }
+  ]
+}
+```
+
+In this example, `project_config` is a Python dictionary, but when written to `config.json`, it will be automatically serialized as proper JSON with double quotes and indentation.
+
 ## Using Template Variables
 
 The root path and individual file paths can include template variables:
@@ -166,6 +210,25 @@ FileSpec(
 }
 ```
 
+**Writing Structured Data as JSON**:
+
+```json
+{
+  "type": "write_files",
+  "config": {
+    "root": "output/data",
+    "files": [
+      {
+        "path": "config.json",
+        "content_key": "config_data"
+      }
+    ]
+  }
+}
+```
+
+When `config_data` is a Python dictionary or list, it will be automatically serialized as formatted JSON.
+
 **Project-Specific Output**:
 
 ```json
@@ -192,8 +255,10 @@ FileSpec(
 
 ## Important Notes
 
-- Directories are created automatically if they don’t exist
+- Directories are created automatically if they don't exist
 - Files are overwritten without confirmation if they already exist
 - All paths are rendered using template variables from the context (ContextProtocol)
 - File content is written using UTF-8 encoding
 - Both FileSpec and List[FileSpec] input formats are supported
+- Python dictionaries and lists are automatically serialized to properly formatted JSON with indentation
+- JSON serialization uses `json.dumps(content, ensure_ascii=False, indent=2)` for consistent formatting

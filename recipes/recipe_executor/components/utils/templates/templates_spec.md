@@ -15,7 +15,7 @@ The Utils component provides general utility functions for recipes, primarily fo
 ## Implementation Considerations
 
 - Use the Liquid templating library directly without unnecessary abstraction
-- Convert context values to strings before rendering to prevent type errors
+- Pass the `context.dict()` to the Liquid template for rendering
 - Handle rendering errors gracefully with clear error messages
 - Keep the implementation stateless and focused on its single responsibility
 

@@ -1,0 +1,109 @@
+{
+  "steps": [
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Initialize processing variables.\n\nOutput only this JSON object:\n{\n  \"iteration\": 0,\n  \"max_iterations\": 3,\n  \"done_processing\": false\n}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": {
+          "type": "object",
+          "properties": {
+            "iteration": { "type": "integer" },
+            "max_iterations": { "type": "integer" },
+            "done_processing": { "type": "boolean" }
+          },
+          "required": ["iteration", "max_iterations", "done_processing"]
+        },
+        "output_key": "process_state"
+      }
+    },
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Create a copy of the components to process.\n\nComponents:\n{{components_to_process}}\n\nOutput only this identical JSON array without any changes.",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": [
+          {
+            "type": "object",
+            "properties": {
+              "component_id": { "type": "string" },
+              "spec_file": { "type": "string" },
+              "needs_analysis": { "type": "boolean" }
+            },
+            "required": ["component_id", "spec_file", "needs_analysis"]
+          }
+        ],
+        "output_key": "current_components"
+      }
+    },
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Initialize empty arrays for results.\n\nOutput only this JSON object:\n{\n  \"final_components\": [],\n  \"components_to_split\": [],\n  \"new_components\": []\n}",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": {
+          "type": "object",
+          "properties": {
+            "final_components": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "component_id": { "type": "string" },
+                  "spec_file": { "type": "string" },
+                  "needs_analysis": { "type": "boolean" }
+                },
+                "required": ["component_id", "spec_file", "needs_analysis"]
+              }
+            },
+            "components_to_split": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "component_id": { "type": "string" },
+                  "spec_file": { "type": "string" },
+                  "needs_analysis": { "type": "boolean" }
+                },
+                "required": ["component_id", "spec_file", "needs_analysis"]
+              }
+            },
+            "new_components": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "component_id": { "type": "string" },
+                  "spec_file": { "type": "string" },
+                  "needs_analysis": { "type": "boolean" }
+                },
+                "required": ["component_id", "spec_file", "needs_analysis"]
+              }
+            }
+          },
+          "required": [
+            "final_components",
+            "components_to_split",
+            "new_components"
+          ]
+        },
+        "output_key": "processing_results"
+      }
+    },
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "Determine which recipe to run based on process state.\n\nProcess State:\n{{process_state}}\n\nIf iteration < max_iterations and not done_processing, output 'process_components_iteration.json'. Otherwise, output 'finalize_components.json'.\n\nOutput only the recipe filename and nothing else.",
+        "model": "{{model|default:'openai/o3-mini'}}",
+        "output_format": "text",
+        "output_key": "next_recipe"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "recipes/blueprint_generator/recipes/{{next_recipe}}"
+      }
+    }
+  ]
+}

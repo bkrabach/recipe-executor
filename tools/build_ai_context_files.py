@@ -100,6 +100,13 @@ def build_context_files(force=False) -> None:
             "exclude": collect_files.DEFAULT_EXCLUDE,
             "include": [],
         },
+        # Collect files from recipes/blueprint_generator
+        {
+            "patterns": ["recipes/blueprint_generator"],
+            "output": f"{OUTPUT_DIR}/blueprint_generator_files.md",
+            "exclude": collect_files.DEFAULT_EXCLUDE,
+            "include": [],
+        },
     ]
 
     # Execute each task
