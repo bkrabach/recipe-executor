@@ -19,6 +19,12 @@
           {
             "type": "execute_recipe",
             "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_edit.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
               "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_edit.json"
             }
           },

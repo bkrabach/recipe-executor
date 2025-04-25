@@ -26,17 +26,16 @@
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Create a list with just the main component for processing.\n\nOutput only this JSON array:\n[\n  {\n    \"component_id\": \"main_component\",\n    \"spec_file\": \"main_component_spec.md\",\n    \"needs_analysis\": false\n  }\n]",
+        "prompt": "Create a list with just the main component for processing.\n\nOutput only this JSON array:\n[\n  {\n    \"component_id\": \"main_component\",\n    \"needs_analysis\": false\n  }\n]",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": [
           {
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "components_to_process"

@@ -1,5 +1,5 @@
 # AI Context Files
-Date: 4/25/2025, 11:27:14 AM
+Date: 4/25/2025, 12:42:28 PM
 Files: 11
 
 === File: recipes/blueprint_generator/blueprint_generator.json ===
@@ -252,7 +252,7 @@ The system should be modular, extensible, and allow for future integration of ma
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -294,7 +294,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Organize the components by their generation order.\n\nComponents:\n{{final_component_list}}\n\nGeneration Order:\n{{component_generation_order}}\n\nCreate an array of components in the correct generation order. Each component should have at least component_id, spec_file, and any other relevant properties from the original final_component_list.\n\nOutput a JSON array of component objects in generation order.",
+        "prompt": "Organize the components by their generation order.\n\nComponents:\n{{final_component_list}}\n\nGeneration Order:\n{{component_generation_order}}\n\nCreate an array of components in the correct generation order. Each component should have at least a component_id and any other relevant properties from the original final_component_list.\n\nOutput a JSON array of component objects in generation order.",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": {
           "type": "array",
@@ -302,10 +302,9 @@ The system should be modular, extensible, and allow for future integration of ma
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         },
         "output_key": "ordered_components"
@@ -391,7 +390,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "read_files",
       "config": {
-        "path": "{{output_dir}}/components/{{component.spec_file}}",
+        "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
         "content_key": "component_spec"
       }
     },
@@ -509,10 +508,9 @@ The system should be modular, extensible, and allow for future integration of ma
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "current_components"
@@ -532,10 +530,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -544,10 +541,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "new_components": {
@@ -556,10 +552,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
@@ -603,7 +598,7 @@ The system should be modular, extensible, and allow for future integration of ma
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -673,10 +668,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -685,10 +679,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
@@ -706,7 +699,7 @@ The system should be modular, extensible, and allow for future integration of ma
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -737,23 +730,17 @@ The system should be modular, extensible, and allow for future integration of ma
           {
             "type": "llm_generate",
             "config": {
-              "prompt": "Extract the component IDs from these sub-component specifications and create a list of sub-components for further processing.\n\nSub-Component Specs:\n{{subcomponent_specs}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"subcomponent_identifier\",\n    \"spec_file\": \"subcomponent_identifier_spec.md\",\n    \"needs_analysis\": true,\n    \"parent_id\": \"{{component.component_id}}\"\n  }\n]",
+              "prompt": "Extract the component IDs from these sub-component specifications and create a list of sub-components for further processing.\n\nSub-Component Specs:\n{{subcomponent_specs}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"subcomponent_identifier\",\n    \"needs_analysis\": true,\n    \"parent_id\": \"{{component.component_id}}\"\n  }\n]",
               "model": "{{model|default:'openai/o3-mini'}}",
               "output_format": [
                 {
                   "type": "object",
                   "properties": {
                     "component_id": { "type": "string" },
-                    "spec_file": { "type": "string" },
                     "needs_analysis": { "type": "boolean" },
                     "parent_id": { "type": "string" }
                   },
-                  "required": [
-                    "component_id",
-                    "spec_file",
-                    "needs_analysis",
-                    "parent_id"
-                  ]
+                  "required": ["component_id", "needs_analysis", "parent_id"]
                 }
               ],
               "output_key": "component_subcomponents"
@@ -794,10 +781,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -806,10 +792,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "new_components": {
@@ -818,10 +803,9 @@ The system should be modular, extensible, and allow for future integration of ma
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
@@ -845,10 +829,9 @@ The system should be modular, extensible, and allow for future integration of ma
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         },
         "output_key": "next_iteration_components"
@@ -907,17 +890,16 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Create a list with just the main component for processing.\n\nOutput only this JSON array:\n[\n  {\n    \"component_id\": \"main_component\",\n    \"spec_file\": \"main_component_spec.md\",\n    \"needs_analysis\": false\n  }\n]",
+        "prompt": "Create a list with just the main component for processing.\n\nOutput only this JSON array:\n[\n  {\n    \"component_id\": \"main_component\",\n    \"needs_analysis\": false\n  }\n]",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": [
           {
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "components_to_process"
@@ -985,17 +967,16 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Based on the component specifications that were generated, create a list of components for further processing.\n\nComponents from Analysis:\n{{analysis_result.recommended_components}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"component_identifier\",\n    \"spec_file\": \"component_identifier_spec.md\",\n    \"needs_analysis\": true\n  }\n]\n\nEnsure that all components are included, using the exact component_id values from the analysis result.",
+        "prompt": "Based on the component specifications that were generated, create a list of components for further processing.\n\nComponents from Analysis:\n{{analysis_result.recommended_components}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"component_identifier\",\n    \"needs_analysis\": true\n  }\n]\n\nEnsure that all components are included, using the exact component_id values from the analysis result.",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": [
           {
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "components_to_process"

@@ -40,13 +40,14 @@ None
 ## Output Files
 
 - `steps/registry.py`
-- `steps/__init__.py` (details below, write this file in addition to the registry.py file)
+- `steps/__init__.py` (details below, IMPORTANT - write this file in addition to the registry.py file!)
 
 Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
 
 ```python
 # In recipe_executor/steps/__init__.py
 from recipe_executor.steps.registry import STEP_REGISTRY
+from recipe_executor.steps.conditional import ConditionalStep
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.llm_generate import LLMGenerateStep
 from recipe_executor.steps.loop import LoopStep
@@ -57,6 +58,7 @@ from recipe_executor.steps.write_files import WriteFilesStep
 
 # Register steps by updating the registry
 STEP_REGISTRY.update({
+    "conditional": ConditionalStep,
     "execute_recipe": ExecuteRecipeStep,
     "llm_generate": LLMGenerateStep,
     "loop": LoopStep,

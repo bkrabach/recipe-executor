@@ -49,17 +49,16 @@
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Based on the component specifications that were generated, create a list of components for further processing.\n\nComponents from Analysis:\n{{analysis_result.recommended_components}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"component_identifier\",\n    \"spec_file\": \"component_identifier_spec.md\",\n    \"needs_analysis\": true\n  }\n]\n\nEnsure that all components are included, using the exact component_id values from the analysis result.",
+        "prompt": "Based on the component specifications that were generated, create a list of components for further processing.\n\nComponents from Analysis:\n{{analysis_result.recommended_components}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"component_identifier\",\n    \"needs_analysis\": true\n  }\n]\n\nEnsure that all components are included, using the exact component_id values from the analysis result.",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": [
           {
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "components_to_process"

@@ -17,6 +17,7 @@ from recipe_executor.steps.base import BaseStep
 
 # Structure of STEP_REGISTRY
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {
+    "conditional": ConditionalStep,
     "execute_recipe": ExecuteRecipeStep,
     "llm_generate": LLMGenerateStep,
     "loop": LoopStep,

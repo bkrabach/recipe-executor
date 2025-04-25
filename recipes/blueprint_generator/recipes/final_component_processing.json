@@ -9,7 +9,7 @@
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -51,7 +51,7 @@
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "Organize the components by their generation order.\n\nComponents:\n{{final_component_list}}\n\nGeneration Order:\n{{component_generation_order}}\n\nCreate an array of components in the correct generation order. Each component should have at least component_id, spec_file, and any other relevant properties from the original final_component_list.\n\nOutput a JSON array of component objects in generation order.",
+        "prompt": "Organize the components by their generation order.\n\nComponents:\n{{final_component_list}}\n\nGeneration Order:\n{{component_generation_order}}\n\nCreate an array of components in the correct generation order. Each component should have at least a component_id and any other relevant properties from the original final_component_list.\n\nOutput a JSON array of component objects in generation order.",
         "model": "{{model|default:'openai/o3-mini'}}",
         "output_format": {
           "type": "array",
@@ -59,10 +59,9 @@
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         },
         "output_key": "ordered_components"

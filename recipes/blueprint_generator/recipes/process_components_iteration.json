@@ -9,7 +9,7 @@
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -79,10 +79,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -91,10 +90,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
@@ -112,7 +110,7 @@
           {
             "type": "read_files",
             "config": {
-              "path": "{{output_dir}}/components/{{component.spec_file}}",
+              "path": "{{output_dir}}/components/{{component.component_id}}_spec.md",
               "content_key": "component_spec"
             }
           },
@@ -143,23 +141,17 @@
           {
             "type": "llm_generate",
             "config": {
-              "prompt": "Extract the component IDs from these sub-component specifications and create a list of sub-components for further processing.\n\nSub-Component Specs:\n{{subcomponent_specs}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"subcomponent_identifier\",\n    \"spec_file\": \"subcomponent_identifier_spec.md\",\n    \"needs_analysis\": true,\n    \"parent_id\": \"{{component.component_id}}\"\n  }\n]",
+              "prompt": "Extract the component IDs from these sub-component specifications and create a list of sub-components for further processing.\n\nSub-Component Specs:\n{{subcomponent_specs}}\n\nOutput a JSON array of component objects with structure:\n[\n  {\n    \"component_id\": \"subcomponent_identifier\",\n    \"needs_analysis\": true,\n    \"parent_id\": \"{{component.component_id}}\"\n  }\n]",
               "model": "{{model|default:'openai/o3-mini'}}",
               "output_format": [
                 {
                   "type": "object",
                   "properties": {
                     "component_id": { "type": "string" },
-                    "spec_file": { "type": "string" },
                     "needs_analysis": { "type": "boolean" },
                     "parent_id": { "type": "string" }
                   },
-                  "required": [
-                    "component_id",
-                    "spec_file",
-                    "needs_analysis",
-                    "parent_id"
-                  ]
+                  "required": ["component_id", "needs_analysis", "parent_id"]
                 }
               ],
               "output_key": "component_subcomponents"
@@ -200,10 +192,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -212,10 +203,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "new_components": {
@@ -224,10 +214,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
@@ -251,10 +240,9 @@
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         },
         "output_key": "next_iteration_components"

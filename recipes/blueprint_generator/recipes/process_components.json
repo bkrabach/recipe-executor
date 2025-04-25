@@ -27,10 +27,9 @@
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
-              "spec_file": { "type": "string" },
               "needs_analysis": { "type": "boolean" }
             },
-            "required": ["component_id", "spec_file", "needs_analysis"]
+            "required": ["component_id", "needs_analysis"]
           }
         ],
         "output_key": "current_components"
@@ -50,10 +49,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "components_to_split": {
@@ -62,10 +60,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             },
             "new_components": {
@@ -74,10 +71,9 @@
                 "type": "object",
                 "properties": {
                   "component_id": { "type": "string" },
-                  "spec_file": { "type": "string" },
                   "needs_analysis": { "type": "boolean" }
                 },
-                "required": ["component_id", "spec_file", "needs_analysis"]
+                "required": ["component_id", "needs_analysis"]
               }
             }
           },
