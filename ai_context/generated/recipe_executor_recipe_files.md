@@ -1,6 +1,6 @@
 # AI Context Files
-Date: 4/25/2025, 11:27:14 AM
-Files: 91
+Date: 4/25/2025, 3:31:09 PM
+Files: 95
 
 === File: recipes/recipe_executor/ai_context/DEV_GUIDE_FOR_PYTHON.md ===
 # Dev Guide for Python
@@ -2377,6 +2377,352 @@ The purpose of the Steps Base component is to provide a foundational structure f
 - `steps/base.py`
 
 
+=== File: recipes/recipe_executor/components/steps/conditional/conditional_create.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
+        "content_key": "steps_base_docs"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
+        "content_key": "context_docs"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
+        "content_key": "templates_docs"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
+        "context_overrides": {
+          "component_id": "conditional",
+          "component_path": "/steps",
+          "existing_code": "{{existing_code}}",
+          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
+        }
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/components/steps/conditional/conditional_docs.md ===
+# Conditional Step Documentation
+
+## Importing
+
+```python
+from recipe_executor.steps.conditional import ConditionalStep
+```
+
+## Configuration
+
+The ConditionalStep is configured with a condition expression and step branches to execute based on the evaluation result:
+
+```python
+class ConditionalConfig(StepConfig):
+    """
+    Configuration for ConditionalStep.
+
+    Fields:
+        condition: Expression string to evaluate against the context.
+        if_true: Optional steps to execute when the condition evaluates to true.
+        if_false: Optional steps to execute when the condition evaluates to false.
+    """
+    condition: str
+    if_true: Optional[Dict[str, Any]] = None
+    if_false: Optional[Dict[str, Any]] = None
+```
+
+## Step Registration
+
+The ConditionalStep is registered in the steps package:
+
+```python
+from recipe_executor.steps.registry import STEP_REGISTRY
+from recipe_executor.steps.conditional import ConditionalStep
+
+STEP_REGISTRY["conditional"] = ConditionalStep
+```
+
+## Basic Usage in Recipes
+
+The ConditionalStep allows you to branch execution paths based on evaluating expressions:
+
+```json
+{
+  "steps": [
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "context['analysis_result']['needs_splitting'] == true",
+        "if_true": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/recipes/split_project.json"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/recipes/process_single_component.json"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Supported Expression Types
+
+### Context Value Checks
+
+```json
+"condition": "context['key'] == 'value'"
+"condition": "context['nested']['key'] != null"
+"condition": "context['count'] > 0"
+```
+
+### File Operations
+
+```json
+"condition": "file_exists('{{output_dir}}/specs/initial_project_spec.md')"
+"condition": "all_files_exist(['file1.md', 'file2.md'])"
+"condition": "file_is_newer('source.txt', 'output.txt')"
+```
+
+### Logical Operations
+
+```json
+"condition": "and(context['a'] == true, context['b'] == true)"
+"condition": "or(file_exists('file1.md'), file_exists('file2.md'))"
+"condition": "not(context['skip_processing'])"
+```
+
+### Template Variables in Expressions
+
+```json
+"condition": "file_exists('{{output_dir}}/components/{{component_id}}_spec.md')"
+```
+
+## Common Use Cases
+
+### Conditional Recipe Execution
+
+```json
+{
+  "type": "conditional",
+  "config": {
+    "condition": "context['step_complete'] == true",
+    "if_true": {
+      "steps": [
+        {
+          "type": "execute_recipe",
+          "config": {
+            "recipe_path": "recipes/next_step.json"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### File Existence Checking
+
+```json
+{
+  "type": "conditional",
+  "config": {
+    "condition": "file_exists('{{output_path}}')",
+    "if_true": {
+      "steps": [
+        /* Steps to handle existing file */
+      ]
+    },
+    "if_false": {
+      "steps": [
+        /* Steps to generate the file */
+      ]
+    }
+  }
+}
+```
+
+### Complex Condition
+
+```json
+{
+  "type": "conditional",
+  "config": {
+    "condition": "and(context['should_process'] == true, or(file_exists('input1.md'), file_exists('input2.md')))",
+    "if_true": {
+      "steps": [
+        /* Processing steps */
+      ]
+    }
+  }
+}
+```
+
+## Utility Recipe Example
+
+```json
+// check_and_process.json
+{
+  "steps": [
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "all_files_exist(['{{input_file}}', '{{config_file}}'])",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{input_file}}",
+                "content_key": "input_content"
+              }
+            }
+            /* More processing steps */
+          ]
+        },
+        "if_false": {
+          "steps": [
+            /* Steps to handle missing files */
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Expressions are evaluated in the context of the current recipe execution
+- Template variables in the condition string are rendered before evaluation
+- Both `if_true` and `if_false` branches are optional and can be omitted for simple checks
+- When a branch doesn't exist for the condition result, that path is simply skipped
+- Nested conditional steps are supported for complex decision trees
+- The conditional step is specifically designed to reduce unnecessary LLM calls in recipes
+
+
+=== File: recipes/recipe_executor/components/steps/conditional/conditional_edit.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/conditional.py",
+        "content_key": "existing_code"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_create.json",
+        "context_overrides": {
+          "existing_code": "{{existing_code}}"
+        }
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/components/steps/conditional/conditional_spec.md ===
+# Conditional Step Type Specification
+
+## Purpose
+
+The Conditional step enables branching execution paths in recipes based on evaluating expressions. It serves as a key building block for creating utility recipes or non-LLM flow control.
+
+## Core Requirements
+
+- Evaluate conditional expressions against the current context state
+- Support multiple condition types including:
+  - Context value checks
+  - File existence checks
+  - Comparison operations
+- Execute different sets of steps based on the result of the condition evaluation
+- Support nested conditions and complex logical operations
+- Provide clear error messages when expressions are invalid
+
+## Implementation Considerations
+
+- Support template rendering in the condition string before evaluation
+- Keep expression evaluation lightweight and focused on common needs
+- Allow for direct access to context values via expression syntax
+- Make error messages helpful for debugging invalid expressions
+- Process nested step configurations in a recursive manner
+- Ensure consistent logging of condition results and execution paths
+- Properly handle function-like logical operations that conflict with Python keywords:
+
+  - Transform logical function calls before evaluation:
+
+    ```python
+      # First replace boolean literals
+      expr = expr.replace(" true", " True").replace(" false", " False").replace(" null", " None")
+
+      # Transform logical function calls to avoid Python keyword conflicts
+      # Look for function calls with opening parenthesis to avoid replacing words inside strings
+      expr = expr.replace("and(", "_and(")
+      expr = expr.replace("or(", "_or(")
+      expr = expr.replace("not(", "_not(")
+    ```
+
+## Logging
+
+- Debug: Log the condition being evaluated, its result, and which branch is taken
+- Info: None
+
+## Component Dependencies
+
+### Internal Components
+
+- **Context**: Uses context to access values for condition evaluation
+- **Utils/Templates**: Uses template rendering for condition strings with variables
+
+### External Libraries
+
+None
+
+### Configuration Dependencies
+
+None
+
+## Error Handling
+
+- Provide clear error messages for invalid expressions
+- Handle missing context values gracefully (typically evaluating to false)
+- Properly propagate errors from executed step branches
+
+## Output Files
+
+- `steps/conditional.py`
+
+
 === File: recipes/recipe_executor/components/steps/create.json ===
 {
   "steps": [
@@ -2406,6 +2752,12 @@ The purpose of the Steps Base component is to provide a foundational structure f
             "type": "execute_recipe",
             "config": {
               "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/llm_generate/llm_generate_create.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_create.json"
             }
           },
           {
@@ -2464,6 +2816,12 @@ The purpose of the Steps Base component is to provide a foundational structure f
             "type": "execute_recipe",
             "config": {
               "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_edit.json"
+            }
+          },
+          {
+            "type": "execute_recipe",
+            "config": {
+              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_edit.json"
             }
           },
           {
@@ -3311,17 +3669,14 @@ The LLMGenerateStep component enables recipes to generate content using large la
         "properties": {
             "items": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": // Define the item schema here
             }
         }
     }
     ```
   - Use `json_object_to_pydantic_model` to create a dynamic Pydantic model from the JSON schema
   - Pass the dynamic model to the LLM call as the `output_type` parameter
-  - After receiving the results, retrieve the list from the output and store it in the context:
-    ```python
-    context.set_value(output_key, result["items"])
-    ```
+  - After receiving the results, convert the output to a Dict[str, Any] and store the `items` list in the context
 - If `output_format` is "files":
   - Pass the following `FileSpecCollection` model to the LLM call:
     ```python
@@ -3352,7 +3707,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - **Models**: Uses the `FileSpec` model for file generation output
 - **LLM**: Uses the LLM component class `LLM` from `llm_utils.llm` to interact with language models and optional MCP servers
 - **MCP**: Uses the `get_mcp_server` function to convert MCP server configurations to `MCPServer` instances
-- **Utils/Models**: Uses `json_object_to_pydantic_model` to create dynamic Pydantic models from JSON objects
+- **Utils/Models**: Uses `json_object_to_pydantic_model` to create dynamic Pydantic models from JSON objects, after receiving the results from the LLM use `.model_dump()` to convert the Pydantic model to a dictionary
 - **Utils/Templates**: Uses `render_template` for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries
@@ -3455,17 +3810,63 @@ class LoopStepConfig(StepConfig):
         items: Key in the context containing the collection to iterate over. Supports template variable syntax
                with dot notation for accessing nested data structures (e.g., "data.items", "response.results").
         item_key: Key to use when storing the current item in each iteration's context.
+        max_concurrency: Maximum number of items to process concurrently.
+                         Default = 1 means process items sequentially (no parallelism).
+                         n > 1 means process up to n items at a time.
+                         0 means no explicit limit (all items may run at once, limited only by system resources).
+        delay: Time in seconds to wait between starting each parallel task.
+               Default = 0 means no delay (all allowed items start immediately).
         substeps: List of sub-step configurations to execute for each item.
         result_key: Key to store the collection of results in the context.
-        fail_fast: Whether to stop processing on the first error (default: True).
+        fail_fast: Whether to stop processing on the first error.
     """
 
     items: str
     item_key: str
+    max_concurrency: int = 1
+    delay: float = 0.0
     substeps: List[Dict[str, Any]]
     result_key: str
     fail_fast: bool = True
 ```
+
+## Parallel Execution Support
+
+The LoopStep supports parallel processing of items:
+
+```json
+{
+  "type": "loop",
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "max_concurrency": 3,  // Process up to 3 items in parallel
+    "delay": 0.2,          // Wait 0.2 seconds between starting each task
+    "substeps": [...],
+    "result_key": "processed_components"
+  }
+}
+```
+
+### Parallel Execution Parameters
+
+- **max_concurrency**: Maximum number of items to process concurrently.
+
+  - `0` (default): Process all items at once (limited only by system resources)
+  - `1`: Process items sequentially (no parallelism)
+  - `n > 1`: Process up to n items at a time
+
+- **delay**: Time in seconds to wait between starting each parallel task.
+  - `0.0` (default): Start all allowed tasks immediately
+  - `n > 0`: Add n seconds delay between starting each task
+
+### When to Use Parallel Execution
+
+Parallel execution is most beneficial for loops where:
+
+- Each item's processing is independent of other items
+- Processing each item involves significant wait time (e.g., LLM calls, network requests)
+- The number of items is large enough to benefit from parallelism
 
 ## Step Registration
 
@@ -3642,6 +4043,40 @@ Within each iteration, you can reference:
 }
 ```
 
+### Parallel Processing Example
+
+```json
+{
+  "type": "loop",
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "max_concurrency": 5,
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Generate a blueprint for component: {{component.name}}",
+          "model": "{{model}}",
+          "output_format": "files",
+          "output_key": "blueprint"
+        }
+      },
+      {
+        "type": "write_files",
+        "config": {
+          "files_key": "blueprint",
+          "root": "{{output_dir}}/components/{{component.id}}"
+        }
+      }
+    ],
+    "result_key": "processed_blueprints"
+  }
+}
+```
+
+In this example, up to 5 components will be processed simultaneously, each generating and writing a blueprint. This can significantly reduce execution time for LLM-intensive operations across multiple items.
+
 ## Error Handling
 
 By default, the LoopStep will stop processing on the first error (`fail_fast: true`). You can change this behavior:
@@ -3715,6 +4150,11 @@ The LoopStep component enables recipes to iterate over a collection of items, ex
 - Provide consistent error handling across all iterations
 - Maintain processing state to enable resumability
 - Support various collection types (arrays, objects)
+- Support concurrent processing of items using configurable parallelism settings (max_concurrency > 1)
+- Provide control over the number of items processed simultaneously
+- Allow for staggered execution of parallel items via optional delay parameter
+- Prevent nested thread pool creation that could lead to deadlocks or resource exhaustion
+- Provide reliable completion of all tasks regardless of recipe structure or nesting
 
 ## Implementation Considerations
 
@@ -3728,21 +4168,31 @@ The LoopStep component enables recipes to iterate over a collection of items, ex
 - Handle empty collections gracefully
 - Leverage asyncio for efficient processing
 - Support structured iteration history for debugging
+- Use asyncio for concurrency control and task management
+- If parallel item processing is enabled (max_concurrency > 1):
+  - Implement an async execution model to allow for non-blocking I/O operations
+  - When executing items in parallel, properly await async operations and run sync operations directly
+  - Use `Context.clone()` to create independent context copies for each item
+  - Implement a configurable launch delay (using `asyncio.sleep`) for staggered start times
+  - Monitor exceptions and implement fail-fast behavior
+  - Provide clear logging for item lifecycle events and execution summary
+  - Manage resources efficiently to prevent memory or thread leaks
 
 ## Component Dependencies
 
 ### Internal Components
 
-- **Protocols** – (Required) Leverages ContextProtocol for context sharing, ExecutorProtocol for execution, and StepProtocol for the step interface contract
-- **Step Base** – (Required) Adheres to the step execution interface via StepProtocol
-- **Step Registry** – (Required) Uses the step registry to instantiate the `execute_recipe` step for each sub-step
-- **Context** – (Required) Shares data via a context object implementing the ContextProtocol between the main recipe and sub-recipes
-- **Executor** – (Required) Uses an executor implementing ExecutorProtocol to run the sub-recipe
-- **Utils/Templates** – (Required) Uses template rendering for the `items` path and sub-step configurations
+- **Protocols**: Leverages ContextProtocol for context sharing, ExecutorProtocol for execution, and StepProtocol for the step interface contract
+- **Step Base**: Adheres to the step execution interface via StepProtocol
+- **Step Registry**: Uses the step registry to instantiate the `execute_recipe` step for each sub-step
+- **Context**: Shares data via a context object implementing the ContextProtocol between the main recipe and sub-recipes
+- **Executor**: Uses an executor implementing ExecutorProtocol to run the sub-recipe
+- **Utils/Templates**: Uses template rendering for the `items` path and sub-step configurations
 
 ### External Libraries
 
-- **asyncio** - (Required) Uses asyncio for asynchronous processing
+- **asyncio**: Uses asyncio for asynchronous processing and managing parallel processing of loop items
+- **time**: Uses `time.sleep` to implement delays between sub-step launches
 
 ### Configuration Dependencies
 
@@ -3756,7 +4206,6 @@ None
 
 - Debug: Log the start/end of each item processing with its index/key, log steps execution within the loop
 - Info: Log high-level information about how many items are being processed and the result collection
-- Error: Log detailed error information including which item caused the error and at what stage
 
 ## Error Handling
 
@@ -3766,14 +4215,6 @@ None
 - Provide clear error messages when an item fails processing
 - Include the item key/index in error messages for easier debugging
 - Allow configuration of whether to fail fast or continue on errors
-
-## Future Considerations
-
-- Parallel processing of items with configurable concurrency
-- Enhanced filtering capabilities to process only certain items
-- Progress tracking for long-running loops
-- Checkpointing and resumability for very large collections
-- Support for early termination based on conditions
 
 
 === File: recipes/recipe_executor/components/steps/mcp/mcp_create.json ===
@@ -4053,7 +4494,7 @@ class ParallelConfig(StepConfig):
     """
     substeps: List[Dict[str, Any]]
     max_concurrency: int = 0
-    delay: float = 0
+    delay: float = 0.0
 ```
 
 ## Step Registration
@@ -4099,8 +4540,8 @@ The ParallelStep allows you to run multiple steps concurrently. Sub-steps are de
             }
           }
         ],
-        "max_concurrency": 2,
-        "delay": 1
+        "max_concurrency": 2, // Process up to 2 sub-steps in parallel
+        "delay": 0.5 // Optional delay of 0.5 seconds between starting each sub-step
       }
     }
   ]
@@ -4184,7 +4625,7 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 
 ### External Libraries
 
-- **ThreadPoolExecutor**: Uses `concurrent.futures.ThreadPoolExecutor` for parallel execution
+- **asyncio**: Utilizes asyncio for asynchronous task management and parallel execution
 - **time**: Uses `time.sleep` to implement delays between sub-step launches
 
 ### Configuration Dependencies
@@ -4642,6 +5083,7 @@ from recipe_executor.steps.base import BaseStep
 
 # Structure of STEP_REGISTRY
 STEP_REGISTRY: Dict[str, Type[BaseStep]] = {
+    "conditional": ConditionalStep,
     "execute_recipe": ExecuteRecipeStep,
     "llm_generate": LLMGenerateStep,
     "loop": LoopStep,
@@ -4756,13 +5198,14 @@ None
 ## Output Files
 
 - `steps/registry.py`
-- `steps/__init__.py` (details below, write this file in addition to the registry.py file)
+- `steps/__init__.py` (details below, IMPORTANT - write this file in addition to the registry.py file!)
 
 Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
 
 ```python
 # In recipe_executor/steps/__init__.py
 from recipe_executor.steps.registry import STEP_REGISTRY
+from recipe_executor.steps.conditional import ConditionalStep
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
 from recipe_executor.steps.llm_generate import LLMGenerateStep
 from recipe_executor.steps.loop import LoopStep
@@ -4773,6 +5216,7 @@ from recipe_executor.steps.write_files import WriteFilesStep
 
 # Register steps by updating the registry
 STEP_REGISTRY.update({
+    "conditional": ConditionalStep,
     "execute_recipe": ExecuteRecipeStep,
     "llm_generate": LLMGenerateStep,
     "loop": LoopStep,
@@ -5786,7 +6230,7 @@ None
     {
       "type": "llm_generate",
       "config": {
-        "prompt": "You are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n{{spec}}\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}Ensure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\nGenerate the appropriate file(s) (if the spec defines multiple output files, make sure to create each): {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, etc.\n\n",
+        "prompt": "# TASK\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n<SPECIFICATION>\n{{spec}}\n</SPECIFICATION>\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}# GUIDANCE\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\n# OUTPUT\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at onces return in the `files` collection). For example, {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}__init__.py, etc.\n\n",
         "model": "{{model|default:'openai/gpt-4.1'}}",
         "output_format": "files",
         "output_key": "generated_files"

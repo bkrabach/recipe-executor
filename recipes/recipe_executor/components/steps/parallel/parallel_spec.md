@@ -37,7 +37,7 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 
 ### External Libraries
 
-- **ThreadPoolExecutor**: Uses `concurrent.futures.ThreadPoolExecutor` for parallel execution
+- **asyncio**: Utilizes asyncio for asynchronous task management and parallel execution
 - **time**: Uses `time.sleep` to implement delays between sub-step launches
 
 ### Configuration Dependencies

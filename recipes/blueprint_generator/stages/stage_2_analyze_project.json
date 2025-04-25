@@ -1,0 +1,81 @@
+{
+  "steps": [
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "file_exists('{{output_dir}}/analysis/analysis_result.json')",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/analysis/analysis_result.json",
+                "content_key": "analysis_result",
+                "merge_mode": "dict"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/specs/initial_project_spec.md",
+                "content_key": "project_spec"
+              }
+            },
+            {
+              "type": "llm_generate",
+              "config": {
+                "prompt": "Analyze this project specification and determine if it should be split into multiple components.\n\nProject Specification:\n{{project_spec}}\n\nGuidance Documents:\n{{guidance_docs}}\n\nProvide your analysis as a JSON object with the following structure:\n{\n  \"needs_splitting\": true/false,\n  \"reasoning\": \"Explanation of your decision\",\n  \"recommended_components\": [\n    {\n      \"component_id\": \"component_identifier\",\n      \"component_name\": \"Human Readable Component Name\",\n      \"description\": \"Brief description of this component\"\n    }\n  ]\n}\n\nYour response should be ONLY valid JSON with no additional text.",
+                "model": "{{model|default:'openai/o3-mini'}}",
+                "output_format": {
+                  "type": "object",
+                  "properties": {
+                    "needs_splitting": { "type": "boolean" },
+                    "reasoning": { "type": "string" },
+                    "recommended_components": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component_id": { "type": "string" },
+                          "component_name": { "type": "string" },
+                          "description": { "type": "string" }
+                        },
+                        "required": [
+                          "component_id",
+                          "component_name",
+                          "description"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "needs_splitting",
+                    "reasoning",
+                    "recommended_components"
+                  ]
+                },
+                "output_key": "analysis_result"
+              }
+            },
+            {
+              "type": "write_files",
+              "config": {
+                "files": [
+                  {
+                    "path": "analysis/analysis_result.json",
+                    "content_key": "analysis_result"
+                  }
+                ],
+                "root": "{{output_dir}}"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

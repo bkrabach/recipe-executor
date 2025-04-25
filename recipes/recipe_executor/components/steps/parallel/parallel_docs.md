@@ -28,7 +28,7 @@ class ParallelConfig(StepConfig):
     """
     substeps: List[Dict[str, Any]]
     max_concurrency: int = 0
-    delay: float = 0
+    delay: float = 0.0
 ```
 
 ## Step Registration
@@ -74,8 +74,8 @@ The ParallelStep allows you to run multiple steps concurrently. Sub-steps are de
             }
           }
         ],
-        "max_concurrency": 2,
-        "delay": 1
+        "max_concurrency": 2, // Process up to 2 sub-steps in parallel
+        "delay": 0.5 // Optional delay of 0.5 seconds between starting each sub-step
       }
     }
   ]

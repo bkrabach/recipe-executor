@@ -23,17 +23,63 @@ class LoopStepConfig(StepConfig):
         items: Key in the context containing the collection to iterate over. Supports template variable syntax
                with dot notation for accessing nested data structures (e.g., "data.items", "response.results").
         item_key: Key to use when storing the current item in each iteration's context.
+        max_concurrency: Maximum number of items to process concurrently.
+                         Default = 1 means process items sequentially (no parallelism).
+                         n > 1 means process up to n items at a time.
+                         0 means no explicit limit (all items may run at once, limited only by system resources).
+        delay: Time in seconds to wait between starting each parallel task.
+               Default = 0 means no delay (all allowed items start immediately).
         substeps: List of sub-step configurations to execute for each item.
         result_key: Key to store the collection of results in the context.
-        fail_fast: Whether to stop processing on the first error (default: True).
+        fail_fast: Whether to stop processing on the first error.
     """
 
     items: str
     item_key: str
+    max_concurrency: int = 1
+    delay: float = 0.0
     substeps: List[Dict[str, Any]]
     result_key: str
     fail_fast: bool = True
 ```
+
+## Parallel Execution Support
+
+The LoopStep supports parallel processing of items:
+
+```json
+{
+  "type": "loop",
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "max_concurrency": 3,  // Process up to 3 items in parallel
+    "delay": 0.2,          // Wait 0.2 seconds between starting each task
+    "substeps": [...],
+    "result_key": "processed_components"
+  }
+}
+```
+
+### Parallel Execution Parameters
+
+- **max_concurrency**: Maximum number of items to process concurrently.
+
+  - `0` (default): Process all items at once (limited only by system resources)
+  - `1`: Process items sequentially (no parallelism)
+  - `n > 1`: Process up to n items at a time
+
+- **delay**: Time in seconds to wait between starting each parallel task.
+  - `0.0` (default): Start all allowed tasks immediately
+  - `n > 0`: Add n seconds delay between starting each task
+
+### When to Use Parallel Execution
+
+Parallel execution is most beneficial for loops where:
+
+- Each item's processing is independent of other items
+- Processing each item involves significant wait time (e.g., LLM calls, network requests)
+- The number of items is large enough to benefit from parallelism
 
 ## Step Registration
 
@@ -209,6 +255,40 @@ Within each iteration, you can reference:
   }
 }
 ```
+
+### Parallel Processing Example
+
+```json
+{
+  "type": "loop",
+  "config": {
+    "items": "components",
+    "item_key": "component",
+    "max_concurrency": 5,
+    "substeps": [
+      {
+        "type": "llm_generate",
+        "config": {
+          "prompt": "Generate a blueprint for component: {{component.name}}",
+          "model": "{{model}}",
+          "output_format": "files",
+          "output_key": "blueprint"
+        }
+      },
+      {
+        "type": "write_files",
+        "config": {
+          "files_key": "blueprint",
+          "root": "{{output_dir}}/components/{{component.id}}"
+        }
+      }
+    ],
+    "result_key": "processed_blueprints"
+  }
+}
+```
+
+In this example, up to 5 components will be processed simultaneously, each generating and writing a blueprint. This can significantly reduce execution time for LLM-intensive operations across multiple items.
 
 ## Error Handling
 

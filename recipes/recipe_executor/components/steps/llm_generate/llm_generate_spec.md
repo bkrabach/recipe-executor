@@ -30,17 +30,14 @@ The LLMGenerateStep component enables recipes to generate content using large la
         "properties": {
             "items": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": // Define the item schema here
             }
         }
     }
     ```
   - Use `json_object_to_pydantic_model` to create a dynamic Pydantic model from the JSON schema
   - Pass the dynamic model to the LLM call as the `output_type` parameter
-  - After receiving the results, retrieve the list from the output and store it in the context:
-    ```python
-    context.set_value(output_key, result["items"])
-    ```
+  - After receiving the results, convert the output to a Dict[str, Any] and store the `items` list in the context
 - If `output_format` is "files":
   - Pass the following `FileSpecCollection` model to the LLM call:
     ```python
@@ -71,7 +68,7 @@ The LLMGenerateStep component enables recipes to generate content using large la
 - **Models**: Uses the `FileSpec` model for file generation output
 - **LLM**: Uses the LLM component class `LLM` from `llm_utils.llm` to interact with language models and optional MCP servers
 - **MCP**: Uses the `get_mcp_server` function to convert MCP server configurations to `MCPServer` instances
-- **Utils/Models**: Uses `json_object_to_pydantic_model` to create dynamic Pydantic models from JSON objects
+- **Utils/Models**: Uses `json_object_to_pydantic_model` to create dynamic Pydantic models from JSON objects, after receiving the results from the LLM use `.model_dump()` to convert the Pydantic model to a dictionary
 - **Utils/Templates**: Uses `render_template` for dynamic content resolution in prompts and model identifiers
 
 ### External Libraries

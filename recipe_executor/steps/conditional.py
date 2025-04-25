@@ -1,27 +1,66 @@
 import logging
-import operator
 import os
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from recipe_executor.protocols import ContextProtocol
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.utils.templates import render_template
 
-# Utility: simple operators mapping for comparison
-_COMPARISON_OPS: Dict[str, Callable[[Any, Any], bool]] = {
-    "==": operator.eq,
-    "!=": operator.ne,
-    ">": operator.gt,
-    "<": operator.lt,
-    ">=": operator.ge,
-    "<=": operator.le,
-}
-
 
 class ConditionalConfig(StepConfig):
+    """
+    Configuration for ConditionalStep.
+
+    Fields:
+        condition: Expression string to evaluate against the context.
+        if_true: Optional steps to execute when the condition evaluates to true.
+        if_false: Optional steps to execute when the condition evaluates to false.
+    """
+
     condition: str
-    if_true: Dict[str, Any]
+    if_true: Optional[Dict[str, Any]] = None
     if_false: Optional[Dict[str, Any]] = None
+
+
+def _coerce_bool(value: Any) -> bool:
+    # Handles None or missing key as False
+    return bool(value)
+
+
+def file_exists(path: str) -> bool:
+    return os.path.exists(path)
+
+
+def all_files_exist(files: List[str]) -> bool:
+    return all(os.path.exists(f) for f in files)
+
+
+def file_is_newer(source: str, output: str) -> bool:
+    if not os.path.exists(source) or not os.path.exists(output):
+        return False
+    source_time = os.path.getmtime(source)
+    output_time = os.path.getmtime(output)
+    return source_time > output_time
+
+
+def _and(*args: Any) -> bool:
+    return all(_coerce_bool(arg) for arg in args)
+
+
+def _or(*args: Any) -> bool:
+    return any(_coerce_bool(arg) for arg in args)
+
+
+def _not(arg: Any) -> bool:
+    return not _coerce_bool(arg)
+
+
+def _safe_eval(expr: str, eval_globals: Dict[str, Any], eval_locals: Dict[str, Any]) -> Any:
+    # Only allow access to declared builtins and context
+    try:
+        return eval(expr, eval_globals, eval_locals)
+    except Exception as exc:
+        raise ValueError(f"Invalid conditional expression: {expr!r}: {exc}") from exc
 
 
 class ConditionalStep(BaseStep[ConditionalConfig]):
@@ -29,336 +68,69 @@ class ConditionalStep(BaseStep[ConditionalConfig]):
         super().__init__(logger, ConditionalConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        cond_str: str = self.config.condition
-        # Render templates if present
-        try:
-            cond_eval: str = render_template(cond_str, context)
-        except Exception as err:
-            raise ValueError(f"Error rendering template in condition '{cond_str}': {err}")
-
-        try:
-            result: bool = _eval_condition(cond_eval, context)
-        except Exception as err:
-            raise ValueError(f"Error evaluating conditional expression '{cond_eval}': {err}")
-
-        self.logger.debug(f"[Conditional] Evaluated condition: '{cond_eval}' => {result}")
-        branch = self.config.if_true if result else self.config.if_false
-        branch_str = "if_true" if result else "if_false"
-
-        if branch is None:
-            self.logger.debug(f"[Conditional] Branch '{branch_str}' is not defined. Skipping.")
-            return
-
-        steps = branch.get("steps", [])
-        if not isinstance(steps, list):
-            raise ValueError(f"'{branch_str}' must define a 'steps' list.")
-
-        self.logger.debug(f"[Conditional] Executing branch: '{branch_str}' with {len(steps)} step(s).")
-        # Step import here to avoid circular issues
         from recipe_executor.steps.registry import STEP_REGISTRY
 
-        for idx, step_conf in enumerate(steps):
-            if not isinstance(step_conf, dict):
-                raise ValueError(f"Step definition at index {idx} in '{branch_str}' is not a dictionary.")
-            step_type = step_conf.get("type")
-            step_cfg = step_conf.get("config", {})
-            if step_type not in STEP_REGISTRY:
-                raise ValueError(f"No registered step for type '{step_type}' in branch '{branch_str}'.")
-            step_cls = STEP_REGISTRY[step_type]
-            inner_logger = self.logger.getChild(f"{branch_str}.{step_type}[{idx}]")
-            step = step_cls(inner_logger, step_cfg)
-            await step.execute(context)
-
-
-def _eval_condition(expr: str, context: ContextProtocol) -> bool:
-    """
-    Entry-point for evaluating a condition expr string given a context.
-    """
-    # Clean up leading/trailing spaces
-    expr = expr.strip()
-    if not expr:
-        raise ValueError("Empty condition expression is not allowed.")
-    # Try parsing as logical ops first
-    node = _parse_logical(expr)
-    if node is not None:
-        return _eval_logical_node(node, context)
-    # Otherwise, fallback to direct expr
-    return _eval_simple_expr(expr, context)
-
-
-# ---- Simple expression parser below ----
-
-
-def _parse_logical(expr: str) -> Optional[Dict[str, Any]]:
-    # Logical ops: and(expr1, expr2), or(...), not(expr)
-    # Ex: and(context['foo']==1, file_exists('bar'))
-    expr = expr.strip()
-    for op in ("and", "or", "not"):
-        if expr.startswith(f"{op}(") and expr.endswith(")"):
-            inside = expr[len(op) + 1 : -1].strip()
-            parts = _split_args(inside)
-            if op == "not":
-                if len(parts) != 1:
-                    raise ValueError("not(expr) must have exactly one argument.")
-            elif len(parts) < 2:
-                raise ValueError(f"{op}(...): Must have at least two arguments.")
-            return {"type": op, "args": parts}
-    return None
-
-
-def _eval_logical_node(node: Dict[str, Any], context: ContextProtocol) -> bool:
-    op: str = node["type"]
-    parts: List[str] = node["args"]
-    if op == "and":
-        for p in parts:
-            if not _eval_condition(p, context):
-                return False
-        return True
-    elif op == "or":
-        for p in parts:
-            if _eval_condition(p, context):
-                return True
-        return False
-    elif op == "not":
-        return not _eval_condition(parts[0], context)
-    raise ValueError(f"Unknown logical op '{op}' in AST.")
-
-
-def _split_args(s: str) -> List[str]:
-    # Parse expr1, expr2, ... for minimal paren-safe splitting
-    args: List[str] = []
-    cur = ""
-    depth = 0
-    i = 0
-    while i < len(s):
-        c = s[i]
-        if c == "(":
-            depth += 1
-            cur += c
-        elif c == ")":
-            if depth == 0:
-                raise ValueError("Mismatched parenthesis in condition.")
-            depth -= 1
-            cur += c
-        elif c == "," and depth == 0:
-            args.append(cur.strip())
-            cur = ""
-        else:
-            cur += c
-        i += 1
-    if cur.strip():
-        args.append(cur.strip())
-    return args
-
-
-def _eval_simple_expr(expr: str, context: ContextProtocol) -> bool:
-    # File ops
-    if expr.startswith("file_exists(") and expr.endswith(")"):
-        arg = _extract_arg(expr)
-        return _file_exists(_strip_quotes(arg), context)
-    if expr.startswith("all_exist(") and expr.endswith(")"):
-        arg = _extract_arg(expr)
-        files = _eval_list_argument(arg, context)
-        return all(_file_exists(f, context) for f in files)
-    if expr.startswith("is_newer(") and expr.endswith(")"):
-        arg = _extract_arg(expr)
-        parts = _split_args(arg)
-        if len(parts) != 2:
-            raise ValueError("is_newer(source, target) requires exactly 2 arguments.")
-        src, tgt = _strip_quotes(parts[0]), _strip_quotes(parts[1])
-        return _file_is_newer(src, tgt, context)
-
-    # Comparisons or contains/startswith
-    for op_str in ["==", "!=", ">=", "<=", ">", "<"]:
-        lhs, rhs = _split_binary(expr, op_str)
-        if lhs is not None:
-            if lhs is None or rhs is None:
-                raise ValueError(f"Invalid binary expression: '{expr}'")
-            left = _resolve_value(lhs, context)
-            right = _resolve_value(rhs, context)
-            fn = _COMPARISON_OPS[op_str]
-            return fn(left, right)
-
-    # contains(list, item)
-    if expr.startswith("contains(") and expr.endswith(")"):
-        arg = _extract_arg(expr)
-        lst_str, item_str = _split_args(arg)
-        lst = _resolve_value(lst_str, context)
-        item = _resolve_value(item_str, context)
+        # 1. Render the template string for the condition
+        rendered_condition: str = ""
         try:
-            return item in lst
-        except Exception:
-            return False
+            rendered_condition = render_template(self.config.condition, context)
+        except Exception as exc:
+            self.logger.error(f"Template rendering error in condition: {self.config.condition!r}: {exc}")
+            raise
 
-    # startswith(string, prefix)
-    if expr.startswith("startswith(") and expr.endswith(")"):
-        arg = _extract_arg(expr)
-        s, prefix = _split_args(arg)
-        s_val = _resolve_value(s, context)
-        prefix_val = _resolve_value(prefix, context)
+        # 2. Prepare the context for evaluation
+        expr: str = rendered_condition
+        expr = expr.replace(" true", " True").replace(" false", " False").replace(" null", " None")
+        expr = expr.replace("and(", "_and(")
+        expr = expr.replace("or(", "_or(")
+        expr = expr.replace("not(", "_not(")
+
+        eval_globals: Dict[str, Any] = {
+            "__builtins__": {},
+            "_and": _and,
+            "_or": _or,
+            "_not": _not,
+            "file_exists": file_exists,
+            "all_files_exist": all_files_exist,
+            "file_is_newer": file_is_newer,
+        }
+        eval_locals: Dict[str, Any] = {"context": context}
+
+        # 3. Evaluate the condition
         try:
-            return str(s_val).startswith(str(prefix_val))
-        except Exception:
-            return False
+            result: Any = _safe_eval(expr, eval_globals, eval_locals)
+        except Exception as exc:
+            self.logger.error(f"Error evaluating condition: {expr!r}: {exc}")
+            raise
 
-    # context['key'] or context["key"]
-    if expr.startswith("context["):
-        # Only truthiness check
-        val = _resolve_value(expr, context)
-        return _is_truthy(val)
+        result_bool: bool = _coerce_bool(result)
+        self.logger.debug(
+            f"ConditionalStep evaluated condition '{self.config.condition}' (rendered: '{expr}') -> {result_bool}"
+        )
 
-    # bare true/false/null
-    if expr in ("true", "True"):
-        return True
-    if expr in ("false", "False"):
-        return False
-    if expr in ("null", "None"):
-        return False
-    raise ValueError(f"Unsupported or invalid condition expression: '{expr}'")
+        chosen_branch: Optional[Dict[str, Any]] = None
+        branch_name: Optional[str] = None
+        if result_bool and self.config.if_true is not None:
+            chosen_branch = self.config.if_true
+            branch_name = "if_true"
+        elif not result_bool and self.config.if_false is not None:
+            chosen_branch = self.config.if_false
+            branch_name = "if_false"
 
-
-# --- Value parsing utilities ---
-
-
-def _extract_arg(expr: str) -> str:
-    start = expr.find("(")
-    end = expr.rfind(")")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError(f"Malformed function expression: '{expr}'")
-    return expr[start + 1 : end].strip()
-
-
-def _split_binary(expr: str, op: str) -> Union[tuple, tuple[None, None]]:
-    # Only top-level op splitting, not inner parens
-    idx = -1
-    depth = 0
-    for i, c in enumerate(expr):
-        if c == "(":
-            depth += 1
-        elif c == ")":
-            depth -= 1
-        elif not depth and expr[i : i + len(op)] == op:
-            idx = i
-            break
-    if idx == -1:
-        return None, None
-    lhs = expr[:idx].strip()
-    rhs = expr[idx + len(op) :].strip()
-    return lhs, rhs
-
-
-def _resolve_value(val_expr: str, context: ContextProtocol) -> Any:
-    # context[...]
-    if val_expr.startswith("context["):
-        return _extract_context_value(val_expr, context)
-    # quoted string
-    if (val_expr.startswith("'") and val_expr.endswith("'")) or (val_expr.startswith('"') and val_expr.endswith('"')):
-        return val_expr[1:-1]
-    # null/None
-    if val_expr in ("null", "None"):
-        return None
-    if val_expr in ("true", "True"):
-        return True
-    if val_expr in ("false", "False"):
-        return False
-    # number?
-    try:
-        if "." in val_expr:
-            return float(val_expr)
-        return int(val_expr)
-    except Exception:
-        pass
-    # fallback: as is
-    return val_expr
-
-
-def _extract_context_value(expr: str, context: ContextProtocol) -> Any:
-    # Support context["key"] or context['a']["b"] and so on
-    tokens: List[str] = []
-    i = expr.find("[")
-    while i < len(expr):
-        if expr[i] == "[":
-            j = i + 1
-            if expr[j] in ('"', "'"):
-                q = expr[j]
-                k = j + 1
-                while k < len(expr) and expr[k] != q:
-                    k += 1
-                tokens.append(expr[j + 1 : k])
-                i = k + 1
-            else:
-                # e.g., context[NUMBER]
-                k = j
-                while k < len(expr) and expr[k] != "]":
-                    k += 1
-                tokens.append(expr[j:k])
-                i = k
-        elif expr[i] == "]":
-            i += 1
+        if chosen_branch is not None:
+            self.logger.debug(f"ConditionalStep executing branch: {branch_name}")
+            steps: List[Dict[str, Any]] = chosen_branch.get("steps", [])
+            for step_index, step_config in enumerate(steps):
+                step_type: str = step_config["type"]
+                step_conf: Dict[str, Any] = step_config.get("config", {})
+                StepClass = STEP_REGISTRY[step_type]
+                step_instance = StepClass(self.logger, step_conf)
+                try:
+                    await step_instance.execute(context)
+                except Exception as exc:
+                    self.logger.error(
+                        f"ConditionalStep error in branch '{branch_name}', step {step_index} [{step_type}]: {exc}"
+                    )
+                    raise
         else:
-            i += 1
-    ref: Any = context
-    for t in tokens:
-        # context keys always from artifacts
-        if isinstance(ref, ContextProtocol):
-            obj = ref.get(t, None)
-        elif isinstance(ref, dict):
-            obj = ref.get(t, None)
-        else:
-            try:
-                obj = ref[t]
-            except Exception:
-                obj = None
-        ref = obj
-    return ref
-
-
-def _is_truthy(val: Any) -> bool:
-    if val is None:
-        return False
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, (list, dict, str)):
-        return bool(val)
-    return True
-
-
-def _file_exists(path: str, context: ContextProtocol) -> bool:
-    try:
-        return os.path.isfile(path)
-    except Exception:
-        return False
-
-
-def _eval_list_argument(arg: str, context: ContextProtocol) -> List[str]:
-    # Accepts either ["a", "b"] or ['a', ...] or context[...] value that resolves to list
-    val = arg.strip()
-    if val.startswith("[") and val.endswith("]"):
-        body = val[1:-1].strip()
-        items = _split_args(body)
-        return [_strip_quotes(it) for it in items if it]
-    # Try to resolve as context value
-    result = _resolve_value(val, context)
-    if isinstance(result, list):
-        return result
-    if isinstance(result, str):
-        return [result]
-    return []
-
-
-def _strip_quotes(s: str) -> str:
-    s = s.strip()
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
-        return s[1:-1]
-    return s
-
-
-def _file_is_newer(src: str, tgt: str, context: ContextProtocol) -> bool:
-    try:
-        if not os.path.exists(src) or not os.path.exists(tgt):
-            return False
-        src_mtime = os.path.getmtime(src)
-        tgt_mtime = os.path.getmtime(tgt)
-        return src_mtime > tgt_mtime
-    except Exception:
-        return False
+            self.logger.debug(f"ConditionalStep: Skipping branch, none taken. (Condition result: {result_bool})")

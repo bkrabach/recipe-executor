@@ -34,25 +34,180 @@
       }
     },
     {
-      "type": "llm_generate",
+      "type": "conditional",
       "config": {
-        "prompt": "Transform this raw idea into a structured project specification. Consider the guidance docs and reference materials.\n\nRaw Idea:\n{{raw_idea}}\n\nGuidance Documents:\n{{guidance_docs}}\n\nContext Files:\n{{context_files}}\n\nReference Docs:\n{{reference_docs}}\n\nCreate a comprehensive, structured specification that includes project overview, requirements, technical constraints, and implementation guidelines. The specification should be detailed enough to analyze for component splitting.\n\nName the output file 'initial_project_spec.md'.",
-        "model": "{{model|default:'openai/o3-mini'}}",
-        "output_format": "files",
-        "output_key": "initial_project_spec"
+        "condition": "file_exists('{{output_dir}}/specs/initial_project_spec.md')",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/specs/initial_project_spec.md",
+                "content_key": "initial_project_spec"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_1_process_raw_idea.json"
+              }
+            }
+          ]
+        }
       }
     },
     {
-      "type": "write_files",
+      "type": "conditional",
       "config": {
-        "files_key": "initial_project_spec",
-        "root": "{{output_dir}}/specs"
+        "condition": "file_exists('{{output_dir}}/analysis/analysis_result.json')",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/analysis/analysis_result.json",
+                "content_key": "analysis_result",
+                "merge_mode": "dict"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_2_analyze_project.json"
+              }
+            }
+          ]
+        }
       }
     },
     {
-      "type": "execute_recipe",
+      "type": "conditional",
       "config": {
-        "recipe_path": "recipes/blueprint_generator/recipes/analyze_project.json"
+        "condition": "context['analysis_result']['needs_splitting'] == true",
+        "if_true": {
+          "steps": [
+            {
+              "type": "conditional",
+              "config": {
+                "condition": "all_files_exist('{{output_dir}}/components/*.md')",
+                "if_false": {
+                  "steps": [
+                    {
+                      "type": "execute_recipe",
+                      "config": {
+                        "recipe_path": "recipes/blueprint_generator/stages/stage_3a_split_project.json"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "conditional",
+              "config": {
+                "condition": "file_exists('{{output_dir}}/components/main_component_spec.md')",
+                "if_false": {
+                  "steps": [
+                    {
+                      "type": "execute_recipe",
+                      "config": {
+                        "recipe_path": "recipes/blueprint_generator/stages/stage_3b_single_component.json"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "file_exists('{{output_dir}}/analysis/final_components.json')",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/analysis/final_components.json",
+                "content_key": "final_component_list",
+                "merge_mode": "dict"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_4_process_components.json"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "file_exists('{{output_dir}}/analysis/component_dependencies.json')",
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_5_analyze_dependencies.json"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "all_files_exist('{{output_dir}}/blueprints/*/blueprint.md')",
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_6_generate_blueprints.json"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "file_exists('{{output_dir}}/reports/final_report.md')",
+        "if_false": {
+          "steps": [
+            {
+              "type": "execute_recipe",
+              "config": {
+                "recipe_path": "recipes/blueprint_generator/stages/stage_7_generate_report.json"
+              }
+            }
+          ]
+        }
       }
     }
   ]

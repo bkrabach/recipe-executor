@@ -15,60 +15,6 @@ The Conditional step enables branching execution paths in recipes based on evalu
 - Support nested conditions and complex logical operations
 - Provide clear error messages when expressions are invalid
 
-## Configuration Structure
-
-```json
-{
-  "type": "conditional",
-  "config": {
-    "condition": "expression_string",
-    "if_true": {
-      "steps": [
-        /* steps to execute if true */
-      ]
-    },
-    "if_false": {
-      "steps": [
-        /* steps to execute if false */
-      ],
-      "optional": true
-    }
-  }
-}
-```
-
-### Configuration Fields:
-
-- `condition`: A string containing the expression to evaluate (supports multiple expression types)
-- `if_true`: Object containing steps to execute when the condition evaluates to true
-- `if_false`: Optional object containing steps to execute when the condition evaluates to false
-
-## Expression Types
-
-The `condition` field should support:
-
-1. **Context Value Expressions**:
-
-   - `context["key"] == value`
-   - `context["key"]["nested"] != null`
-
-2. **File Operations**:
-
-   - `file_exists("path/to/file.md")`
-   - `all_exist(["file1.md", "file2.md"])`
-   - `is_newer("source.md", "target.md")`
-
-3. **Logical Operations**:
-
-   - `and(expr1, expr2)`
-   - `or(expr1, expr2)`
-   - `not(expr)`
-
-4. **Value Comparisons**:
-   - `==`, `!=`, `>`, `<`, `>=`, `<=`
-   - `contains(list, item)`
-   - `startswith(string, prefix)`
-
 ## Implementation Considerations
 
 - Support template rendering in the condition string before evaluation
@@ -77,6 +23,20 @@ The `condition` field should support:
 - Make error messages helpful for debugging invalid expressions
 - Process nested step configurations in a recursive manner
 - Ensure consistent logging of condition results and execution paths
+- Properly handle function-like logical operations that conflict with Python keywords:
+
+  - Transform logical function calls before evaluation:
+
+    ```python
+      # First replace boolean literals
+      expr = expr.replace(" true", " True").replace(" false", " False").replace(" null", " None")
+
+      # Transform logical function calls to avoid Python keyword conflicts
+      # Look for function calls with opening parenthesis to avoid replacing words inside strings
+      expr = expr.replace("and(", "_and(")
+      expr = expr.replace("or(", "_or(")
+      expr = expr.replace("not(", "_not(")
+    ```
 
 ## Logging
 

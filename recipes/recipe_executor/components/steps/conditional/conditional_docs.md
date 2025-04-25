@@ -17,11 +17,11 @@ class ConditionalConfig(StepConfig):
 
     Fields:
         condition: Expression string to evaluate against the context.
-        if_true: Steps to execute when the condition evaluates to true.
+        if_true: Optional steps to execute when the condition evaluates to true.
         if_false: Optional steps to execute when the condition evaluates to false.
     """
     condition: str
-    if_true: Dict[str, Any]
+    if_true: Optional[Dict[str, Any]] = None
     if_false: Optional[Dict[str, Any]] = None
 ```
 
@@ -87,8 +87,8 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 
 ```json
 "condition": "file_exists('{{output_dir}}/specs/initial_project_spec.md')"
-"condition": "all_exist(['file1.md', 'file2.md'])"
-"condition": "is_newer('source.txt', 'output.txt')"
+"condition": "all_files_exist(['file1.md', 'file2.md'])"
+"condition": "file_is_newer('source.txt', 'output.txt')"
 ```
 
 ### Logical Operations
@@ -174,7 +174,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "all_exist(['{{input_file}}', '{{config_file}}'])",
+        "condition": "all_files_exist(['{{input_file}}', '{{config_file}}'])",
         "if_true": {
           "steps": [
             {
@@ -202,7 +202,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 
 - Expressions are evaluated in the context of the current recipe execution
 - Template variables in the condition string are rendered before evaluation
-- The `if_false` branch is optional and can be omitted for simple checks
+- Both `if_true` and `if_false` branches are optional and can be omitted for simple checks
 - When a branch doesn't exist for the condition result, that path is simply skipped
 - Nested conditional steps are supported for complex decision trees
 - The conditional step is specifically designed to reduce unnecessary LLM calls in recipes

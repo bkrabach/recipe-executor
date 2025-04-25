@@ -1,0 +1,41 @@
+{
+  "steps": [
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "file_exists('{{output_dir}}/specs/initial_project_spec.md')",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{output_dir}}/specs/initial_project_spec.md",
+                "content_key": "initial_project_spec"
+              }
+            }
+          ]
+        },
+        "if_false": {
+          "steps": [
+            {
+              "type": "llm_generate",
+              "config": {
+                "prompt": "Transform this raw idea into a structured project specification. Consider the guidance docs and reference materials.\n\nRaw Idea:\n{{raw_idea}}\n\nGuidance Documents:\n{{guidance_docs}}\n\nContext Files:\n{{context_files}}\n\nReference Docs:\n{{reference_docs}}\n\nCreate a comprehensive, structured specification that includes project overview, requirements, technical constraints, and implementation guidelines. The specification should be detailed enough to analyze for component splitting.\n\nName the output file 'initial_project_spec.md'.",
+                "model": "{{model|default:'openai/o3-mini'}}",
+                "output_format": "files",
+                "output_key": "initial_project_spec"
+              }
+            },
+            {
+              "type": "write_files",
+              "config": {
+                "files_key": "initial_project_spec",
+                "root": "{{output_dir}}/specs"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
