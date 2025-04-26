@@ -2,6 +2,7 @@
 Base step component for the Recipe Executor.
 Defines a generic BaseStep class and the base Pydantic StepConfig.
 """
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +10,6 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-# Avoid circular imports at runtime by importing for type checking if needed
 from recipe_executor.protocols import ContextProtocol
 
 
@@ -18,10 +18,11 @@ class StepConfig(BaseModel):
     Base configuration model for steps.
     Extend this class to add step-specific fields.
     """
+
     # No common fields; each step should subclass and define its own
     pass
 
-# Generic type for step configuration
+
 StepConfigType = TypeVar("StepConfigType", bound=StepConfig)
 
 
@@ -45,15 +46,11 @@ class BaseStep(Generic[StepConfigType]):
         self.logger: logging.Logger = logger
         self.config: StepConfigType = config
         # Log initialization with debug-level detail
-        self.logger.debug(
-            f"Initialized {self.__class__.__name__} with config: {self.config!r}"
-        )
+        self.logger.debug(f"Initialized {self.__class__.__name__} with config: {self.config!r}")
 
     async def execute(self, context: ContextProtocol) -> None:
         """
-        Execute the step logic.
-
-        Must be overridden by subclasses.
+        Execute the step logic. Must be overridden by subclasses.
 
         Args:
             context: Execution context adhering to ContextProtocol.
@@ -61,6 +58,4 @@ class BaseStep(Generic[StepConfigType]):
         Raises:
             NotImplementedError: If not implemented in a subclass.
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement the execute method"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement the execute method")

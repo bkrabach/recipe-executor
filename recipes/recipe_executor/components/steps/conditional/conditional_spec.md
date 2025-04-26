@@ -17,26 +17,14 @@ The Conditional step enables branching execution paths in recipes based on evalu
 
 ## Implementation Considerations
 
-- Support template rendering in the condition string before evaluation
+- If expression is already a boolean or a string that can be evaluated to a boolean, use it directly as it may have been rendered by the template engine
+- Include conversion of "true" and "false" strings to boolean values in any safe globals list
 - Keep expression evaluation lightweight and focused on common needs
 - Allow for direct access to context values via expression syntax
 - Make error messages helpful for debugging invalid expressions
 - Process nested step configurations in a recursive manner
 - Ensure consistent logging of condition results and execution paths
-- Properly handle function-like logical operations that conflict with Python keywords:
-
-  - Transform logical function calls before evaluation:
-
-    ```python
-      # First replace boolean literals
-      expr = expr.replace(" true", " True").replace(" false", " False").replace(" null", " None")
-
-      # Transform logical function calls to avoid Python keyword conflicts
-      # Look for function calls with opening parenthesis to avoid replacing words inside strings
-      expr = expr.replace("and(", "_and(")
-      expr = expr.replace("or(", "_or(")
-      expr = expr.replace("not(", "_not(")
-    ```
+- Properly handle function-like logical operations that conflict with Python keywords
 
 ## Logging
 

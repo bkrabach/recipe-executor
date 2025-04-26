@@ -1,0 +1,151 @@
+[
+  {
+    "id": "context",
+    "path": "/",
+    "deps": ["protocols"],
+    "refs": []
+  },
+  {
+    "id": "executor",
+    "path": "/",
+    "deps": ["protocols", "models", "steps/registry", "logger"],
+    "refs": []
+  },
+  {
+    "id": "logger",
+    "path": "/",
+    "deps": ["protocols"],
+    "refs": []
+  },
+  {
+    "id": "main",
+    "path": "/",
+    "deps": ["context", "executor", "logger", "protocols"],
+    "refs": []
+  },
+  {
+    "id": "models",
+    "path": "/",
+    "deps": ["protocols"],
+    "refs": []
+  },
+  {
+    "id": "protocols",
+    "path": "/",
+    "deps": ["models"],
+    "refs": []
+  },
+  {
+    "id": "azure_openai",
+    "path": "/llm_utils",
+    "deps": ["logger"],
+    "refs": [
+      "AZURE_IDENTITY_CLIENT_DOCS.md",
+      "git_collector/PYDANTIC_AI_DOCS.md"
+    ]
+  },
+  {
+    "id": "llm",
+    "path": "/llm_utils",
+    "deps": ["logger", "llm_utils/azure_openai", "llm_utils/mcp"],
+    "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
+  },
+  {
+    "id": "mcp",
+    "path": "/llm_utils",
+    "deps": ["logger"],
+    "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
+  },
+  {
+    "id": "base",
+    "path": "/steps",
+    "deps": ["protocols", "logger"],
+    "refs": []
+  },
+  {
+    "id": "conditional",
+    "path": "/steps",
+    "deps": ["steps/base", "context", "utils/templates"],
+    "refs": []
+  },
+  {
+    "id": "execute_recipe",
+    "path": "/steps",
+    "deps": [
+      "steps/base",
+      "context",
+      "utils/templates",
+      "protocols",
+      "executor"
+    ],
+    "refs": []
+  },
+  {
+    "id": "llm_generate",
+    "path": "/steps",
+    "deps": [
+      "context",
+      "models",
+      "llm_utils/llm",
+      "llm_utils/mcp",
+      "steps/base",
+      "utils/models",
+      "utils/templates"
+    ],
+    "refs": []
+  },
+  {
+    "id": "loop",
+    "path": "/steps",
+    "deps": [
+      "steps/base",
+      "context",
+      "utils/templates",
+      "steps/registry",
+      "executor"
+    ],
+    "refs": []
+  },
+  {
+    "id": "mcp",
+    "path": "/steps",
+    "deps": ["steps/base", "utils/templates", "llm_utils/mcp", "protocols"],
+    "refs": ["git_collector/MCP_PYTHON_SDK_DOCS.md"]
+  },
+  {
+    "id": "parallel",
+    "path": "/steps",
+    "deps": ["steps/base", "protocols", "steps/registry"],
+    "refs": []
+  },
+  {
+    "id": "read_files",
+    "path": "/steps",
+    "deps": ["steps/base", "context", "utils/templates"],
+    "refs": []
+  },
+  {
+    "id": "registry",
+    "path": "/steps",
+    "deps": [],
+    "refs": []
+  },
+  {
+    "id": "write_files",
+    "path": "/steps",
+    "deps": ["steps/base", "context", "models", "utils/templates"],
+    "refs": []
+  },
+  {
+    "id": "models",
+    "path": "/utils",
+    "deps": [],
+    "refs": []
+  },
+  {
+    "id": "templates",
+    "path": "/utils",
+    "deps": ["protocols"],
+    "refs": ["git_collector/LIQUID_PYTHON_DOCS.md"]
+  }
+]

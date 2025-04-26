@@ -10,7 +10,7 @@
     {
       "type": "conditional",
       "config": {
-        "condition": "{{edit| default:'false'}}",
+        "condition": "{{edit|default:'false'}}",
         "if_true": {
           "steps": [
             {

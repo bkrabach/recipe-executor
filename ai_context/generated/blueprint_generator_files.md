@@ -1,5 +1,5 @@
 # AI Context Files
-Date: 4/25/2025, 3:31:09 PM
+Date: 4/25/2025, 11:56:50 PM
 Files: 14
 
 === File: recipes/blueprint_generator/blueprint_generator.json ===
@@ -96,7 +96,7 @@ Files: 14
     {
       "type": "conditional",
       "config": {
-        "condition": "context['analysis_result']['needs_splitting'] == true",
+        "condition": "{{analysis_result.needs_splitting}}",
         "if_true": {
           "steps": [
             {
@@ -186,7 +186,7 @@ Files: 14
     {
       "type": "conditional",
       "config": {
-        "condition": "all_exist_pattern('{{output_dir}}/blueprints/*/blueprint.md')",
+        "condition": "all_files_exist('{{output_dir}}/blueprints/*/blueprint.md')",
         "if_false": {
           "steps": [
             {
@@ -478,7 +478,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "conditional",
       "config": {
-        "condition": "context['analysis_result']['needs_splitting'] == true",
+        "condition": "{{analysis_result.needs_splitting}}",
         "if_true": {
           "steps": [
             {
@@ -509,7 +509,7 @@ The system should be modular, extensible, and allow for future integration of ma
                               "files": [
                                 {
                                   "path": "{{current_component.component_id}}_spec.md",
-                                  "content": "{{component_spec_content}}"
+                                  "content_key": "component_spec_content"
                                 }
                               ],
                               "root": "{{output_dir}}/components"
@@ -582,7 +582,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "conditional",
       "config": {
-        "condition": "context['analysis_result']['needs_splitting'] == false",
+        "condition": "not({{analysis_result.needs_splitting}})",
         "if_true": {
           "steps": [
             {
@@ -873,7 +873,7 @@ The system should be modular, extensible, and allow for future integration of ma
             {
               "type": "conditional",
               "config": {
-                "condition": "and(context['process_state']['iteration'] < context['process_state']['max_iterations'], context['process_state']['done_processing'] == false)",
+                "condition": "and({{process_state.iteration}} < {{process_state.max_iterations}}, not({{process_state.done_processing}}))",
                 "if_true": {
                   "steps": [
                     {
@@ -974,10 +974,7 @@ The system should be modular, extensible, and allow for future integration of ma
               "config": {
                 "prompt": "Determine the order in which components should be generated based on dependencies.\n\nComponent Dependencies:\n{{component_dependency_analysis}}\n\nCreate a dependency graph and perform a topological sort to determine the generation order. The order should ensure that a component is generated only after all its dependencies have been generated.\n\nOutput a JSON array with the component IDs in the order they should be generated.",
                 "model": "{{model|default:'openai/o3-mini'}}",
-                "output_format": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                },
+                "output_format": [{ "type": "string" }],
                 "output_key": "component_generation_order"
               }
             },
@@ -986,9 +983,8 @@ The system should be modular, extensible, and allow for future integration of ma
               "config": {
                 "prompt": "Organize the components by their generation order.\n\nComponents:\n{{final_component_list}}\n\nGeneration Order:\n{{component_generation_order}}\n\nCreate an array of components in the correct generation order. Each component should have at least a component_id and any other relevant properties from the original final_component_list.\n\nOutput a JSON array of component objects in generation order.",
                 "model": "{{model|default:'openai/o3-mini'}}",
-                "output_format": {
-                  "type": "array",
-                  "items": {
+                "output_format": [
+                  {
                     "type": "object",
                     "properties": {
                       "component_id": { "type": "string" },
@@ -996,7 +992,7 @@ The system should be modular, extensible, and allow for future integration of ma
                     },
                     "required": ["component_id", "needs_analysis"]
                   }
-                },
+                ],
                 "output_key": "ordered_components"
               }
             },
@@ -1246,9 +1242,17 @@ The system should be modular, extensible, and allow for future integration of ma
             {
               "type": "llm_generate",
               "config": {
-                "prompt": "Extract the final list of all components that don't need further splitting.\n\nProcessing Results:\n{{processing_results}}\n\nOutput a JSON array containing all components in the final_components list.",
+                "prompt": "Extract the final list of all components that don't need further splitting.\n\nProcessing Results:\n{{processing_results}}\n\nOutput a JSON array containing all components in the final_components list.\n",
                 "model": "{{model|default:'openai/o3-mini'}}",
-                "output_format": [{ "type": "object" }],
+                "output_format": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "component_id": { "type": "string" }
+                    },
+                    "required": ["component_id"]
+                  }
+                ],
                 "output_key": "final_component_list"
               }
             },
@@ -1353,7 +1357,7 @@ The system should be modular, extensible, and allow for future integration of ma
                       "files": [
                         {
                           "path": "analysis/{{component.component_id}}_analysis.json",
-                          "content": "{{component_analysis}}"
+                          "content_key": "component_analysis"
                         }
                       ],
                       "root": "{{output_dir}}"
@@ -1458,7 +1462,7 @@ The system should be modular, extensible, and allow for future integration of ma
                   {
                     "type": "conditional",
                     "config": {
-                      "condition": "context['component_analysis']['needs_splitting'] == true",
+                      "condition": "{{component_analysis.needs_splitting}}",
                       "if_true": {
                         "steps": [
                           {
@@ -1633,9 +1637,8 @@ The system should be modular, extensible, and allow for future integration of ma
       "config": {
         "prompt": "Prepare components for the next iteration.\n\nSub-Components:\n{{sub_components}}\n\nIf there are sub-components, output them for the next iteration. Otherwise, output an empty array.\n\nOutput only a JSON array.",
         "model": "{{model|default:'openai/o3-mini'}}",
-        "output_format": {
-          "type": "array",
-          "items": {
+        "output_format": [
+          {
             "type": "object",
             "properties": {
               "component_id": { "type": "string" },
@@ -1643,7 +1646,7 @@ The system should be modular, extensible, and allow for future integration of ma
             },
             "required": ["component_id", "needs_analysis"]
           }
-        },
+        ],
         "output_key": "next_iteration_components"
       }
     },
@@ -1662,7 +1665,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "conditional",
       "config": {
-        "condition": "and(context['updated_process_state']['iteration'] < context['updated_process_state']['max_iterations'], context['updated_process_state']['done_processing'] == false, array_length(context['next_iteration_components']) > 0)",
+        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components}})",
         "if_true": {
           "steps": [
             {

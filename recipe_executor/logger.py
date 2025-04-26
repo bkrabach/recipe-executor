@@ -1,11 +1,10 @@
 import os
 import sys
 import logging
-from typing import Tuple
+from typing import Any
 
 def init_logger(
-    log_dir: str = "logs",
-    stdio_log_level: str = "INFO"
+    log_dir: str = "logs", stdio_log_level: str = "INFO"
 ) -> logging.Logger:
     """
     Initializes a logger that writes to stdout and to log files (debug/info/error).
@@ -22,60 +21,57 @@ def init_logger(
     Raises:
         Exception: If log directory cannot be created or log files cannot be opened.
     """
-    # Prepare logger
+    # Get root logger and set lowest level
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    # Reset existing handlers
+    # Remove any existing handlers
     for handler in list(logger.handlers):
         logger.removeHandler(handler)
 
     # Create log directory
     try:
         os.makedirs(log_dir, exist_ok=True)
-    except Exception as e:
-        raise Exception(f"Failed to create log directory '{log_dir}': {e}")
+    except Exception as exc:
+        raise Exception(f"Failed to create log directory '{log_dir}': {exc}")
 
-    # Formatter for all handlers
+    # Define formatter for all handlers
     formatter = logging.Formatter(
         fmt="%(asctime)s.%(msecs)03d [%(levelname)s] (%(filename)s:%(lineno)d) %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # File handlers configuration
-    paths: Tuple[str, str, str] = (
-        os.path.join(log_dir, "debug.log"),
-        os.path.join(log_dir, "info.log"),
-        os.path.join(log_dir, "error.log"),
-    )
-
-    levels = (logging.DEBUG, logging.INFO, logging.ERROR)
-    names = ("debug", "info", "error")
-
-    for fname, level, name in zip(paths, levels, names):
+    # Set up file handlers: debug.log, info.log, error.log
+    level_map = [
+        ("debug", logging.DEBUG),
+        ("info", logging.INFO),
+        ("error", logging.ERROR),
+    ]
+    for name, level in level_map:
+        path = os.path.join(log_dir, f"{name}.log")
         try:
-            fh = logging.FileHandler(fname, mode="w", encoding="utf-8")
-            fh.setLevel(level)
-            fh.setFormatter(formatter)
-            logger.addHandler(fh)
-        except Exception as e:
-            raise Exception(f"Failed to set up {name} log file '{fname}': {e}")
+            file_handler = logging.FileHandler(path, mode="w", encoding="utf-8")
+            file_handler.setLevel(level)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        except Exception as exc:
+            raise Exception(f"Failed to set up {name} log file '{path}': {exc}")
 
-    # Console handler
-    lvl_name = stdio_log_level.upper()
-    if lvl_name == "WARN":
-        lvl_name = "WARNING"
-    if lvl_name not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
-        lvl_name = "INFO"
-    console_level = getattr(logging, lvl_name)
+    # Configure console (stdout) handler
+    level_name = stdio_log_level.upper()
+    if level_name == "WARN":
+        level_name = "WARNING"
+    if level_name not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+        level_name = "INFO"
+    console_level: Any = getattr(logging, level_name, logging.INFO)
 
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(console_level)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(console_level)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
     # Initialization logs
-    logger.debug("Logger initialized: log_dir='%s', stdio_log_level='%s'", log_dir, lvl_name)
+    logger.debug("Logger initialized: log_dir='%s', stdio_log_level='%s'", log_dir, level_name)
     logger.info("Logger initialized successfully")
 
     return logger

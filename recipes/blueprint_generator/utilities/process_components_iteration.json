@@ -167,7 +167,7 @@
                   {
                     "type": "conditional",
                     "config": {
-                      "condition": "context['component_analysis']['needs_splitting'] == true",
+                      "condition": "{{component_analysis.needs_splitting}}",
                       "if_true": {
                         "steps": [
                           {
@@ -370,7 +370,7 @@
     {
       "type": "conditional",
       "config": {
-        "condition": "and(context['updated_process_state']['iteration'] < context['updated_process_state']['max_iterations'], context['updated_process_state']['done_processing'] == false, context['next_iteration_components'])",
+        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components}})",
         "if_true": {
           "steps": [
             {

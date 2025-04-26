@@ -94,11 +94,11 @@ from recipe_executor import Executor, Context
 from recipe_executor.protocols import ExecutorProtocol, ContextProtocol
 
 context: ContextProtocol = Context()
-executor: ExecutorProtocol = Executor()
+executor: ExecutorProtocol = Executor(logger)
 executor.execute("path/to/recipe.json", context)
 ```
 
-In this example, `Context()` is the concrete implementation provided by the system (which implements `ContextProtocol`), and `Executor()` is the concrete executor implementing `ExecutorProtocol`. By annotating them as `ContextProtocol` and `ExecutorProtocol`, we emphasize that our code relies only on the defined interface, not a specific implementation. This is optional for running the code (the system will work with or without the annotations), but it is useful for clarity and static type checking.
+In this example, `Context` is the concrete implementation provided by the system (which implements `ContextProtocol`), and `Executor` is the concrete executor implementing `ExecutorProtocol`. By annotating them as `ContextProtocol` and `ExecutorProtocol`, we emphasize that our code relies only on the defined interface, not a specific implementation. This is optional for running the code (the system will work with or without the annotations), but it is useful for clarity and static type checking.
 
 ```python
 from recipe_executor.protocols import ContextProtocol, ExecutorProtocol

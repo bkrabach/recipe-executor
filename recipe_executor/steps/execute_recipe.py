@@ -1,6 +1,6 @@
-from typing import Dict, Any
 import os
 import logging
+from typing import Any, Dict
 
 from recipe_executor.steps.base import BaseStep, StepConfig
 from recipe_executor.protocols import ContextProtocol
@@ -28,11 +28,11 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
         # Render the recipe path template
         rendered_path: str = render_template(self.config.recipe_path, context)
 
-        # Validate path exists
+        # Validate that the sub-recipe file exists
         if not os.path.isfile(rendered_path):
             raise FileNotFoundError(f"Sub-recipe file not found: {rendered_path}")
 
-        # Apply context overrides
+        # Apply context overrides before execution
         for key, template_value in self.config.context_overrides.items():
             rendered_value: str = render_template(template_value, context)
             context[key] = rendered_value
@@ -47,5 +47,6 @@ class ExecuteRecipeStep(BaseStep[ExecuteRecipeConfig]):
             await executor.execute(rendered_path, context)
             self.logger.info(f"Completed sub-recipe execution: {rendered_path}")
         except Exception as e:
-            self.logger.error(f"Error executing sub-recipe {rendered_path}: {e}")
+            # Log and propagate with context
+            self.logger.error(f"Error executing sub-recipe '{rendered_path}': {e}")
             raise RuntimeError(f"Failed to execute sub-recipe '{rendered_path}': {e}") from e

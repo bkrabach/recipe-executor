@@ -1,24 +1,6 @@
-from recipe_executor.steps.conditional import ConditionalStep
-from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
-from recipe_executor.steps.llm_generate import LLMGenerateStep
-from recipe_executor.steps.loop import LoopStep
-from recipe_executor.steps.mcp import MCPStep
-from recipe_executor.steps.parallel import ParallelStep
-from recipe_executor.steps.read_files import ReadFilesStep
-from recipe_executor.steps.registry import STEP_REGISTRY
-from recipe_executor.steps.write_files import WriteFilesStep
-
-# Register steps by updating the registry
-STEP_REGISTRY.update({
-    "conditional": ConditionalStep,
-    "execute_recipe": ExecuteRecipeStep,
-    "llm_generate": LLMGenerateStep,
-    "loop": LoopStep,
-    "mcp": MCPStep,
-    "parallel": ParallelStep,
-    "read_files": ReadFilesStep,
-    "write_files": WriteFilesStep,
-})
+"""
+Package-level imports and registration for standard recipe steps.
+"""
 
 __all__ = [
     "STEP_REGISTRY",
@@ -31,3 +13,25 @@ __all__ = [
     "ReadFilesStep",
     "WriteFilesStep",
 ]
+
+from recipe_executor.steps.registry import STEP_REGISTRY
+from recipe_executor.steps.conditional import ConditionalStep
+from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
+from recipe_executor.steps.llm_generate import LLMGenerateStep
+from recipe_executor.steps.loop import LoopStep
+from recipe_executor.steps.mcp import MCPStep
+from recipe_executor.steps.parallel import ParallelStep
+from recipe_executor.steps.read_files import ReadFilesStep
+from recipe_executor.steps.write_files import WriteFilesStep
+
+# Register standard steps by updating the global registry
+STEP_REGISTRY.update({
+    "conditional": ConditionalStep,
+    "execute_recipe": ExecuteRecipeStep,
+    "llm_generate": LLMGenerateStep,
+    "loop": LoopStep,
+    "mcp": MCPStep,
+    "parallel": ParallelStep,
+    "read_files": ReadFilesStep,
+    "write_files": WriteFilesStep,
+})

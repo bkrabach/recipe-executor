@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -16,13 +16,12 @@ class ReadFilesConfig(StepConfig):
 
     Fields:
         path (Union[str, List[str]]): Path, comma-separated string, or list of paths to the file(s) to read (may be templated).
-        content_key (str): Name to store the file content in context.
-        optional (bool): Whether to continue if a file is not found.
+        content_key (str): Name under which to store file content in the context.
+        optional (bool): Whether to continue if a file is not found (default: False).
         merge_mode (str): How to handle multiple files' content. Options:
-            - "concat" (default): Concatenate all files with newlines between filenames + content
-            - "dict": Store a dictionary with filenames as keys and content as values
+            - "concat" (default): Concatenate all files with newlines between filename headers + content
+            - "dict": Store a dictionary with file paths as keys and content as values
     """
-
     path: Union[str, List[str]]
     content_key: str
     optional: bool = False
@@ -42,26 +41,26 @@ class ReadFilesStep(BaseStep[ReadFilesConfig]):
         raw_path = cfg.path
         paths: List[str] = []
 
-        # Resolve and normalize paths
+        # Resolve and normalize paths (with template rendering)
         if isinstance(raw_path, str):
             rendered = render_template(raw_path, context)
-            # Split comma-separated
+            # Split comma-separated string into list
             if "," in rendered:
                 parts = [p.strip() for p in rendered.split(",") if p.strip()]
-                paths = parts
+                paths.extend(parts)
             else:
-                paths = [rendered]
+                paths.append(rendered)
         elif isinstance(raw_path, list):
-            for p in raw_path:
-                if not isinstance(p, str):
-                    raise ValueError(f"Invalid path entry: {p!r}")
-                rendered = render_template(p, context)
+            for entry in raw_path:
+                if not isinstance(entry, str):
+                    raise ValueError(f"Invalid path entry type: {entry!r}")
+                rendered = render_template(entry, context)
                 paths.append(rendered)
         else:
             raise ValueError(f"Invalid type for path: {type(raw_path)}")
 
         results: List[Any] = []
-        result_dict: Dict[str, Any] = {}
+        result_map: Dict[str, Any] = {}
 
         for path in paths:
             self.logger.debug(f"Reading file at path: {path}")
@@ -72,54 +71,54 @@ class ReadFilesStep(BaseStep[ReadFilesConfig]):
                     continue
                 raise FileNotFoundError(msg)
 
-            # Read file content
-            with open(path, "r", encoding="utf-8") as f:
+            # Read file content as UTF-8 text
+            with open(path, mode="r", encoding="utf-8") as f:
                 text = f.read()
 
-            # Attempt deserialization if applicable
+            # Attempt to deserialize structured formats
             ext = os.path.splitext(path)[1].lower()
-            content: Any
+            content: Any = text
             try:
                 if ext == ".json":
                     content = json.loads(text)
                 elif ext in (".yaml", ".yml"):
                     content = yaml.safe_load(text)
-                else:
-                    content = text
-            except Exception as e:
-                self.logger.warning(f"Failed to parse structured data from {path}: {e}")
+            except Exception as exc:
+                self.logger.warning(f"Failed to parse structured data from {path}: {exc}")
                 content = text
 
             self.logger.info(f"Successfully read file: {path}")
             results.append(content)
-            result_dict[path] = content
+            result_map[path] = content
 
-        # Merge results
+        # Merge results according to merge_mode
         final_content: Any
         if not results:
-            # No files read
+            # No file was read
             if len(paths) <= 1:
-                final_content = ""  # single missing
+                final_content = ""  # Single (missing) file yields empty string
             elif cfg.merge_mode == "dict":
-                final_content = {}
+                final_content = {}  # Dict of zero entries
             else:
-                final_content = ""
+                final_content = ""  # Concat yields empty string
         elif len(results) == 1:
-            # Single file
+            # Only one file read => return its content directly
             final_content = results[0]
         else:
-            # Multiple files
+            # Multiple files read
             if cfg.merge_mode == "dict":
-                final_content = result_dict
+                final_content = result_map
             else:
-                # concat mode
-                parts: List[str] = []
+                # Default: concat mode, include header with filename
+                segments: List[str] = []
                 for p in paths:
-                    if p in result_dict:
-                        raw = result_dict[p]
-                        parts.append(f"{p}\n{raw}")
-                final_content = "\n".join(parts)
+                    if p in result_map:
+                        raw = result_map[p]
+                        # Convert raw back to text if it was structured
+                        segment = raw if isinstance(raw, str) else json.dumps(raw)
+                        segments.append(f"{p}\n{segment}")
+                final_content = "\n".join(segments)
 
-        # Store in context
+        # Store the merged content in context
         context[cfg.content_key] = final_content
         self.logger.info(f"Stored file content under key '{cfg.content_key}'")

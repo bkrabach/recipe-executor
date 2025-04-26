@@ -2,7 +2,6 @@ import os
 import logging
 from typing import Optional
 
-import openai
 from openai import AsyncAzureOpenAI
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential, get_bearer_token_provider
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -50,7 +49,7 @@ def get_azure_openai_model(
         logger.error("Environment variable AZURE_OPENAI_BASE_URL is required")
         raise Exception("Missing AZURE_OPENAI_BASE_URL")
 
-    # Determine deployment name
+    # Determine deployment identifier
     deployment = deployment_name or env_deployment or model_name
 
     # Log loaded configuration (mask secrets)
@@ -64,15 +63,15 @@ def get_azure_openai_model(
     # Create Azure OpenAI client
     try:
         if use_managed_identity:
-            # Azure Identity authentication
             logger.info("Using Azure Managed Identity for authentication")
             if azure_client_id:
-                cred = ManagedIdentityCredential(client_id=azure_client_id)
+                credential = ManagedIdentityCredential(client_id=azure_client_id)
             else:
-                cred = DefaultAzureCredential()
-            # Token provider for OpenAI
+                credential = DefaultAzureCredential()
+
             token_provider = get_bearer_token_provider(
-                cred, "https://cognitiveservices.azure.com/.default"
+                credential,
+                "https://cognitiveservices.azure.com/.default"
             )
             azure_client = AsyncAzureOpenAI(
                 azure_ad_token_provider=token_provider,
@@ -82,7 +81,6 @@ def get_azure_openai_model(
             )
             auth_method = "Azure Managed Identity"
         else:
-            # API key authentication
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
             if not api_key:
                 logger.error("Environment variable AZURE_OPENAI_API_KEY is required for API key authentication")
@@ -95,17 +93,17 @@ def get_azure_openai_model(
                 azure_deployment=deployment,
             )
             auth_method = "API Key"
-    except Exception as e:
-        logger.error(f"Failed to create AsyncAzureOpenAI client: {e}")
+    except Exception as error:
+        logger.error(f"Failed to create AsyncAzureOpenAI client: {error}")
         raise
 
-    # Wrap client in PydanticAI provider
+    # Wrap client in PydanticAI provider and model
     logger.info(f"Creating Azure OpenAI model '{model_name}' with {auth_method}")
     provider = OpenAIProvider(openai_client=azure_client)
     try:
         model = OpenAIModel(model_name=model_name, provider=provider)
-    except Exception as e:
-        logger.error(f"Failed to create OpenAIModel: {e}")
+    except Exception as error:
+        logger.error(f"Failed to create OpenAIModel: {error}")
         raise
 
     return model

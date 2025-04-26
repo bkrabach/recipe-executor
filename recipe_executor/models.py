@@ -4,6 +4,7 @@ Models for Recipe Executor system.
 Defines Pydantic models for file specifications and recipe structures.
 """
 from typing import Any, Dict, List, Union
+
 from pydantic import BaseModel
 
 
@@ -34,6 +35,6 @@ class Recipe(BaseModel):
     """A complete recipe with multiple steps.
 
     Attributes:
-        steps: A list containing the steps of the recipe.
+        steps: A list of steps defining the recipe.
     """
-    steps: List[RecipeStep]  # List of steps defining the recipe
+    steps: List[RecipeStep]

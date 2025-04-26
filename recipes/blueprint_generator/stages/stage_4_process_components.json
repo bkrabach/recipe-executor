@@ -221,7 +221,7 @@
             {
               "type": "conditional",
               "config": {
-                "condition": "and(context['process_state']['iteration'] < context['process_state']['max_iterations'], context['process_state']['done_processing'] == false)",
+                "condition": "and({{process_state.iteration}} < {{process_state.max_iterations}}, not({{process_state.done_processing}}))",
                 "if_true": {
                   "steps": [
                     {

@@ -18,7 +18,7 @@
     {
       "type": "conditional",
       "config": {
-        "condition": "context['analysis_result']['needs_splitting'] == false",
+        "condition": "not({{analysis_result.needs_splitting}})",
         "if_true": {
           "steps": [
             {

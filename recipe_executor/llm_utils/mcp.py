@@ -2,10 +2,9 @@
 Minimal MCP utility for creating MCPServer instances from configurations.
 """
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic_ai.mcp import MCPServer, MCPServerHTTP, MCPServerStdio
-
 
 # Keys considered sensitive for masking
 _SENSITIVE_KEYS = ("key", "secret", "token", "password")
@@ -14,13 +13,12 @@ def _mask_value(value: Any, key: Optional[str] = None) -> Any:
     """
     Mask sensitive values in a configuration dictionary.
     """
-    # If the key indicates sensitive data, replace value
+    # Mask entire value if key indicates sensitive data
     if key and any(sensitive in key.lower() for sensitive in _SENSITIVE_KEYS):
         return "***"
-    # If dict, apply recursively
+    # Recurse into dicts
     if isinstance(value, dict):
         return {k: _mask_value(v, k) for k, v in value.items()}
-    # Otherwise, return as is
     return value
 
 
@@ -49,9 +47,8 @@ def get_mcp_server(
     except Exception:
         logger.debug("MCP configuration contains non-serializable values")
 
-    # Determine server type
+    # HTTP transport configuration
     if "url" in config:
-        # HTTP transport
         url = config.get("url")
         if not isinstance(url, str):
             raise ValueError("MCP HTTP configuration requires a string 'url'")
@@ -73,23 +70,31 @@ def get_mcp_server(
             logger.error(msg)
             raise RuntimeError(msg) from error
 
-    # Stdio transport
+    # Stdio transport configuration
     if "command" in config:
         command = config.get("command")
         if not isinstance(command, str):
             raise ValueError("MCP stdio configuration requires a string 'command'")
-        args = config.get("args")
-        if not isinstance(args, list) or not all(isinstance(a, str) for a in args):
-            raise ValueError("MCP stdio 'args' must be a list of strings")
-        logger.info("Configuring MCPServerStdio with command: %s args: %s", command, args)
+        args_value = config.get("args")
+        if args_value is None:
+            args_list: List[str] = []
+        else:
+            if not isinstance(args_value, list) or not all(isinstance(a, str) for a in args_value):
+                raise ValueError("MCP stdio 'args' must be a list of strings")
+            args_list = args_value  # type: List[str]
+        logger.info(
+            "Configuring MCPServerStdio with command: %s args: %s",
+            command,
+            args_list,
+        )
         try:
-            return MCPServerStdio(command, args=args)
+            return MCPServerStdio(command=command, args=args_list)
         except Exception as error:
             msg = f"Failed to create stdio MCP server for command {command}: {error}"
             logger.error(msg)
             raise RuntimeError(msg) from error
 
-    # Unrecognized configuration
+    # If neither HTTP nor stdio config is present
     raise ValueError(
         "Invalid MCP server configuration: provide either 'url' for HTTP or 'command' for stdio"
     )

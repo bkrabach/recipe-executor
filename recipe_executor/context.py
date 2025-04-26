@@ -20,8 +20,12 @@ class Context(ContextProtocol):
         config: Optional[Dict[str, Any]] = None,
     ) -> None:
         # Deep copy initial data to avoid side effects from external modifications
-        self._artifacts: Dict[str, Any] = copy.deepcopy(artifacts) if artifacts is not None else {}
-        self._config: Dict[str, Any] = copy.deepcopy(config) if config is not None else {}
+        self._artifacts: Dict[str, Any] = (
+            copy.deepcopy(artifacts) if artifacts is not None else {}
+        )
+        self._config: Dict[str, Any] = (
+            copy.deepcopy(config) if config is not None else {}
+        )
 
     def __getitem__(self, key: str) -> Any:
         try:
@@ -37,10 +41,11 @@ class Context(ContextProtocol):
         del self._artifacts[key]
 
     def __contains__(self, key: object) -> bool:
+        # Only string keys are valid artifact keys
         return isinstance(key, str) and key in self._artifacts
 
     def __iter__(self) -> Iterator[str]:
-        # Return iterator over a snapshot of keys to avoid issues during mutation
+        # Iterate over a snapshot of keys to prevent issues during mutation
         return iter(list(self._artifacts.keys()))
 
     def __len__(self) -> int:
@@ -58,11 +63,11 @@ class Context(ContextProtocol):
         """
         return self._artifacts.get(key, default)
 
-    def clone(self) -> "ContextProtocol":
+    def clone(self) -> ContextProtocol:
         """
         Create a deep copy of this Context, including artifacts and config.
         """
-        # We deep copy internally via __init__
+        # __init__ will deep-copy the provided dicts
         return Context(artifacts=self._artifacts, config=self._config)
 
     def dict(self) -> Dict[str, Any]:

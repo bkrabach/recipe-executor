@@ -1,9 +1,8 @@
 """
 MCPStep component for invoking tools on remote MCP servers and storing results in context.
 """
-
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
@@ -40,8 +39,10 @@ class MCPStep(BaseStep[MCPConfig]):
         super().__init__(logger, MCPConfig(**config))
 
     async def execute(self, context: ContextProtocol) -> None:
-        # Render tool name and arguments
+        # Render tool name
         tool_name: str = render_template(self.config.tool_name, context)
+
+        # Render arguments
         raw_args: Dict[str, Any] = self.config.arguments or {}
         arguments: Dict[str, Any] = {}
         for key, value in raw_args.items():
@@ -50,12 +51,12 @@ class MCPStep(BaseStep[MCPConfig]):
             else:
                 arguments[key] = value
 
-        # Prepare server connection parameters
-        server_conf = self.config.server
+        # Prepare server config
+        server_conf: Dict[str, Any] = self.config.server
         client_cm: Any
         service_desc: str
 
-        # Decide on transport: stdio or SSE (HTTP)
+        # Choose transport
         if "command" in server_conf:
             # stdio transport
             cmd: str = render_template(server_conf.get("command", ""), context)
@@ -64,15 +65,21 @@ class MCPStep(BaseStep[MCPConfig]):
                 if isinstance(arg, str):
                     args_list.append(render_template(arg, context))
                 else:
-                    args_list.append(arg)
+                    args_list.append(str(arg))
+
             env_conf: Optional[Dict[str, str]] = None
             if server_conf.get("env") is not None:
                 env_conf = {}
                 for k, v in server_conf.get("env", {}).items():
-                    env_conf[k] = render_template(v, context) if isinstance(v, str) else str(v)
+                    if isinstance(v, str):
+                        env_conf[k] = render_template(v, context)
+                    else:
+                        env_conf[k] = str(v)
+
             cwd: Optional[str] = None
             if server_conf.get("working_dir") is not None:
-                cwd = render_template(server_conf.get("working_dir", "."), context)
+                cwd = render_template(server_conf.get("working_dir", ""), context)
+
             server_params = StdioServerParameters(
                 command=cmd,
                 args=args_list,
@@ -82,22 +89,25 @@ class MCPStep(BaseStep[MCPConfig]):
             client_cm = stdio_client(server_params)
             service_desc = f"stdio command '{cmd}'"
         else:
-            # SSE/HTTP transport
+            # SSE transport
             url: str = render_template(server_conf.get("url", ""), context)
             headers_conf: Optional[Dict[str, Any]] = None
             if server_conf.get("headers") is not None:
                 headers_conf = {}
                 for k, v in server_conf.get("headers", {}).items():
-                    headers_conf[k] = render_template(v, context) if isinstance(v, str) else v
+                    if isinstance(v, str):
+                        headers_conf[k] = render_template(v, context)
+                    else:
+                        headers_conf[k] = v
+
             client_cm = sse_client(url, headers=headers_conf)
             service_desc = f"SSE server '{url}'"
 
-        # Connect and invoke the tool
+        # Connect and invoke tool
         self.logger.debug(f"Connecting to MCP server: {service_desc}")
         try:
             async with client_cm as (read_stream, write_stream):
                 async with ClientSession(read_stream, write_stream) as session:
-                    # Initialize the MCP client session
                     await session.initialize()
                     self.logger.debug(f"Invoking tool '{tool_name}' with arguments {arguments}")
                     try:
@@ -106,19 +116,27 @@ class MCPStep(BaseStep[MCPConfig]):
                             arguments=arguments,
                         )
                     except Exception as e:
-                        raise ValueError(f"Tool invocation failed for '{tool_name}' on {service_desc}: {e}") from e
+                        msg = (
+                            f"Tool invocation failed for '{tool_name}' "
+                            f"on {service_desc}: {e}"
+                        )
+                        raise ValueError(msg) from e
         except ValueError:
-            # propagate our ValueError for tool invocation
+            # Propagate invocation errors
             raise
         except Exception as e:
-            raise ValueError(f"Failed to call tool '{tool_name}' on {service_desc}: {e}") from e
+            msg = f"Failed to call tool '{tool_name}' on {service_desc}: {e}"
+            raise ValueError(msg) from e
 
-        # Convert result to a dictionary
+        # Convert result to dictionary
         try:
-            result_dict: Dict[str, Any] = result.__dict__
+            result_dict: Dict[str, Any] = result.__dict__  # type: ignore
         except Exception:
-            # fallback for non-dataclass-like objects
-            result_dict = {k: getattr(result, k) for k in dir(result) if not k.startswith("_")}
+            result_dict = {
+                attr: getattr(result, attr)
+                for attr in dir(result)
+                if not attr.startswith("_")
+            }
 
-        # Store result in context
+        # Store in context
         context[self.config.result_key] = result_dict

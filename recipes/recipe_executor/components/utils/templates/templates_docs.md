@@ -14,7 +14,6 @@ The Templates utility component provides a `render_template` function that rende
 def render_template(text: str, context: ContextProtocol) -> str:
     """
     Render the given text as a Liquid template using the provided context.
-    All values in the context are converted to strings before rendering.
 
     Args:
         text (str): The template text to render.

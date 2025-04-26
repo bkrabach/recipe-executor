@@ -46,7 +46,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "context['analysis_result']['needs_splitting'] == true",
+        "condition": "{{analysis_result.needs_splitting}}",
         "if_true": {
           "steps": [
             {
@@ -78,9 +78,10 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 ### Context Value Checks
 
 ```json
-"condition": "context['key'] == 'value'"
-"condition": "context['nested']['key'] != null"
-"condition": "context['count'] > 0"
+"condition": "{{key}} == 'value'"
+"condition": "{{nested.key}} != null"
+"condition": "{{count}} > 0"
+"condition": "{{is_ready}}"
 ```
 
 ### File Operations
@@ -94,9 +95,9 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 ### Logical Operations
 
 ```json
-"condition": "and(context['a'] == true, context['b'] == true)"
+"condition": "and({{a}}, {{b}})"
 "condition": "or(file_exists('file1.md'), file_exists('file2.md'))"
-"condition": "not(context['skip_processing'])"
+"condition": "not({{skip_processing}})"
 ```
 
 ### Template Variables in Expressions
@@ -113,7 +114,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "context['step_complete'] == true",
+    "condition": "{{step_complete}}",
     "if_true": {
       "steps": [
         {
@@ -155,7 +156,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "and(context['should_process'] == true, or(file_exists('input1.md'), file_exists('input2.md')))",
+    "condition": "and({{should_process}}, or(file_exists('input1.md'), file_exists('input2.md')))",
     "if_true": {
       "steps": [
         /* Processing steps */
