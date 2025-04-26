@@ -1,5 +1,5 @@
 # AI Context Files
-Date: 4/25/2025, 11:56:50 PM
+Date: 4/26/2025, 9:34:06 AM
 Files: 14
 
 === File: recipes/blueprint_generator/blueprint_generator.json ===
@@ -1665,7 +1665,7 @@ The system should be modular, extensible, and allow for future integration of ma
     {
       "type": "conditional",
       "config": {
-        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components}})",
+        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components | size}} > 0)",
         "if_true": {
           "steps": [
             {

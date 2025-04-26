@@ -1,23 +1,6 @@
 # AI Context Files
-Date: 4/26/2025, 12:07:48 AM
-Files: 103
-
-=== File: recipes/recipe_executor/ai_context/DEV_GUIDE_FOR_PYTHON.md ===
-# Dev Guide for Python
-
-When contributing to the Python codebase, please follow these guidelines to ensure consistency and maintainability.
-
-- Place import statements at the top of the file, however, where appropriate, perform imports inside functions to avoid circular dependencies.
-- All optional parameters should be typed as `Optional[Type]`.
-- Set types for all variables, including `self` variables in classes.
-- Use `List`, `Dict`, and other type hints from the `typing` module for type annotations, include the type of the list or dictionary.
-- Initialize any variables that will be used outside of a block prior to the block, including `if`, `for`, `while`, `try`, etc. to avoid issues with variables that are possibly unbound on some code paths.
-- Assume that all dependencies mentioned in the component spec or docs are installed, do not write guards for them.
-- If a variable could be `None`, verify that it is not `None` before using it.
-- Do not create main functions for components that do not have a main function listed in the spec.
-- Use full names for variables, classes, and functions. For example, use `get_workspace` instead of `gw`.
-- For `__init__.py` files, use `__all__` to define the public API of the module.
-
+Date: 4/26/2025, 10:52:47 AM
+Files: 44
 
 === File: recipes/recipe_executor/build.json ===
 {
@@ -42,19 +25,19 @@ When contributing to the Python codebase, please follow these guidelines to ensu
           {
             "type": "conditional",
             "config": {
-              "condition": "{% if component_id %}{% if component_id == component.id %}true{% else %}false{% endif %}{% else %}true{% endif %}",
+              "condition": "{% unless component_id %}true{% else %}{% if component_id == component.id %}true{% else %}false{% endif %}{% endunless %}",
               "if_true": {
                 "steps": [
                   {
                     "type": "conditional",
                     "config": {
-                      "condition": "{{edit|default:false}}",
+                      "condition": "{{ edit | default: false }}",
                       "if_true": {
                         "steps": [
                           {
                             "type": "read_files",
                             "config": {
-                              "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor{{ component.path }}{% if component.path != '/' %}/{% endif %}{{ component.id }}.py",
+                              "path": "{{ existing_code_root }}/{% endif %}recipe_executor/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}.py",
                               "content_key": "existing_code",
                               "optional": true
                             }
@@ -66,14 +49,14 @@ When contributing to the Python codebase, please follow these guidelines to ensu
                   {
                     "type": "read_files",
                     "config": {
-                      "path": "{{ recipe_root|default:'recipes/recipe_executor' }}/components{{ component.path }}{% if component.path != '/' %}/{% endif %}{{ component.id }}/{{ component.id }}_spec.md",
+                      "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_spec.md",
                       "content_key": "spec"
                     }
                   },
                   {
                     "type": "read_files",
                     "config": {
-                      "path": "{{ recipe_root|default:'recipes/recipe_executor' }}/components{{ component.path }}{% if component.path != '/' %}/{% endif %}{{ component.id }}/{{ component.id }}_docs.md",
+                      "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_docs.md",
                       "content_key": "docs",
                       "optional": true
                     }
@@ -81,7 +64,7 @@ When contributing to the Python codebase, please follow these guidelines to ensu
                   {
                     "type": "read_files",
                     "config": {
-                      "path": "{% for d in component.deps %}{{ recipe_root|default:'recipes/recipe_executor' }}/components/{{ d }}/{{ d | split: '/' | last }}_spec.md{% unless forloop.last %},{% endunless %}{% endfor %}",
+                      "path": "{% for dep in component.deps %}{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ dep | replace: '.', '/' }}/{{ dep | split: '.' | last }}_spec.md{% unless forloop.last %},{% endunless %}{% endfor %}",
                       "content_key": "dep_docs",
                       "merge_mode": "dict",
                       "optional": true
@@ -90,7 +73,7 @@ When contributing to the Python codebase, please follow these guidelines to ensu
                   {
                     "type": "read_files",
                     "config": {
-                      "path": "{% for r in component.refs %}{{ refs_root|default:'ai_context' }}/{{ r }}{% unless forloop.last %},{% endunless %}{% endfor %}",
+                      "path": "{% for ref in component.refs %}{{ refs_root | default: 'ai_context' }}/{{ ref }}{% unless forloop.last %},{% endunless %}{% endfor %}",
                       "content_key": "ref_docs",
                       "merge_mode": "dict",
                       "optional": true
@@ -106,16 +89,15 @@ When contributing to the Python codebase, please follow these guidelines to ensu
                   {
                     "type": "read_files",
                     "config": {
-                      "path": "{{ recipe_root|default:'recipes/recipe_executor' }}/ai_context/DEV_GUIDE_FOR_PYTHON.md",
-                      "content_key": "dev_guide",
-                      "optional": true
+                      "path": "ai_context/DEV_GUIDE_FOR_PYTHON.md",
+                      "content_key": "dev_guide"
                     }
                   },
                   {
                     "type": "llm_generate",
                     "config": {
-                      "prompt": "# Task\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component.id}} component of a larger project.\n\n## Specification\n<SPECIFICATION>\n{{spec}}\n</SPECIFICATION>\n\n{% if existing_code %}## Existing Code\n\nThis is the prior version of the code and can be used for reference, however the specifications or dependencies may have changed, so it may need to be updated.\n\n<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}## Usage Documentation\n\nThis is the usage documentation that will be provided to callers of this component, it is critical that this is considered a contract and must be fulfilled as this is what is being promised from this component.\n\n<USAGE_DOCUMENTATION>\n{{docs}}\n</USAGE_DOCUMENTATION>\n\n{% if dep_docs %}## Dependency Documentation\n\nIncludes documentation for internal dependencies.\n{% for dep_doc in dep_docs %}<DEPENDENCY_DOC>\n{{dep_docs[dep_doc]}}\n</DEPENDENCY_DOC>\n{% endfor %}\n{% endif %}{% if ref_docs %}# Reference Documentation\n\nIncludes additional documentation for external libraries that have been loaded into this project.\n{% for ref_doc in ref_docs %}<REFERENCE_DOC>\n{{ref_docs[ref_doc]}}\n</REFERENCE_DOC>\n{% endfor %}\n{% endif %}## Guidance\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n{% if dev_guide %}<DEV_GUIDE>\n{{dev_guide}}\n</DEV_GUIDE>\n\n{% endif %}# Output\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at once and return in the `files` collection). For example, {{output_path|default:'recipe_executor'}}{% if component.path != '/' %}/{% endif %}{{component.id}}.<ext>, {{output_path|default:'recipe_executor'}}{% if component.path != '/' %}/{% endif %}__init__.py, etc.\n\n",
-                      "model": "{{ model|default:'openai/o4-mini' }}",
+                      "prompt": "{% assign id_parts = component.id | split: '.' -%}{% assign path = id_parts | size | minus: 1 | join: '/' -%}{% assign id = id_parts | last -%}# Task\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{ component.id }} component of a larger project.\n\n## Specification\n<SPECIFICATION>\n{{ spec }}\n</SPECIFICATION>\n\n{% if existing_code %}## Existing Code\n\nThis is the prior version of the code and can be used for reference, however the specifications or dependencies may have changed, so it may need to be updated.\n\n<EXISTING_CODE>\n{{ existing_code }}\n</EXISTING_CODE>\n\n{% endif %}## Usage Documentation\n\nThis is the usage documentation that will be provided to callers of this component, it is critical that this is considered a contract and must be fulfilled as this is what is being promised from this component.\n\n<USAGE_DOCUMENTATION>\n{{ docs }}\n</USAGE_DOCUMENTATION>\n\n{% if dep_docs %}## Dependency Documentation\n\nIncludes documentation for internal dependencies.\n{% for dep_doc in dep_docs %}<DEPENDENCY_DOC>\n{{ dep_docs[dep_doc] }}\n</DEPENDENCY_DOC>\n{% endfor %}\n{% endif %}{% if ref_docs %}# Reference Documentation\n\nIncludes additional documentation for external libraries that have been loaded into this project.\n{% for ref_doc in ref_docs %}<REFERENCE_DOC>\n{{ ref_docs[ref_doc] }}\n</REFERENCE_DOC>\n{% endfor %}\n{% endif %}## Guidance\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{ implementation_philosophy }}\n</IMPLEMENTATION_PHILOSOPHY>\n\n{% if dev_guide %}<DEV_GUIDE>\n{{ dev_guide }}\n</DEV_GUIDE>\n\n{% endif %}# Output\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at once and return in the `files` collection). For example, {{ output_path | default: 'recipe_executor' }}/{{ path }}/{{ id }}.<ext>, {{ output_path | default: 'recipe_executor' }}/{{ path }}/<other files defined in specification>, etc.\n\n",
+                      "model": "{{ model | default: 'openai/o4-mini' }}",
                       "output_format": "files",
                       "output_key": "generated_files"
                     }
@@ -124,7 +106,7 @@ When contributing to the Python codebase, please follow these guidelines to ensu
                     "type": "write_files",
                     "config": {
                       "files_key": "generated_files",
-                      "root": "{{ output_root|default:'output' }}"
+                      "root": "{{ output_root | default: 'output' }}"
                     }
                   }
                 ]
@@ -142,43 +124,36 @@ When contributing to the Python codebase, please follow these guidelines to ensu
 [
   {
     "id": "context",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "executor",
-    "path": "/",
-    "deps": ["protocols", "models", "steps/registry", "logger"],
+    "deps": ["protocols", "logger", "models", "steps.registry"],
     "refs": []
   },
   {
     "id": "logger",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "main",
-    "path": "/",
     "deps": ["context", "executor", "logger", "protocols"],
     "refs": []
   },
   {
     "id": "models",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "protocols",
-    "path": "/",
     "deps": ["models"],
     "refs": []
   },
   {
-    "id": "azure_openai",
-    "path": "/llm_utils",
+    "id": "llm_utils.azure_openai",
     "deps": ["logger"],
     "refs": [
       "AZURE_IDENTITY_CLIENT_DOCS.md",
@@ -186,196 +161,96 @@ When contributing to the Python codebase, please follow these guidelines to ensu
     ]
   },
   {
-    "id": "llm",
-    "path": "/llm_utils",
-    "deps": ["logger", "llm_utils/azure_openai", "llm_utils/mcp"],
+    "id": "llm_utils.llm",
+    "deps": ["logger", "llm_utils.azure_openai", "llm_utils.mcp"],
     "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
   },
   {
-    "id": "mcp",
-    "path": "/llm_utils",
+    "id": "llm_utils.mcp",
     "deps": ["logger"],
     "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
   },
   {
-    "id": "base",
-    "path": "/steps",
-    "deps": ["protocols", "logger"],
+    "id": "steps.base",
+    "deps": ["logger", "protocols"],
     "refs": []
   },
   {
-    "id": "conditional",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "utils/templates"],
+    "id": "steps.conditional",
+    "deps": ["context", "steps.base", "utils.templates"],
     "refs": []
   },
   {
-    "id": "execute_recipe",
-    "path": "/steps",
+    "id": "steps.execute_recipe",
     "deps": [
-      "steps/base",
       "context",
-      "utils/templates",
+      "executor",
       "protocols",
-      "executor"
+      "steps.base",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "llm_generate",
-    "path": "/steps",
+    "id": "steps.llm_generate",
     "deps": [
       "context",
       "models",
-      "llm_utils/llm",
-      "llm_utils/mcp",
-      "steps/base",
-      "utils/models",
-      "utils/templates"
+      "llm_utils.llm",
+      "llm_utils.mcp",
+      "steps.base",
+      "utils.models",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "loop",
-    "path": "/steps",
+    "id": "steps.loop",
     "deps": [
-      "steps/base",
       "context",
-      "utils/templates",
-      "steps/registry",
-      "executor"
+      "executor",
+      "steps.base",
+      "steps.registry",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "mcp",
-    "path": "/steps",
-    "deps": ["steps/base", "utils/templates", "llm_utils/mcp", "protocols"],
+    "id": "steps.mcp",
+    "deps": ["protocols", "llm_utils.mcp", "steps.base", "utils.templates"],
     "refs": ["git_collector/MCP_PYTHON_SDK_DOCS.md"]
   },
   {
-    "id": "parallel",
-    "path": "/steps",
-    "deps": ["steps/base", "protocols", "steps/registry"],
+    "id": "steps.parallel",
+    "deps": ["protocols", "steps.base", "steps.registry"],
     "refs": []
   },
   {
-    "id": "read_files",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "utils/templates"],
+    "id": "steps.read_files",
+    "deps": ["steps.base", "context", "utils.templates"],
     "refs": []
   },
   {
-    "id": "registry",
-    "path": "/steps",
+    "id": "steps.registry",
     "deps": [],
     "refs": []
   },
   {
-    "id": "write_files",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "models", "utils/templates"],
+    "id": "steps.write_files",
+    "deps": ["context", "models", "steps.base", "utils/.templates"],
     "refs": []
   },
   {
-    "id": "models",
-    "path": "/utils",
+    "id": "utils.models",
     "deps": [],
     "refs": []
   },
   {
-    "id": "templates",
-    "path": "/utils",
+    "id": "utils.templates",
     "deps": ["protocols"],
     "refs": ["git_collector/LIQUID_PYTHON_DOCS.md"]
   }
 ]
-
-
-=== File: recipes/recipe_executor/components/context/context_build.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit|default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/context.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "context",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/context/context_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit| default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/context.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "context",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
-        }
-      }
-    }
-  ]
-}
 
 
 === File: recipes/recipe_executor/components/context/context_docs.md ===
@@ -487,29 +362,6 @@ The `clone()` method creates a deep copy of the Context, including all artifacts
 - **Configuration vs Artifacts**: Remember that context configuration is only available via `context.get_config()` and `context.set_config()`. It is not manipulated via the dictionary interface (`__getitem__`/`__setitem__`). This separation is by convention; Context does not prevent you from modifying the configuration, so it is up to developers to decide how to manage configuration values.
 
 
-=== File: recipes/recipe_executor/components/context/context_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/context.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/context/context_spec.md ===
 # Context Component Specification
 
@@ -571,123 +423,12 @@ The Context component is the shared state container for the Recipe Executor syst
 
 ## Output Files
 
-- `context.py`
+- `recipe_executor/context.py`
 
 ## Future Considerations
 
 - **Namespacing or Hierarchies**: In larger workflows, there might be a need to namespace context data (e.g., per step or per sub-recipe) to avoid key collisions. Future versions might introduce optional namespacing schemes or structured keys.
 - **Immutable Context Option**: Possibly provide a mode or subclass for an immutable context (read-only once created) for scenarios where you want to ensure no step modifies the data.
-
-
-=== File: recipes/recipe_executor/components/executor/executor_build.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "content_key": "models_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_docs.md",
-        "content_key": "registry_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit| default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/executor.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "executor",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<REGISTRY_DOCS>\n{{registry_docs}}\n</REGISTRY_DOCS>\n<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/executor/executor_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "content_key": "models_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_docs.md",
-        "content_key": "registry_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "executor",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<REGISTRY_DOCS>\n{{registry_docs}}\n</REGISTRY_DOCS>\n<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>"
-        }
-      }
-    }
-  ]
-}
 
 
 === File: recipes/recipe_executor/components/executor/executor_docs.md ===
@@ -760,29 +501,6 @@ In each case, the Executor will parse the input (if needed) and sequentially exe
 - **Step Instantiation**: When the Executor runs a step, it creates a new instance of the step class for each step execution (even if the same step type appears multiple times, each occurrence is a fresh instance). The step class’s `__init__` usually takes the step configuration (from the recipe) and an optional logger.
 - **Error Handling**: If any step fails (raises an exception), Executor will halt the execution of the remaining steps. The exception will bubble up as a `ValueError` with context about which step failed. You should be prepared to catch exceptions around `await executor.execute(...)` in contexts where a failure is possible or should not crash the entire program.
 - **Context After Execution**: After `execute` completes (successfully), the context contains all the artifacts that steps have placed into it. You can inspect `context` to get results (for example, if a step writes an output, it might be found in `context["output_key"]`). The context is your way to retrieve outcomes from the recipe.
-
-
-=== File: recipes/recipe_executor/components/executor/executor_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/executor.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
 
 
 === File: recipes/recipe_executor/components/executor/executor_spec.md ===
@@ -869,104 +587,7 @@ The Executor component is responsible for executing recipes defined in JSON form
 
 ## Output Files
 
-- `executor.py`
-
-
-=== File: recipes/recipe_executor/components/llm_utils/azure_openai/azure_openai_build.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/AZURE_IDENTITY_CLIENT_DOCS.md",
-        "content_key": "azure_identity_client_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit| default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/azure_openai.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "azure_openai",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/llm_utils/azure_openai/azure_openai_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/AZURE_IDENTITY_CLIENT_DOCS.md",
-        "content_key": "azure_identity_client_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "azure_openai",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<AZURE_IDENTITY_CLIENT_DOCS>\n{{azure_identity_client_docs}}\n</AZURE_IDENTITY_CLIENT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/executor.py`
 
 
 === File: recipes/recipe_executor/components/llm_utils/azure_openai/azure_openai_docs.md ===
@@ -1055,29 +676,6 @@ AZURE_OPENAI_DEPLOYMENT_NAME= # Optional, defaults to model_name
 ```
 
 
-=== File: recipes/recipe_executor/components/llm_utils/azure_openai/azure_openai_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/azure_openai.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/llm_utils/azure_openai/azure_openai_spec.md ===
 # Azure OpenAI Component Specification
 
@@ -1162,218 +760,7 @@ openai_model = OpenAIModel(
 
 ## Output Files
 
-- `llm_utils/azure_openai.py`
-
-
-=== File: recipes/recipe_executor/components/llm_utils/build.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_build.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_build.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_build.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/llm_utils/create.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_create.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-=== File: recipes/recipe_executor/components/llm_utils/edit.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_edit.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-=== File: recipes/recipe_executor/components/llm_utils/llm/llm_build.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_docs.md",
-        "content_key": "azure_openai_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_docs.md",
-        "content_key": "mcp_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit| default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/llm.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "llm",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<AZURE_OPENAI_DOCUMENTATION>\n{{azure_openai_docs}}\n</AZURE_OPENAI_DOCUMENTATION>\n<MCP_DOCUMENTATION>\n{{mcp_docs}}\n</MCP_DOCUMENTATION>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/llm_utils/llm/llm_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/azure_openai/azure_openai_docs.md",
-        "content_key": "azure_openai_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_docs.md",
-        "content_key": "mcp_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "llm",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<AZURE_OPENAI_DOCUMENTATION>\n{{azure_openai_docs}}\n</AZURE_OPENAI_DOCUMENTATION>\n<MCP_DOCUMENTATION>\n{{mcp_docs}}\n</MCP_DOCUMENTATION>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/llm_utils/azure_openai.py`
 
 
 === File: recipes/recipe_executor/components/llm_utils/llm/llm_docs.md ===
@@ -1522,29 +909,6 @@ except Exception as e:
 - The component logs full request details at debug level
 
 
-=== File: recipes/recipe_executor/components/llm_utils/llm/llm_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/llm.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/llm_utils/llm/llm_spec.md ===
 # LLM Component Specification
 
@@ -1612,7 +976,7 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Output Files
 
-- `llm_utils/llm.py`
+- `recipe_executor/llm_utils/llm.py`
 
 ## Dependency Integration Considerations
 
@@ -1704,89 +1068,6 @@ return OpenAIModel(
 ```
 
 
-=== File: recipes/recipe_executor/components/llm_utils/mcp/mcp_build.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "conditional",
-      "config": {
-        "condition": "{{edit| default:'false'}}",
-        "if_true": {
-          "steps": [
-            {
-              "type": "read_files",
-              "config": {
-                "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/mcp.py",
-                "content_key": "existing_code"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "mcp",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/llm_utils/mcp/mcp_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/PYDANTIC_AI_DOCS.md",
-        "content_key": "pydantic_ai_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "mcp",
-          "component_path": "/llm_utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>\n<PYDANTIC_AI_DOCUMENTATION>\n{{pydantic_ai_docs}}\n</PYDANTIC_AI_DOCUMENTATION>"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/llm_utils/mcp/mcp_docs.md ===
 # MCP Utility Usage
 
@@ -1857,30 +1138,6 @@ except RuntimeError as e:
 - **MCPServer** does not maintain an active connection to the server. Each tool list/call creates a new connection.
 
 
-=== File: recipes/recipe_executor/components/llm_utils/mcp/mcp_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/llm_utils/mcp.py",
-        "content_key": "existing_code",
-        "optional": true
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/llm_utils/mcp/mcp_spec.md ===
 # MCP Utility Component Specification
 
@@ -1926,25 +1183,8 @@ None
 
 ## Output Files
 
-- `llm_utils/mcp.py`
+- `recipe_executor/llm_utils/mcp.py`
 
-
-=== File: recipes/recipe_executor/components/logger/logger_create.json ===
-{
-  "steps": [
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "logger",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
 
 === File: recipes/recipe_executor/components/logger/logger_docs.md ===
 # Logger Component Usage
@@ -2043,29 +1283,6 @@ Example:
 - The logger is thread-safe and can be used in multi-threaded applications
 
 
-=== File: recipes/recipe_executor/components/logger/logger_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/logger.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/logger/logger_spec.md ===
 # Logger Component Specification
 
@@ -2123,47 +1340,7 @@ None
 
 ## Output Files
 
-- `logger.py`
-
-
-=== File: recipes/recipe_executor/components/main/main_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
-        "content_key": "executor_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "main",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/logger.py`
 
 
 === File: recipes/recipe_executor/components/main/main_docs.md ===
@@ -2246,29 +1423,6 @@ The stack trace for exceptions is output to stderr (via `traceback.format_exc()`
 - Logging is configured at runtime when Main calls `init_logger`. The logs (including debug information and errors) are saved in the directory specified by `--log-dir`. Each run may append to these logs, so it's advisable to monitor or clean the log directory if running many recipes.
 
 
-=== File: recipes/recipe_executor/components/main/main_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/main.py,{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/__init__.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/main/main_spec.md ===
 # Main Component Specification
 
@@ -2280,8 +1434,8 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 - Provide a command-line interface for executing recipes (accept recipe path and optional parameters).
 - Load environment variables from a `.env` file at startup (using python-dotenv).
- - Parse context values supplied via command-line arguments (`--context key=value`) into initial Context artifacts.
- - Parse configuration values supplied via command-line arguments (`--config key=value`) into the Context `config` attribute.
+- Parse context values supplied via command-line arguments (`--context key=value`) into initial Context artifacts.
+- Parse configuration values supplied via command-line arguments (`--config key=value`) into the Context `config` attribute.
 - Initialize a logging system and direct log output to a specified directory.
 - Create the Context and Executor instances and orchestrate the recipe execution by running an asyncio event loop to call `await Executor.execute` with the provided context.
 - Handle successful completion by reporting execution time, and handle errors by logging and exiting with a non-zero status.
@@ -2289,9 +1443,9 @@ The Main component serves as the command-line entry point for the Recipe Executo
 ## Implementation Considerations
 
 - Use Python's built-in `argparse` for argument parsing.
- - Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of artifacts.
- - Support multiple `--config` arguments by accumulating them into a list and parsing into a dictionary of configuration values.
- - Create a `Context` object using the parsed artifacts and configuration dictionaries (e.g., `Context(artifacts=artifacts, config=config)`).
+- Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of artifacts.
+- Support multiple `--config` arguments by accumulating them into a list and parsing into a dictionary of configuration values.
+- Create a `Context` object using the parsed artifacts and configuration dictionaries (e.g., `Context(artifacts=artifacts, config=config)`).
 - Use the `Executor` component to run the recipe, passing the context object to it.
 - Implement asynchronous execution:
   - Define an async `main_async` function that performs the core execution logic
@@ -2336,25 +1490,8 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 ## Output Files
 
-- `main.py`
+- `recipe_executor/main.py`
 
-
-=== File: recipes/recipe_executor/components/models/models_create.json ===
-{
-  "steps": [
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "models",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
 
 === File: recipes/recipe_executor/components/models/models_docs.md ===
 # Models Component Usage
@@ -2508,29 +1645,6 @@ valid_file = FileSpec(path="file.txt", content="File content")
 - Models can be created from JSON with `Model.model_validate_json(json_data)`
 
 
-=== File: recipes/recipe_executor/components/models/models_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/models.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/models/models_spec.md ===
 # Models Component Specification
 
@@ -2575,33 +1689,7 @@ None
 
 ## Output Files
 
-- `models.py`
-
-
-=== File: recipes/recipe_executor/components/protocols/protocols_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "content_key": "models_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "protocols",
-          "component_path": "/",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/models.py`
 
 
 === File: recipes/recipe_executor/components/protocols/protocols_docs.md ===
@@ -2732,29 +1820,6 @@ In this example, `MyCustomExecutor` implements the `ExecutorProtocol`, ensuring 
 All developers and AI recipes should reference **this protocols documentation** when implementing or using components. This ensures that all components are consistent and adhere to the same interface definitions, enables decoupling, and prevents import cycles. It also allows for easier testing and swapping of implementations, as all components can be treated as interchangeable as long as they adhere to the defined protocols.
 
 
-=== File: recipes/recipe_executor/components/protocols/protocols_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/protocols.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/protocols/protocols_spec.md ===
 # Protocols Component Specification
 
@@ -2805,40 +1870,7 @@ The Protocols component defines the core interfaces for the Recipe Executor syst
 
 ## Output Files
 
-- `protocols.py`
-
-
-=== File: recipes/recipe_executor/components/steps/base/base_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_docs.md",
-        "content_key": "logger_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "base",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<LOGGER_DOCS>\n{{logger_docs}}\n</LOGGER_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/protocols.py`
 
 
 === File: recipes/recipe_executor/components/steps/base/base_docs.md ===
@@ -2897,29 +1929,6 @@ Now, any recipe with a step like `{"type": "echo", "config": {"message": "Hello 
 - **Adhering to StepProtocol**: By following the pattern above, your custom step automatically adheres to `StepProtocol` because it implements `execute(context: ContextProtocol)`.
 
 
-=== File: recipes/recipe_executor/components/steps/base/base_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/base.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/base/base_spec.md ===
 # Steps Base Component Specification
 
@@ -2976,47 +1985,7 @@ The purpose of the Steps Base component is to provide a foundational structure f
 
 ## Output Files
 
-- `steps/base.py`
-
-
-=== File: recipes/recipe_executor/components/steps/conditional/conditional_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "conditional",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/base.py`
 
 
 === File: recipes/recipe_executor/components/steps/conditional/conditional_docs.md ===
@@ -3068,7 +2037,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "{{analysis_result.needs_splitting}}",
+        "condition": "{{ analysis_result.needs_splitting }}",
         "if_true": {
           "steps": [
             {
@@ -3136,7 +2105,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "{{step_complete}}",
+    "condition": "{{ step_complete }}",
     "if_true": {
       "steps": [
         {
@@ -3157,7 +2126,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "file_exists('{{output_path}}')",
+    "condition": "file_exists('{{ output_path }}')",
     "if_true": {
       "steps": [
         /* Steps to handle existing file */
@@ -3178,7 +2147,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "and({{should_process}}, or(file_exists('input1.md'), file_exists('input2.md')))",
+    "condition": "and({{ should_process }}, or(file_exists('input1.md'), file_exists('input2.md')))",
     "if_true": {
       "steps": [
         /* Processing steps */
@@ -3197,13 +2166,13 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "all_files_exist(['{{input_file}}', '{{config_file}}'])",
+        "condition": "all_files_exist(['{{ input_file }}', '{{ config_file }}'])",
         "if_true": {
           "steps": [
             {
               "type": "read_files",
               "config": {
-                "path": "{{input_file}}",
+                "path": "{{ input_file }}",
                 "content_key": "input_content"
               }
             }
@@ -3229,29 +2198,6 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 - When a branch doesn't exist for the condition result, that path is simply skipped
 - Nested conditional steps are supported for complex decision trees
 - The conditional step is specifically designed to reduce unnecessary LLM calls in recipes
-
-
-=== File: recipes/recipe_executor/components/steps/conditional/conditional_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/conditional.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
 
 
 === File: recipes/recipe_executor/components/steps/conditional/conditional_spec.md ===
@@ -3311,206 +2257,7 @@ None
 
 ## Output Files
 
-- `steps/conditional.py`
-
-
-=== File: recipes/recipe_executor/components/steps/create.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/llm_generate/llm_generate_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/loop/loop_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/mcp/mcp_create.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/steps/edit.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/conditional/conditional_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/llm_generate/llm_generate_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/loop/loop_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/mcp/mcp_edit.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/steps/execute_recipe/execute_recipe_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
-        "content_key": "executor_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "execute_recipe",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/conditional.py`
 
 
 === File: recipes/recipe_executor/components/steps/execute_recipe/execute_recipe_docs.md ===
@@ -3700,29 +2447,6 @@ Sub-recipes can be composed to create more complex workflows:
 - Sub-recipes can execute their own sub-recipes (nested execution)
 
 
-=== File: recipes/recipe_executor/components/steps/execute_recipe/execute_recipe_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/execute_recipe.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/execute_recipe/execute_recipe_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/execute_recipe/execute_recipe_spec.md ===
 # ExecuteRecipeStep Component Specification
 
@@ -3783,82 +2507,7 @@ None
 
 ## Output Files
 
-- `steps/execute_recipe.py`
-
-## Future Considerations
-
-- Support providing recipe content directly in configuration
-- Context isolation options for sub-recipes
-- Result mapping from sub-recipes back to parent recipes
-- Conditional sub-recipe execution
-
-
-=== File: recipes/recipe_executor/components/steps/llm_generate/llm_generate_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/llm/llm_docs.md",
-        "content_key": "llm_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/mcp/mcp_docs.md",
-        "content_key": "mcp_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "content_key": "models_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/models/models_docs.md",
-        "content_key": "utils_models_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "llm_generate",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<LLM_DOCS>\n{{llm_docs}}\n</LLM_DOCS>\n<MCP_DOCS>\n{{mcp_docs}}\n</MCP_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<UTILS_MODELS_DOCS>\n{{utils_models_docs}}\n</UTILS_MODELS_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/execute_recipe.py`
 
 
 === File: recipes/recipe_executor/components/steps/llm_generate/llm_generate_docs.md ===
@@ -4204,29 +2853,6 @@ Context after execution:
 ```
 
 
-=== File: recipes/recipe_executor/components/steps/llm_generate/llm_generate_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/llm_generate.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/llm_generate/llm_generate_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/llm_generate/llm_generate_spec.md ===
 # LLMGenerateStep Component Specification
 
@@ -4318,61 +2944,7 @@ None
 
 ## Output Files
 
-- `steps/llm_generate.py`
-
-
-=== File: recipes/recipe_executor/components/steps/loop/loop_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_docs.md",
-        "content_key": "executor_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "loop",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<EXECUTOR_DOCS>\n{{executor_docs}}\n</EXECUTOR_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>\n"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/llm_generate.py`
 
 
 === File: recipes/recipe_executor/components/steps/loop/loop_docs.md ===
@@ -4701,29 +3273,6 @@ With `fail_fast: false`, the LoopStep will:
 - The LoopStep supports both array and object collections
 
 
-=== File: recipes/recipe_executor/components/steps/loop/loop_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/loop.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/loop/loop_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/loop/loop_spec.md ===
 # LoopStep Component Specification
 
@@ -4789,10 +3338,6 @@ The LoopStep component enables recipes to iterate over a collection of items, ex
 
 None
 
-## Output Files
-
-- `steps/loop.py` - (LoopStep implementation)
-
 ## Logging
 
 - Debug: Log the start/end of each item processing with its index/key, log steps execution within the loop
@@ -4807,45 +3352,9 @@ None
 - Include the item key/index in error messages for easier debugging
 - Allow configuration of whether to fail fast or continue on errors
 
+## Output Files
 
-=== File: recipes/recipe_executor/components/steps/mcp/mcp_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/git_collector/MCP_PYTHON_SDK_DOCS.md",
-        "content_key": "mcp_python_sdk_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "mcp",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>\n<MCP_PYTHON_SDK_DOCS>\n{{mcp_python_sdk_docs}}\n</MCP_PYTHON_SDK_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/loop.py` - (LoopStep implementation)
 
 
 === File: recipes/recipe_executor/components/steps/mcp/mcp_docs.md ===
@@ -4936,30 +3445,6 @@ After execution, the context contains:
 All string configuration fields support templating using context variables.
 
 
-=== File: recipes/recipe_executor/components/steps/mcp/mcp_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/mcp.py",
-        "content_key": "existing_code",
-        "optional": true
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/mcp/mcp_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/mcp/mcp_spec.md ===
 # MCPStep Component Specification
 
@@ -5018,40 +3503,7 @@ None
 
 ## Output Files
 
-- `steps/mcp.py`
-
-
-=== File: recipes/recipe_executor/components/steps/parallel/parallel_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "base_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "parallel",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>\n<BASE_DOCS>\n{{base_docs}}\n</BASE_DOCS>\n<STEPS_DOCS>\n{{steps_docs}}\n</STEPS_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/mcp.py`
 
 
 === File: recipes/recipe_executor/components/steps/parallel/parallel_docs.md ===
@@ -5153,29 +3605,6 @@ The ParallelStep is designed to integrate seamlessly with the rest of your recip
 - **Delay Between Sub-steps:** Use the `delay` parameter to control the timing of sub-step execution, which can help manage resource contention.
 
 
-=== File: recipes/recipe_executor/components/steps/parallel/parallel_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/parallel.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/parallel/parallel_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/parallel/parallel_spec.md ===
 # ParallelStep Component Specification
 
@@ -5223,10 +3652,6 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 
 None
 
-## Output Files
-
-- `steps/parallel.py` (ParallelStep implementation)
-
 ## Logging
 
 - Debug: Log sub-step start/completion events, thread allocation, and configuration details
@@ -5240,45 +3665,9 @@ None
 - Ensure proper thread pool shutdown to prevent orphaned threads
 - Propagate the original exception with contextual information about the failure
 
+## Output Files
 
-=== File: recipes/recipe_executor/components/steps/read_files/read_files_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "read_files",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/parallel.py` (ParallelStep implementation)
 
 
 === File: recipes/recipe_executor/components/steps/read_files/read_files_docs.md ===
@@ -5546,30 +3935,6 @@ Then in the recipe you can use that context value:
 - All paths support template rendering (including each path in a list)
 
 
-=== File: recipes/recipe_executor/components/steps/read_files/read_files_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/read_files.py",
-        "content_key": "existing_code",
-        "optional": true
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/read_files/read_files_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/read_files/read_files_spec.md ===
 # ReadFilesStep Component Specification
 
@@ -5634,25 +3999,8 @@ None
 
 ## Output Files
 
-- `steps/read_files.py`
+- `recipe_executor/steps/read_files.py`
 
-
-=== File: recipes/recipe_executor/components/steps/registry/registry_create.json ===
-{
-  "steps": [
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "registry",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
 
 === File: recipes/recipe_executor/components/steps/registry/registry_docs.md ===
 # Step Registry Component Usage
@@ -5723,29 +4071,6 @@ from recipe_executor.steps.registry import STEP_REGISTRY
 - Custom steps need to be explicitly registered by the user
 
 
-=== File: recipes/recipe_executor/components/steps/registry/registry_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/registry.py,{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/__init__.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/registry/registry_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/registry/registry_spec.md ===
 # Step Registry Component Specification
 
@@ -5788,13 +4113,11 @@ None
 
 ## Output Files
 
-- `steps/registry.py`
-- `steps/__init__.py` (details below, IMPORTANT - write this file in addition to the registry.py file!)
-
-Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
+- `recipe_executor/steps/registry.py`
+- `recipe_executor/steps/__init__.py` (details below)
 
 ```python
-# In recipe_executor/steps/__init__.py
+# recipe_executor/steps/__init__.py
 from recipe_executor.steps.registry import STEP_REGISTRY
 from recipe_executor.steps.conditional import ConditionalStep
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep
@@ -5817,53 +4140,6 @@ STEP_REGISTRY.update({
     "write_files": WriteFilesStep,
 })
 ```
-
-
-=== File: recipes/recipe_executor/components/steps/write_files/write_files_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/base/base_docs.md",
-        "content_key": "steps_base_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_docs.md",
-        "content_key": "models_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_docs.md",
-        "content_key": "context_docs"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_docs.md",
-        "content_key": "templates_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "write_files",
-          "component_path": "/steps",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<STEPS_BASE_DOCS>\n{{steps_base_docs}}\n</STEPS_BASE_DOCS>\n<CONTEXT_DOCS>\n{{context_docs}}\n</CONTEXT_DOCS>\n<MODELS_DOCS>\n{{models_docs}}\n</MODELS_DOCS>\n<TEMPLATES_DOCS>\n{{templates_docs}}\n</TEMPLATES_DOCS>"
-        }
-      }
-    }
-  ]
-}
 
 
 === File: recipes/recipe_executor/components/steps/write_files/write_files_docs.md ===
@@ -6133,29 +4409,6 @@ When `config_data` is a Python dictionary or list, it will be automatically seri
 - JSON serialization uses `json.dumps(content, ensure_ascii=False, indent=2)` for consistent formatting
 
 
-=== File: recipes/recipe_executor/components/steps/write_files/write_files_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/steps/write_files.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/write_files/write_files_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/steps/write_files/write_files_spec.md ===
 # WriteFilesStep Component Specification
 
@@ -6219,87 +4472,7 @@ None
 
 ## Output Files
 
-- `steps/write_files.py`
-
-## Future Considerations
-
-- "Dry-run" mode that logs intended writes without performing them
-- Support for custom serialization formats beyond JSON
-- Configurable JSON serialization options (indentation, sorting keys, etc.)
-
-
-=== File: recipes/recipe_executor/components/utils/create.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/models/models_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_create.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/utils/edit.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/models/models_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_edit.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/components/utils/models/models_create.json ===
-{
-  "steps": [
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "models",
-          "component_path": "/utils",
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/steps/write_files.py`
 
 
 === File: recipes/recipe_executor/components/utils/models/models_docs.md ===
@@ -6364,29 +4537,6 @@ print(instance.model_dump())      # {'name': 'Alice', 'age': 30, 'email': 'alice
 NOTE: An **object** is required at the root level of the schema. If the root type is not an object, a `ValueError` will be raised.
 
 
-=== File: recipes/recipe_executor/components/utils/models/models_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/utils/models.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/models/models_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/utils/models/models_spec.md ===
 # Models-Utility Component Specification
 
@@ -6447,33 +4597,7 @@ None
 
 ## Output Files
 
-- `utils/models.py`
-
-
-=== File: recipes/recipe_executor/components/utils/templates/templates_create.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_docs.md",
-        "content_key": "protocols_docs"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/build_component.json",
-        "context_overrides": {
-          "component_id": "templates",
-          "component_path": "/utils",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "<PROTOCOLS_DOCS>\n{{protocols_docs}}\n</PROTOCOLS_DOCS>"
-        }
-      }
-    }
-  ]
-}
+- `recipe_executor/utils/models.py`
 
 
 === File: recipes/recipe_executor/components/utils/templates/templates_docs.md ===
@@ -6548,29 +4672,6 @@ template = "{% for item in items %}Item: {{item}}{% endfor %}"
 ```
 
 
-=== File: recipes/recipe_executor/components/utils/templates/templates_edit.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{% if existing_code_root %}{{existing_code_root}}/{% endif %}recipe_executor/utils/templates.py",
-        "content_key": "existing_code"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/templates/templates_create.json",
-        "context_overrides": {
-          "existing_code": "{{existing_code}}"
-        }
-      }
-    }
-  ]
-}
-
-
 === File: recipes/recipe_executor/components/utils/templates/templates_spec.md ===
 # Utils Component Specification
 
@@ -6620,220 +4721,6 @@ None
 
 ## Output Files
 
-- `utils/templates.py`
-
-
-=== File: recipes/recipe_executor/create.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_create.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_create.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/create.json"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/create.json"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/create.json"
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/edit.json ===
-{
-  "steps": [
-    {
-      "type": "parallel",
-      "config": {
-        "substeps": [
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/context/context_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/logger/logger_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/models/models_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/executor/executor_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/main/main_edit.json"
-            }
-          },
-          {
-            "type": "execute_recipe",
-            "config": {
-              "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/protocols/protocols_edit.json"
-            }
-          }
-        ],
-        "max_concurrency": 0,
-        "delay": 0
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/steps/edit.json"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/llm_utils/edit.json"
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/components/utils/edit.json"
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/utils/build_component.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_spec.md",
-        "content_key": "spec"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/components{{component_path}}{% if component_path != '/' %}/{% endif %}{{component_id}}/{{component_id}}_docs.md",
-        "content_key": "usage_docs",
-        "optional": true
-      }
-    },
-    {
-      "type": "execute_recipe",
-      "config": {
-        "recipe_path": "{{recipe_root|default:'recipes/recipe_executor'}}/utils/generate_code.json",
-        "context_overrides": {
-          "output_path": "recipe_executor{{component_path}}",
-          "language": "{{language|default:'python'}}",
-          "spec": "{{spec}}",
-          "usage_docs": "{{usage_docs}}",
-          "existing_code": "{{existing_code}}",
-          "additional_content": "{{additional_content}}"
-        }
-      }
-    }
-  ]
-}
-
-
-=== File: recipes/recipe_executor/utils/generate_code.json ===
-{
-  "steps": [
-    {
-      "type": "read_files",
-      "config": {
-        "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
-        "content_key": "implementation_philosophy"
-      }
-    },
-    {
-      "type": "read_files",
-      "config": {
-        "path": "{{recipe_root|default:'recipes/recipe_executor'}}/ai_context/DEV_GUIDE_FOR_PYTHON.md",
-        "content_key": "dev_guide",
-        "optional": true
-      }
-    },
-    {
-      "type": "llm_generate",
-      "config": {
-        "prompt": "# TASK\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{component_id}} component of a larger project.\n\nSpecification:\n<SPECIFICATION>\n{{spec}}\n</SPECIFICATION>\n\n{% if existing_code %}<EXISTING_CODE>\n{{existing_code}}\n</EXISTING_CODE>\n\n{% endif %}{% if usage_docs %}<USAGE_DOCUMENTATION>\n{{usage_docs}}\n</USAGE_DOCUMENTATION>\n\n{% endif %}{% if additional_content %}{{additional_content}}\n\n{% endif %}# GUIDANCE\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{implementation_philosophy}}\n</IMPLEMENTATION_PHILOSOPHY>\n\n<DEV_GUIDE>{{dev_guide}}</DEV_GUIDE>\n\n# OUTPUT\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at onces return in the `files` collection). For example, {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}{{component_id}}.<ext>, {{output_path|default:'/'}}{% if component_path != '/' %}/{% endif %}__init__.py, etc.\n\n",
-        "model": "{{model|default:'openai/gpt-4.1'}}",
-        "output_format": "files",
-        "output_key": "generated_files"
-      }
-    },
-    {
-      "type": "write_files",
-      "config": {
-        "files_key": "generated_files",
-        "root": "{{output_root|default:'output'}}"
-      }
-    }
-  ]
-}
+- `recipe_executor/utils/templates.py`
 
 

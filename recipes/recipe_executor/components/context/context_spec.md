@@ -58,7 +58,7 @@ The Context component is the shared state container for the Recipe Executor syst
 
 ## Output Files
 
-- `context.py`
+- `recipe_executor/context.py`
 
 ## Future Considerations
 

@@ -64,7 +64,7 @@ The LLM component provides a unified interface for interacting with various larg
 
 ## Output Files
 
-- `llm_utils/llm.py`
+- `recipe_executor/llm_utils/llm.py`
 
 ## Dependency Integration Considerations
 

@@ -46,7 +46,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "{{analysis_result.needs_splitting}}",
+        "condition": "{{ analysis_result.needs_splitting }}",
         "if_true": {
           "steps": [
             {
@@ -114,7 +114,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "{{step_complete}}",
+    "condition": "{{ step_complete }}",
     "if_true": {
       "steps": [
         {
@@ -135,7 +135,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "file_exists('{{output_path}}')",
+    "condition": "file_exists('{{ output_path }}')",
     "if_true": {
       "steps": [
         /* Steps to handle existing file */
@@ -156,7 +156,7 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
 {
   "type": "conditional",
   "config": {
-    "condition": "and({{should_process}}, or(file_exists('input1.md'), file_exists('input2.md')))",
+    "condition": "and({{ should_process }}, or(file_exists('input1.md'), file_exists('input2.md')))",
     "if_true": {
       "steps": [
         /* Processing steps */
@@ -175,13 +175,13 @@ The ConditionalStep allows you to branch execution paths based on evaluating exp
     {
       "type": "conditional",
       "config": {
-        "condition": "all_files_exist(['{{input_file}}', '{{config_file}}'])",
+        "condition": "all_files_exist(['{{ input_file }}', '{{ config_file }}'])",
         "if_true": {
           "steps": [
             {
               "type": "read_files",
               "config": {
-                "path": "{{input_file}}",
+                "path": "{{ input_file }}",
                 "content_key": "input_content"
               }
             }

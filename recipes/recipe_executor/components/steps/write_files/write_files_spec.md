@@ -60,10 +60,4 @@ None
 
 ## Output Files
 
-- `steps/write_files.py`
-
-## Future Considerations
-
-- "Dry-run" mode that logs intended writes without performing them
-- Support for custom serialization formats beyond JSON
-- Configurable JSON serialization options (indentation, sorting keys, etc.)
+- `recipe_executor/steps/write_files.py`

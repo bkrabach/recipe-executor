@@ -62,10 +62,6 @@ The LoopStep component enables recipes to iterate over a collection of items, ex
 
 None
 
-## Output Files
-
-- `steps/loop.py` - (LoopStep implementation)
-
 ## Logging
 
 - Debug: Log the start/end of each item processing with its index/key, log steps execution within the loop
@@ -79,3 +75,7 @@ None
 - Provide clear error messages when an item fails processing
 - Include the item key/index in error messages for easier debugging
 - Allow configuration of whether to fail fast or continue on errors
+
+## Output Files
+
+- `recipe_executor/steps/loop.py` - (LoopStep implementation)

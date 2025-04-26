@@ -44,10 +44,6 @@ The ParallelStep component enables the Recipe Executor to run multiple sub-recip
 
 None
 
-## Output Files
-
-- `steps/parallel.py` (ParallelStep implementation)
-
 ## Logging
 
 - Debug: Log sub-step start/completion events, thread allocation, and configuration details
@@ -60,3 +56,7 @@ None
 - Include clear error context identifying which sub-step failed
 - Ensure proper thread pool shutdown to prevent orphaned threads
 - Propagate the original exception with contextual information about the failure
+
+## Output Files
+
+- `recipe_executor/steps/parallel.py` (ParallelStep implementation)

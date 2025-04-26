@@ -88,4 +88,4 @@ None
 
 ## Output Files
 
-- `steps/llm_generate.py`
+- `recipe_executor/steps/llm_generate.py`

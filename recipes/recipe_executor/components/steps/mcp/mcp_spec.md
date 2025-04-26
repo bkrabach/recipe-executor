@@ -55,4 +55,4 @@ None
 
 ## Output Files
 
-- `steps/mcp.py`
+- `recipe_executor/steps/mcp.py`

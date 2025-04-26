@@ -57,4 +57,4 @@ None
 
 ## Output Files
 
-- `utils/models.py`
+- `recipe_executor/utils/models.py`

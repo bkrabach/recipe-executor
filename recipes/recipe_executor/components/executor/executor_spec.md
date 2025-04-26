@@ -81,4 +81,4 @@ The Executor component is responsible for executing recipes defined in JSON form
 
 ## Output Files
 
-- `executor.py`
+- `recipe_executor/executor.py`

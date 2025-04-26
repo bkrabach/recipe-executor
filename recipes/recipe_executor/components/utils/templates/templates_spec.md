@@ -46,4 +46,4 @@ None
 
 ## Output Files
 
-- `utils/templates.py`
+- `recipe_executor/utils/templates.py`

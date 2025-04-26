@@ -57,11 +57,4 @@ None
 
 ## Output Files
 
-- `steps/execute_recipe.py`
-
-## Future Considerations
-
-- Support providing recipe content directly in configuration
-- Context isolation options for sub-recipes
-- Result mapping from sub-recipes back to parent recipes
-- Conditional sub-recipe execution
+- `recipe_executor/steps/execute_recipe.py`

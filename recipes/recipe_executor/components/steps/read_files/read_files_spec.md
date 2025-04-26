@@ -61,4 +61,4 @@ None
 
 ## Output Files
 
-- `steps/read_files.py`
+- `recipe_executor/steps/read_files.py`

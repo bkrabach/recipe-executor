@@ -370,7 +370,7 @@
     {
       "type": "conditional",
       "config": {
-        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components}})",
+        "condition": "and({{updated_process_state.iteration}} < {{updated_process_state.max_iterations}}, not({{updated_process_state.done_processing}}), {{next_iteration_components | size}} > 0)",
         "if_true": {
           "steps": [
             {

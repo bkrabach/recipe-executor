@@ -39,13 +39,11 @@ None
 
 ## Output Files
 
-- `steps/registry.py`
-- `steps/__init__.py` (details below, IMPORTANT - write this file in addition to the registry.py file!)
-
-Create the `__init__.py` file in the `steps` directory to ensure it is treated as a package. Steps are registered in the steps package `__init__.py`:
+- `recipe_executor/steps/registry.py`
+- `recipe_executor/steps/__init__.py` (details below)
 
 ```python
-# In recipe_executor/steps/__init__.py
+# recipe_executor/steps/__init__.py
 from recipe_executor.steps.registry import STEP_REGISTRY
 from recipe_executor.steps.conditional import ConditionalStep
 from recipe_executor.steps.execute_recipe import ExecuteRecipeStep

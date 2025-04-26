@@ -8,14 +8,28 @@ ai-context-files:
 	@python $(repo_root)/tools/build_ai_context_files.py
 	@python $(repo_root)/tools/build_git_collector_files.py
 
-# Create new recipe executor code from scratch using the recipe executor itself
-.PHONY: recipe-executor-create
-recipe-executor-create:
-	@echo "Generating recipe executor code from scratch from recipe..."
-	@recipe-executor recipes/recipe_executor/create.json
+.PHONY: recipe-executor-create recipe-executor-edit create-component edit-component
 
-# Edit/revise the existing recipe executor code using the recipe executor itself
-.PHONY: recipe-executor-edit
+# Create recipe executor code from scratch using modular recipes
+recipe-executor-create:
+	@echo "Generating recipe executor code from modular recipes..."
+	recipe-tool --execute recipes/recipe_executor/build.json model=openai/o4-mini
+
+# Edit existing recipe executor code using modular recipes
 recipe-executor-edit:
-	@echo "Revising the existing recipe executor code from recipe..."
-	@recipe-executor recipes/recipe_executor/edit.json
+	@echo "Editing recipe executor code from modular recipes..."
+	recipe-tool --execute recipes/recipe_executor/build.json model=openai/o4-mini edit=true existing_code_root=.
+
+# Create a specific component
+create-component:
+	@echo "Generating component $(COMPONENT)..."
+	recipe-tool --execute recipes/recipe_executor/build.json model=openai/o4-mini component_id=$(COMPONENT)
+
+# Edit a specific component
+edit-component:
+	@echo "Editing component $(COMPONENT)..."
+	recipe-tool --execute recipes/recipe_executor/build.json model=openai/o4-mini component_id=$(COMPONENT) edit=true existing_code_root=.
+
+# Usage examples:
+# make create-component COMPONENT=context
+# make edit-component COMPONENT=llm_utils.llm

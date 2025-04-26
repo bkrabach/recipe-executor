@@ -81,4 +81,4 @@ openai_model = OpenAIModel(
 
 ## Output Files
 
-- `llm_utils/azure_openai.py`
+- `recipe_executor/llm_utils/azure_openai.py`

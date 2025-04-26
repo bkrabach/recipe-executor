@@ -1,43 +1,36 @@
 [
   {
     "id": "context",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "executor",
-    "path": "/",
-    "deps": ["protocols", "models", "steps/registry", "logger"],
+    "deps": ["protocols", "logger", "models", "steps.registry"],
     "refs": []
   },
   {
     "id": "logger",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "main",
-    "path": "/",
     "deps": ["context", "executor", "logger", "protocols"],
     "refs": []
   },
   {
     "id": "models",
-    "path": "/",
     "deps": ["protocols"],
     "refs": []
   },
   {
     "id": "protocols",
-    "path": "/",
     "deps": ["models"],
     "refs": []
   },
   {
-    "id": "azure_openai",
-    "path": "/llm_utils",
+    "id": "llm_utils.azure_openai",
     "deps": ["logger"],
     "refs": [
       "AZURE_IDENTITY_CLIENT_DOCS.md",
@@ -45,106 +38,92 @@
     ]
   },
   {
-    "id": "llm",
-    "path": "/llm_utils",
-    "deps": ["logger", "llm_utils/azure_openai", "llm_utils/mcp"],
+    "id": "llm_utils.llm",
+    "deps": ["logger", "llm_utils.azure_openai", "llm_utils.mcp"],
     "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
   },
   {
-    "id": "mcp",
-    "path": "/llm_utils",
+    "id": "llm_utils.mcp",
     "deps": ["logger"],
     "refs": ["git_collector/PYDANTIC_AI_DOCS.md"]
   },
   {
-    "id": "base",
-    "path": "/steps",
-    "deps": ["protocols", "logger"],
+    "id": "steps.base",
+    "deps": ["logger", "protocols"],
     "refs": []
   },
   {
-    "id": "conditional",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "utils/templates"],
+    "id": "steps.conditional",
+    "deps": ["context", "steps.base", "utils.templates"],
     "refs": []
   },
   {
-    "id": "execute_recipe",
-    "path": "/steps",
+    "id": "steps.execute_recipe",
     "deps": [
-      "steps/base",
       "context",
-      "utils/templates",
+      "executor",
       "protocols",
-      "executor"
+      "steps.base",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "llm_generate",
-    "path": "/steps",
+    "id": "steps.llm_generate",
     "deps": [
       "context",
       "models",
-      "llm_utils/llm",
-      "llm_utils/mcp",
-      "steps/base",
-      "utils/models",
-      "utils/templates"
+      "llm_utils.llm",
+      "llm_utils.mcp",
+      "steps.base",
+      "utils.models",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "loop",
-    "path": "/steps",
+    "id": "steps.loop",
     "deps": [
-      "steps/base",
       "context",
-      "utils/templates",
-      "steps/registry",
-      "executor"
+      "executor",
+      "steps.base",
+      "steps.registry",
+      "utils.templates"
     ],
     "refs": []
   },
   {
-    "id": "mcp",
-    "path": "/steps",
-    "deps": ["steps/base", "utils/templates", "llm_utils/mcp", "protocols"],
+    "id": "steps.mcp",
+    "deps": ["protocols", "llm_utils.mcp", "steps.base", "utils.templates"],
     "refs": ["git_collector/MCP_PYTHON_SDK_DOCS.md"]
   },
   {
-    "id": "parallel",
-    "path": "/steps",
-    "deps": ["steps/base", "protocols", "steps/registry"],
+    "id": "steps.parallel",
+    "deps": ["protocols", "steps.base", "steps.registry"],
     "refs": []
   },
   {
-    "id": "read_files",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "utils/templates"],
+    "id": "steps.read_files",
+    "deps": ["steps.base", "context", "utils.templates"],
     "refs": []
   },
   {
-    "id": "registry",
-    "path": "/steps",
+    "id": "steps.registry",
     "deps": [],
     "refs": []
   },
   {
-    "id": "write_files",
-    "path": "/steps",
-    "deps": ["steps/base", "context", "models", "utils/templates"],
+    "id": "steps.write_files",
+    "deps": ["context", "models", "steps.base", "utils/.templates"],
     "refs": []
   },
   {
-    "id": "models",
-    "path": "/utils",
+    "id": "utils.models",
     "deps": [],
     "refs": []
   },
   {
-    "id": "templates",
-    "path": "/utils",
+    "id": "utils.templates",
     "deps": ["protocols"],
     "refs": ["git_collector/LIQUID_PYTHON_DOCS.md"]
   }

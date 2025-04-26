@@ -8,8 +8,8 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 - Provide a command-line interface for executing recipes (accept recipe path and optional parameters).
 - Load environment variables from a `.env` file at startup (using python-dotenv).
- - Parse context values supplied via command-line arguments (`--context key=value`) into initial Context artifacts.
- - Parse configuration values supplied via command-line arguments (`--config key=value`) into the Context `config` attribute.
+- Parse context values supplied via command-line arguments (`--context key=value`) into initial Context artifacts.
+- Parse configuration values supplied via command-line arguments (`--config key=value`) into the Context `config` attribute.
 - Initialize a logging system and direct log output to a specified directory.
 - Create the Context and Executor instances and orchestrate the recipe execution by running an asyncio event loop to call `await Executor.execute` with the provided context.
 - Handle successful completion by reporting execution time, and handle errors by logging and exiting with a non-zero status.
@@ -17,9 +17,9 @@ The Main component serves as the command-line entry point for the Recipe Executo
 ## Implementation Considerations
 
 - Use Python's built-in `argparse` for argument parsing.
- - Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of artifacts.
- - Support multiple `--config` arguments by accumulating them into a list and parsing into a dictionary of configuration values.
- - Create a `Context` object using the parsed artifacts and configuration dictionaries (e.g., `Context(artifacts=artifacts, config=config)`).
+- Support multiple `--context` arguments by accumulating them into a list and parsing into a dictionary of artifacts.
+- Support multiple `--config` arguments by accumulating them into a list and parsing into a dictionary of configuration values.
+- Create a `Context` object using the parsed artifacts and configuration dictionaries (e.g., `Context(artifacts=artifacts, config=config)`).
 - Use the `Executor` component to run the recipe, passing the context object to it.
 - Implement asynchronous execution:
   - Define an async `main_async` function that performs the core execution logic
@@ -64,4 +64,4 @@ The Main component serves as the command-line entry point for the Recipe Executo
 
 ## Output Files
 
-- `main.py`
+- `recipe_executor/main.py`

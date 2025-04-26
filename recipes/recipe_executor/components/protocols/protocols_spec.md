@@ -47,4 +47,4 @@ The Protocols component defines the core interfaces for the Recipe Executor syst
 
 ## Output Files
 
-- `protocols.py`
+- `recipe_executor/protocols.py`

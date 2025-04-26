@@ -53,4 +53,4 @@ The purpose of the Steps Base component is to provide a foundational structure f
 
 ## Output Files
 
-- `steps/base.py`
+- `recipe_executor/steps/base.py`

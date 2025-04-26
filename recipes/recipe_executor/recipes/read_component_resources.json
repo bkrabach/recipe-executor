@@ -1,0 +1,51 @@
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_spec.md",
+        "content_key": "spec"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_docs.md",
+        "content_key": "docs",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% for dep in component.deps %}{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ dep | replace: '.', '/' }}/{{ dep | split: '.' | last }}_spec.md{% unless forloop.last %},{% endunless %}{% endfor %}",
+        "content_key": "dep_docs",
+        "merge_mode": "dict",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% for ref in component.refs %}{{ refs_root | default: 'ai_context' }}/{{ ref }}{% unless forloop.last %},{% endunless %}{% endfor %}",
+        "content_key": "ref_docs",
+        "merge_mode": "dict",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+        "content_key": "implementation_philosophy"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "ai_context/DEV_GUIDE_FOR_PYTHON.md",
+        "content_key": "dev_guide"
+      }
+    }
+  ]
+}
