@@ -57,6 +57,7 @@
     "output",
     "logs",
     "*.md",
+    "*.excalidraw",
     "ai_context"
   ],
   "cSpell.words": [

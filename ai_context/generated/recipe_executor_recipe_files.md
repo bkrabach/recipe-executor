@@ -1,16 +1,15 @@
 # AI Context Files
-Date: 4/26/2025, 10:52:47 AM
-Files: 44
+Date: 4/26/2025, 11:09:26 AM
+Files: 48
 
 === File: recipes/recipe_executor/build.json ===
 {
   "steps": [
     {
-      "type": "read_files",
+      "type": "execute_recipe",
       "config": {
-        "path": "recipes/recipe_executor/components.json",
-        "content_key": "components",
-        "merge_mode": "dict"
+        "recipe_path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/recipes/read_components.json",
+        "context_overrides": {}
       }
     },
     {
@@ -29,84 +28,10 @@ Files: 44
               "if_true": {
                 "steps": [
                   {
-                    "type": "conditional",
+                    "type": "execute_recipe",
                     "config": {
-                      "condition": "{{ edit | default: false }}",
-                      "if_true": {
-                        "steps": [
-                          {
-                            "type": "read_files",
-                            "config": {
-                              "path": "{{ existing_code_root }}/{% endif %}recipe_executor/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}.py",
-                              "content_key": "existing_code",
-                              "optional": true
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_spec.md",
-                      "content_key": "spec"
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_docs.md",
-                      "content_key": "docs",
-                      "optional": true
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "{% for dep in component.deps %}{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ dep | replace: '.', '/' }}/{{ dep | split: '.' | last }}_spec.md{% unless forloop.last %},{% endunless %}{% endfor %}",
-                      "content_key": "dep_docs",
-                      "merge_mode": "dict",
-                      "optional": true
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "{% for ref in component.refs %}{{ refs_root | default: 'ai_context' }}/{{ ref }}{% unless forloop.last %},{% endunless %}{% endfor %}",
-                      "content_key": "ref_docs",
-                      "merge_mode": "dict",
-                      "optional": true
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
-                      "content_key": "implementation_philosophy"
-                    }
-                  },
-                  {
-                    "type": "read_files",
-                    "config": {
-                      "path": "ai_context/DEV_GUIDE_FOR_PYTHON.md",
-                      "content_key": "dev_guide"
-                    }
-                  },
-                  {
-                    "type": "llm_generate",
-                    "config": {
-                      "prompt": "{% assign id_parts = component.id | split: '.' -%}{% assign path = id_parts | size | minus: 1 | join: '/' -%}{% assign id = id_parts | last -%}# Task\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{ component.id }} component of a larger project.\n\n## Specification\n<SPECIFICATION>\n{{ spec }}\n</SPECIFICATION>\n\n{% if existing_code %}## Existing Code\n\nThis is the prior version of the code and can be used for reference, however the specifications or dependencies may have changed, so it may need to be updated.\n\n<EXISTING_CODE>\n{{ existing_code }}\n</EXISTING_CODE>\n\n{% endif %}## Usage Documentation\n\nThis is the usage documentation that will be provided to callers of this component, it is critical that this is considered a contract and must be fulfilled as this is what is being promised from this component.\n\n<USAGE_DOCUMENTATION>\n{{ docs }}\n</USAGE_DOCUMENTATION>\n\n{% if dep_docs %}## Dependency Documentation\n\nIncludes documentation for internal dependencies.\n{% for dep_doc in dep_docs %}<DEPENDENCY_DOC>\n{{ dep_docs[dep_doc] }}\n</DEPENDENCY_DOC>\n{% endfor %}\n{% endif %}{% if ref_docs %}# Reference Documentation\n\nIncludes additional documentation for external libraries that have been loaded into this project.\n{% for ref_doc in ref_docs %}<REFERENCE_DOC>\n{{ ref_docs[ref_doc] }}\n</REFERENCE_DOC>\n{% endfor %}\n{% endif %}## Guidance\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{ implementation_philosophy }}\n</IMPLEMENTATION_PHILOSOPHY>\n\n{% if dev_guide %}<DEV_GUIDE>\n{{ dev_guide }}\n</DEV_GUIDE>\n\n{% endif %}# Output\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at once and return in the `files` collection). For example, {{ output_path | default: 'recipe_executor' }}/{{ path }}/{{ id }}.<ext>, {{ output_path | default: 'recipe_executor' }}/{{ path }}/<other files defined in specification>, etc.\n\n",
-                      "model": "{{ model | default: 'openai/o4-mini' }}",
-                      "output_format": "files",
-                      "output_key": "generated_files"
-                    }
-                  },
-                  {
-                    "type": "write_files",
-                    "config": {
-                      "files_key": "generated_files",
-                      "root": "{{ output_root | default: 'output' }}"
+                      "recipe_path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/recipes/process_component.json",
+                      "context_overrides": {}
                     }
                   }
                 ]
@@ -4722,5 +4647,134 @@ None
 ## Output Files
 
 - `recipe_executor/utils/templates.py`
+
+
+=== File: recipes/recipe_executor/recipes/generate_component_code.json ===
+{
+  "steps": [
+    {
+      "type": "llm_generate",
+      "config": {
+        "prompt": "{% assign id_parts = component.id | split: '.' -%}{% assign path = id_parts | size | minus: 1 | join: '/' -%}{% assign id = id_parts | last -%}# Task\n\nYou are an expert developer. Based on the following specification{% if existing_code %} and existing code{% endif %}, generate python code for the {{ component.id }} component of a larger project.\n\n## Specification\n<SPECIFICATION>\n{{ spec }}\n</SPECIFICATION>\n\n{% if existing_code %}## Existing Code\n\nThis is the prior version of the code and can be used for reference, however the specifications or dependencies may have changed, so it may need to be updated.\n\n<EXISTING_CODE>\n{{ existing_code }}\n</EXISTING_CODE>\n\n{% endif %}## Usage Documentation\n\nThis is the usage documentation that will be provided to callers of this component, it is critical that this is considered a contract and must be fulfilled as this is what is being promised from this component.\n\n<USAGE_DOCUMENTATION>\n{{ docs }}\n</USAGE_DOCUMENTATION>\n\n{% if dep_docs %}## Dependency Documentation\n\nIncludes documentation for internal dependencies.\n{% for dep_doc in dep_docs %}<DEPENDENCY_DOC>\n{{ dep_docs[dep_doc] }}\n</DEPENDENCY_DOC>\n{% endfor %}\n{% endif %}{% if ref_docs %}# Reference Documentation\n\nIncludes additional documentation for external libraries that have been loaded into this project.\n{% for ref_doc in ref_docs %}<REFERENCE_DOC>\n{{ ref_docs[ref_doc] }}\n</REFERENCE_DOC>\n{% endfor %}\n{% endif %}## Guidance\n\nEnsure the code follows the specification exactly, implements all required functionality, and adheres to the implementation philosophy described in the tags. Include appropriate error handling and type hints. The implementation should be minimal but complete.\n\n<IMPLEMENTATION_PHILOSOPHY>\n{{ implementation_philosophy }}\n</IMPLEMENTATION_PHILOSOPHY>\n\n{% if dev_guide %}<DEV_GUIDE>\n{{ dev_guide }}\n</DEV_GUIDE>\n\n{% endif %}# Output\n\nGenerate the appropriate file(s) (if the specification defines multiple output files, MAKE SURE TO CREATE ALL FILES at once and return in the `files` collection). For example, {{ output_path | default: 'recipe_executor' }}/{{ path }}/{{ id }}.<ext>, {{ output_path | default: 'recipe_executor' }}/{{ path }}/<other files defined in specification>, etc.\n\n",
+        "model": "{{ model | default: 'openai/o4-mini' }}",
+        "output_format": "files",
+        "output_key": "generated_files"
+      }
+    },
+    {
+      "type": "write_files",
+      "config": {
+        "files_key": "generated_files",
+        "root": "{{ output_root | default: 'output' }}"
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/recipes/process_component.json ===
+{
+  "steps": [
+    {
+      "type": "conditional",
+      "config": {
+        "condition": "{{ edit | default: false }}",
+        "if_true": {
+          "steps": [
+            {
+              "type": "read_files",
+              "config": {
+                "path": "{{ existing_code_root }}/recipe_executor/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}.py",
+                "content_key": "existing_code",
+                "optional": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/recipes/read_component_resources.json"
+      }
+    },
+    {
+      "type": "execute_recipe",
+      "config": {
+        "recipe_path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/recipes/generate_component_code.json"
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/recipes/read_component_resources.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_spec.md",
+        "content_key": "spec"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ component.id | replace: '.', '/' }}/{{ component.id | split: '.' | last }}_docs.md",
+        "content_key": "docs",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% for dep in component.deps %}{{ recipe_root | default: 'recipes/recipe_executor' }}/components/{{ dep | replace: '.', '/' }}/{{ dep | split: '.' | last }}_spec.md{% unless forloop.last %},{% endunless %}{% endfor %}",
+        "content_key": "dep_docs",
+        "merge_mode": "dict",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "{% for ref in component.refs %}{{ refs_root | default: 'ai_context' }}/{{ ref }}{% unless forloop.last %},{% endunless %}{% endfor %}",
+        "content_key": "ref_docs",
+        "merge_mode": "dict",
+        "optional": true
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "ai_context/IMPLEMENTATION_PHILOSOPHY.md",
+        "content_key": "implementation_philosophy"
+      }
+    },
+    {
+      "type": "read_files",
+      "config": {
+        "path": "ai_context/DEV_GUIDE_FOR_PYTHON.md",
+        "content_key": "dev_guide"
+      }
+    }
+  ]
+}
+
+
+=== File: recipes/recipe_executor/recipes/read_components.json ===
+{
+  "steps": [
+    {
+      "type": "read_files",
+      "config": {
+        "path": "recipes/recipe_executor/components.json",
+        "content_key": "components",
+        "merge_mode": "dict"
+      }
+    }
+  ]
+}
 
 
